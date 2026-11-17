@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAHROUD Greenhouse Pro v3.5.1</title>
+<meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
+<style>
+:root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif;font-size:13px}
+header{background:linear-gradient(110deg,var(--dark),var(--green2));color:#fff;padding:17px 22px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:43px;height:43px;border:2px solid #bdebd5;border-radius:12px;display:grid;place-items:center;font-size:20px;font-weight:bold}.brand h1{font-size:19px;margin:0}.brand p{font-size:11px;color:#d7f3e7;margin:6px 0 0}
+button,.btn{border:0;border-radius:8px;padding:10px 13px;background:var(--green);color:white;cursor:pointer;font:inherit;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+button:hover,.btn:hover{filter:brightness(1.07)}button:disabled{opacity:.5;cursor:wait}.btn-light{background:white;color:var(--dark)}.btn-soft{background:#eaf4ee;color:var(--dark)}.btn-red{background:var(--red)}
+.top-actions,.toolbar{display:flex;gap:7px;flex-wrap:wrap}
+nav{display:flex;gap:2px;overflow:auto;background:#fff;border-bottom:1px solid var(--border);padding:0 14px;position:sticky;top:0;z-index:5}
+nav button{background:transparent;color:#53685d;border-radius:0;border-bottom:3px solid transparent;padding:13px 14px;white-space:nowrap}
+nav button.active{color:var(--green);border-bottom-color:var(--green);font-weight:bold}
+main{max-width:1550px;margin:auto;padding:16px}.page{display:none}.page.active{display:block}
+.pagehead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0 15px}.pagehead h2{font-size:18px;color:var(--dark);margin:0}.pagehead p{color:var(--muted);font-size:11px;margin:6px 0 0}
+.layout{display:grid;grid-template-columns:310px 1fr;gap:14px;align-items:start}.panel,.card{background:#fff;border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:14px;box-shadow:0 3px 12px rgba(20,65,42,.025)}
+h3{font-size:14px;color:var(--dark);margin:0 0 13px}h4{margin:0 0 10px;color:var(--green)}
+label{display:block;font-size:11px;color:#66766e;margin:10px 0 5px}
+input,select,textarea{width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:#fbfdfb;font:inherit;color:var(--text);min-width:0}
+textarea{min-height:75px;resize:vertical}.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px}.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}.stat{background:#fff;padding:12px;border:1px solid var(--border);border-radius:11px;min-width:0}.stat small{color:var(--muted);font-size:10px}.stat strong{display:block;color:var(--green);font-size:17px;margin-top:7px;overflow-wrap:anywhere}
+.columns{display:grid;grid-template-columns:1.35fr 1fr;gap:14px}.visual{height:330px;background:linear-gradient(#f5fbf7,#e9f4ed);border:1px solid var(--border);border-radius:10px;overflow:hidden}.visual canvas{width:100%;height:100%;display:block}
+table{border-collapse:collapse;width:100%;font-size:11px}th,td{padding:9px;border-bottom:1px solid var(--border);text-align:right;vertical-align:top}th{background:var(--light);color:var(--dark)}.tablewrap{overflow:auto}
+.notice{background:var(--amber);border-right:4px solid #d97706;padding:11px;border-radius:8px;font-size:11px;line-height:2;margin-top:10px;color:#72551b}
+.muted{font-size:11px;color:var(--muted);line-height:1.9}.status{font-size:11px;color:var(--green);min-height:20px;margin:8px 0}.status.error{color:var(--red)}
+.projectlist{display:grid;gap:8px}.projectitem{border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;justify-content:space-between;gap:8px;align-items:center}.projectitem small{display:block;color:var(--muted);margin-top:4px}
+.result{background:#f5faf6;border:1px solid var(--border);border-radius:9px;padding:12px;margin-top:12px}
+footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
+@media(max-width:950px){.layout{grid-template-columns:1fr}.columns{grid-template-columns:1fr}}
+@media(max-width:650px){main{padding:8px}.stats{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}.brand h1{font-size:16px}}
+@media print{header .top-actions,nav,.toolbar,button,.no-print{display:none!important}.page{display:block!important}.layout{display:block}body{background:#fff}.panel,.card,.stat{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.5.1</p></div></div>
+ <div class="top-actions">
+  <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
+  <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
+  <button class="btn-light" onclick="printReport()">چاپ / PDF</button>
+ </div>
+</header>
+<nav>
+ <button class="active" data-page="geometry">هندسه و متره</button>
+ <button data-page="projects">مدیریت پروژه</button>
+ <button data-page="climate">بانک اقلیمی</button>
+ <button data-page="hydro">هیدروپونیک</button>
+ <button data-page="structure">محاسبات سازه</button>
+ <button data-page="reports">گزارش و خروجی</button>
+</nav>
+<main>
+<!-- GEOMETRY -->
+<section id="geometry" class="page active">
+ <div class="pagehead"><div><h2>طراحی هندسی و متره گلخانه</h2><p>مدل شماتیک پارامتریک و برآورد مقدماتی بر مبنای فایل ارسالی شما</p></div><span class="muted" id="activeProjectText">پروژه فعال: پروژه نمونه</span></div>
+ <div class="layout">
+  <aside class="panel">
+   <h3>پارامترهای هندسی</h3>
+   <label>نام پروژه</label><input id="project" value="گلخانه نمونه">
+   <div class="g2"><div><label>تعداد دهانه</label><input id="bays" type="number" min="1" value="5"></div><div><label>عرض هر دهانه (m)</label><input id="bayWidth" type="number" min="1" step=".1" value="8"></div></div>
+   <div class="g2"><div><label>طول گلخانه (m)</label><input id="length" type="number" min="1" value="40"></div><div><label>فاصله قاب‌ها (m)</label><input id="spacing" type="number" min=".1" step=".1" value="4"></div></div>
+   <div class="g2"><div><label>ارتفاع ستون (m)</label><input id="height" type="number" min="1" step=".1" value="5.2"></div><div><label>شیب سقف (درجه)</label><input id="slope" type="number" min="1" max="60" value="28"></div></div>
+   <label>افزایش ارتفاع تاج نسبت به ستون (m)</label><input id="ridge" type="number" min="0" step=".1" value="2.13">
+   <h3 style="margin-top:20px">مقاطع و قیمت</h3>
+   <label>جرم واحد طول فولاد (kg/m)</label><input id="mass" type="number" min="0" step=".01" placeholder="از دیتاشیت معتبر">
+   <label>قیمت فولاد (تومان/kg)</label><input id="steelPrice" type="number" min="0" placeholder="قیمت روز">
+   <label>قیمت پوشش (تومان/m²)</label><input id="coverPrice" type="number" min="0" placeholder="قیمت واحد">
+   <label>نوع پوشش</label><select id="coverType"><option>پلی‌اتیلن</option><option>پلی‌کربنات</option><option>شیشه</option><option>سایر</option></select>
+   <button style="width:100%;margin-top:16px" onclick="calculateGeometry()">محاسبه و به‌روزرسانی</button>
+   <p class="muted">پس از تغییر پارامترها، محاسبات هندسی به‌روزرسانی می‌شوند. متره اعضا ساده‌سازی شده است.</p>
+  </aside>
+  <section>
+   <div class="stats">
+    <div class="stat"><small>عرض کل</small><strong id="widthStat">—</strong></div><div class="stat"><small>مساحت کف</small><strong id="floorStat">—</strong></div><div class="stat"><small>تعداد قاب</small><strong id="frameStat">—</strong></div><div class="stat"><small>سطح پوشش</small><strong id="coverStat">—</strong></div>
+   </div>
+   <div class="columns">
+    <div class="card"><h3>مدل شماتیک گلخانه</h3><div class="visual"><canvas id="model"></canvas></div><p class="muted">نمای ایزومتریک دوبعدی از قاب‌ها؛ این تصویر مدل CAD یا تحلیل سه‌بعدی واقعی نیست.</p></div>
+    <div class="card"><h3>خلاصه هندسی</h3><table><tbody>
+     <tr><td>عرض کل</td><td id="vWidth">—</td></tr><tr><td>طول</td><td id="vLength">—</td></tr><tr><td>ارتفاع ستون</td><td id="vHeight">—</td></tr><tr><td>ارتفاع تاج</td><td id="vRidge">—</td></tr><tr><td>طول شیب سقف</td><td id="vSlope">—</td></tr><tr><td>مساحت سقف</td><td id="vRoof">—</td></tr><tr><td>مساحت دیوارها</td><td id="vWalls">—</td></tr>
+    </tbody></table></div>
+   </div>
+   <div class="card"><h3>جدول متره مقدماتی</h3><div class="tablewrap"><table><thead><tr><th>شرح</th><th>تعداد</th><th>واحد</th><th>مقدار</th><th>مبنای محاسبه</th></tr></thead><tbody id="quantityRows"></tbody></table></div></div>
+   <div class="card"><h3>برآورد هزینه</h3><div class="stats"><div class="stat"><small>طول کل فولاد</small><strong id="steelLength">—</strong></div><div class="stat"><small>وزن فولاد</small><strong id="weight">—</strong></div><div class="stat"><small>هزینه فولاد</small><strong id="steelCost">—</strong></div><div class="stat"><small>هزینه پوشش</small><strong id="coverCost">—</strong></div></div><h3 id="totalCost">جمع هزینه اقلام قابل محاسبه: —</h3></div>
+   <div class="notice" id="geometryWarning">این نرم‌افزار ابزار مقدماتی هندسه و متره است و تأییدیه ایمنی سازه صادر نمی‌کند.</div>
+  </section>
+ </div>
+</section>
+
+<!-- PROJECTS -->
+<section id="projects" class="page">
+ <div class="pagehead"><div><h2>مدیریت پروژه‌ها</h2><p>ذخیره چند پروژه در مرورگر، بازیابی و پشتیبان‌گیری</p></div></div>
+ <div class="columns">
+  <div class="card"><h3>مشخصات پروژه</h3><div class="g2">
+   <div><label>نام پروژه</label><input id="metaName" placeholder="نام پروژه"></div><div><label>کارفرما</label><input id="metaClient" placeholder="نام کارفرما"></div>
+   <div><label>شهر</label><input id="metaCity" placeholder="شهر"></div><div><label>کشور</label><input id="metaCountry" value="ایران"></div>
+   <div><label>نوع گلخانه</label><select id="metaType"><option>چنددهانه</option><option>تونلی</option><option>قوسی</option><option>هیدروپونیک</option><option>سایر</option></select></div><div><label>نوع کشت</label><input id="metaCrop" placeholder="مثلاً گوجه‌فرنگی"></div>
+  </div><label>توضیحات</label><textarea id="metaNotes"></textarea>
+  <div class="toolbar"><button onclick="newProject()">پروژه جدید</button><button onclick="saveProject()">ذخیره پروژه فعال</button><button class="btn-soft" onclick="syncMetaFromGeometry()">همگام‌سازی نام و شهر</button></div><div class="status" id="projectStatus"></div></div>
+  <div class="card"><h3>فهرست پروژه‌ها</h3><div id="projectList" class="projectlist">در حال بارگذاری...</div></div>
+ </div>
+ <div class="card"><h3>پشتیبان‌گیری</h3><div class="toolbar"><button onclick="exportBackup()">دریافت همه پروژه‌ها (JSON)</button><label class="btn btn-soft" for="backupInput">بازیابی فایل JSON</label><input id="backupInput" type="file" accept=".json,application/json" hidden onchange="importBackup(event)"></div><p class="muted">داده‌های IndexedDB فقط در مرورگر و دستگاه فعلی نگهداری می‌شوند؛ پشتیبان جداگانه تهیه کنید.</p></div>
+</section>
+
+<!-- CLIMATE -->
+<section id="climate" class="page">
+ <div class="pagehead"><div><h2>بانک اطلاعات اقلیمی شهرها</h2><p>جست‌وجوی شهر و دریافت داده‌های تاریخی از Open-Meteo</p></div></div>
+ <div class="card"><h3>انتخاب شهر</h3><div class="g2"><div><label>نام شهر</label><input id="cityQuery" placeholder="مثلاً تهران، اصفهان، باکو"></div><div style="align-self:end"><button onclick="searchClimateCities()">جست‌وجوی شهر</button></div></div>
+ <label>نتیجه جست‌وجو</label><select id="citySelect"><option value="">ابتدا جست‌وجو کنید</option></select>
+ <div class="toolbar"><button id="climateBtn" onclick="loadClimate()">دریافت داده‌های تاریخی</button><button class="btn-soft" onclick="showSavedClimate()">نمایش داده ذخیره‌شده</button></div><div class="status" id="climateStatus">برای جست‌وجو و دریافت داده، اتصال اینترنت لازم است.</div></div>
+ <div class="card"><h3>خلاصه اقلیمی دوره تاریخی</h3><div class="stats">
+  <div class="stat"><small>بیشینه دمای روزانه (°C)</small><strong id="cMax">—</strong></div><div class="stat"><small>کمینه دمای روزانه (°C)</small><strong id="cMin">—</strong></div><div class="stat"><small>میانگین رطوبت (%)</small><strong id="cHum">—</strong></div><div class="stat"><small>بیشینه تندباد روزانه (m/s)</small><strong id="cWind">—</strong></div>
+  <div class="stat"><small>بیشینه بارش روزانه (mm)</small><strong id="cRain">—</strong></div><div class="stat"><small>ارتفاع (m)</small><strong id="cElev">—</strong></div><div class="stat"><small>عرض جغرافیایی</small><strong id="cLat">—</strong></div><div class="stat"><small>طول جغرافیایی</small><strong id="cLon">—</strong></div>
+ </div><p id="climateSource" class="muted"></p><div class="notice">داده‌های تاریخی/بازتحلیل برای شناخت اقلیم عمومی‌اند و جایگزین داده طراحی بار باد، برف، زلزله، ضوابط ملی یا برداشت محلی نیستند. مقادیر حدی دوره تاریخی الزاماً بار طراحی نیستند.</div></div>
+</section>
+
+<!-- HYDRO -->
+<section id="hydro" class="page">
+ <div class="pagehead"><div><h2>متره مقدماتی سامانه هیدروپونیک</h2><p>برآورد کانال، لوله، اتصالات، مخزن، فیلتر و پمپ</p></div></div>
+ <div class="card"><h3>پارامترهای سامانه</h3><div class="g3">
+  <div><label>تعداد ردیف کشت</label><input id="hRows" type="number" min="1" value="10"></div><div><label>تعداد کانال در هر ردیف</label><input id="hChannels" type="number" min="1" value="4"></div><div><label>طول هر کانال (m)</label><input id="hLength" type="number" min=".1" step=".1" value="12"></div>
+  <div><label>فاصله پایه‌ها (m)</label><input id="hSupport" type="number" min=".1" step=".1" value="1.5"></div><div><label>قطر داخلی لوله اصلی (mm)</label><input id="hDiameter" type="number" min="1" value="50"></div><div><label>دبی کل سامانه (L/h)</label><input id="hFlow" type="number" min="0" value="3000"></div>
+  <div><label>طول لوله اصلی (m)</label><input id="hMainLength" type="number" min="0" value="35"></div><div><label>طول لوله فرعی (m)</label><input id="hBranchLength" type="number" min="0" value="120"></div><div><label>حجم مخزن (L)</label><input id="hTank" type="number" min="0" value="2000"></div>
+  <div><label>تعداد زانو</label><input id="hElbows" type="number" min="0" value="20"></div><div><label>تعداد سه‌راهی</label><input id="hTees" type="number" min="0" value="12"></div><div><label>تعداد شیر</label><input id="hValves" type="number" min="0" value="6"></div>
+  <div><label>تعداد فیلتر</label><input id="hFilters" type="number" min="0" value="1"></div><div><label>قیمت واحد کانال (تومان/m)</label><input id="hChannelPrice" type="number" min="0" value="0"></div><div><label>قیمت واحد لوله (تومان/m)</label><input id="hPipePrice" type="number" min="0" value="0"></div>
+ </div><div class="toolbar"><button onclick="calculateHydro()">محاسبه متره هیدروپونیک</button><button class="btn-soft" onclick="exportHydroDXF()">خروجی DXF پلان هیدروپونیک</button></div><div id="hydroStatus" class="status"></div><div id="hydroResults"></div></div>
+ <div class="card"><h3>بررسی مقدماتی هیدرولیک</h3><div class="g3">
+  <div><label>هد استاتیک و موردنیاز (m)</label><input id="hHead" type="number" min="0" step=".1" value="8"></div><div><label>بازده کل پمپ (0 تا 1)</label><input id="hEfficiency" type="number" min=".01" max="1" step=".01" value=".6"></div><div><label>ضریب اصطکاک دارسی (f)</label><input id="hFriction" type="number" min=".001" max="1" step=".001" value=".025"></div>
+ </div><button onclick="calculateHydraulics()">محاسبه مقدماتی هد و توان</button><div id="hydraulicResults"></div><div class="notice">این محاسبه افت اصطکاکی مستقیم تقریبی است و در این نسخه افت موضعی، شبکه شاخه‌ای، تغییر دبی در طول مسیر و منحنی واقعی پمپ به‌طور کامل مدل نشده‌اند. انتخاب نهایی پمپ باید با منحنی سازنده انجام شود.</div></div>
+</section>
+
+<!-- STRUCTURE -->
+<section id="structure" class="page">
+ <div class="pagehead"><div><h2>محاسبات مقدماتی سازه</h2><p>بار سطحی به بار خطی قاب و کنترل ساده تیر دوسر ساده</p></div></div>
+ <div class="card"><h3>بارگذاری قاب</h3><div class="g3">
+  <div><label>استاندارد مبنا</label><select id="std"><option value="">انتخاب نشده</option><option>مقررات ملی ساختمان ایران</option><option>Eurocode</option><option>ASCE / IBC</option><option>ورودی سفارشی مهندس</option></select></div>
+  <div><label>فاصله قاب‌ها (m)</label><input id="sFrame" type="number" min=".1" value="4"></div><div><label>بار مرده اضافی D (kN/m²)</label><input id="sD" type="number" min="0" step=".01" value="0"></div>
+  <div><label>بار بهره‌برداری L (kN/m²)</label><input id="sL" type="number" min="0" step=".01" value="0"></div><div><label>فشار/مکش باد W (kN/m²)</label><input id="sW" type="number" step=".01" value="0"></div><div><label>بار برف S (kN/m²)</label><input id="sS" type="number" min="0" step=".01" value="0"></div>
+ </div><div class="notice">مقادیر صفر صرفاً ورودی صفر هستند و به معنی حذف بار قانونی نیستند. باد، برف نامتقارن، بارهای داخلی، زلزله و ضرایب آیین‌نامه‌ای در این ماژول به‌صورت کامل تحلیل نمی‌شوند.</div><button onclick="runStructural()">محاسبه بار خطی قاب</button><div id="structuralOutput"></div></div>
+ <div class="card"><h3>کنترل مقدماتی تیر فولادی دوسر ساده</h3><div class="g3">
+  <div><label>دهانه L (m)</label><input id="bL" type="number" min=".1" value="4"></div><div><label>بار گسترده w (kN/m)</label><input id="bW" type="number" min="0" value="0"></div><div><label>مدول E (GPa)</label><input id="bE" type="number" min="1" value="200"></div>
+  <div><label>ممان دوم سطح I (cm⁴)</label><input id="bI" type="number" min=".01" value="1000"></div><div><label>مدول مقطع Z (cm³)</label><input id="bZ" type="number" min=".01" value="100"></div><div><label>تنش تسلیم Fy (MPa)</label><input id="bFy" type="number" min="1" value="240"></div><div><label>حد خیز L /</label><input id="bLimit" type="number" min="1" value="240"></div>
+ </div><button onclick="runBeam()">کنترل تیر</button><div id="beamOutput"></div>
+ <div class="notice">این مدل تنها تیر ایده‌آل دوسر ساده با بار گسترده یکنواخت است. کمانش جانبی-پیچشی، کمانش موضعی، برش، اتصالات، اندرکنش نیروها و پایداری قاب کنترل نمی‌شود. نتیجه، تأیید طراحی نیست.</div></div>
+</section>
+
+<!-- REPORTS -->
+<section id="reports" class="page">
+ <div class="pagehead"><div><h2>گزارش و خروجی‌ها</h2><p>گزارش خلاصه پروژه، Excel، CSV، DXF و چاپ PDF</p></div></div>
+ <div class="card"><h3>خروجی فایل</h3><div class="toolbar">
+  <button onclick="exportCSV()">دریافت CSV متره</button><button onclick="exportXLSX()">دریافت Excel XLSX</button><button onclick="exportDXF()">دریافت DXF پلان</button><button onclick="exportHydroDXF()">DXF هیدروپونیک</button><button onclick="exportBackup()">پشتیبان JSON</button><button onclick="printReport()">چاپ / PDF</button>
+ </div><div class="status" id="exportStatus"></div></div>
+ <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
+</section>
+</main>
+<footer>SAHROUD Greenhouse Pro v3.5.1 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id), num=id=>{const e=$(id);if(!e||e.value.trim()==="")return null;const v=Number(e.value);return Number.isFinite(v)?v:null};
+const fmt=(n,d=2)=>Number.isFinite(n)?Number(n).toLocaleString("fa-IR",{maximumFractionDigits:d}):"—";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function status(id,msg,error=false){const e=$(id);if(e){e.textContent=msg;e.classList.toggle("error",error)}}
+function download(name,data,type="application/octet-stream"){const blob=new Blob([data],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200)}
+function uid(){return "sah-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7)}
+function showPage(id){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===id));document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===id));if(id==="reports")renderReport()}
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.page)));
+
+/* Geometry calculation based on uploaded v2.12 source */
+let geomResult={};
+function geometryParams(){return {project:$("project").value,bays:Math.max(1,Math.floor(num("bays")||1)),bayWidth:num("bayWidth")||0,length:num("length")||0,spacing:Math.max(.1,num("spacing")||.1),height:num("height")||0,slope:num("slope")||0,ridge:num("ridge")||0,mass:num("mass")||0,steelPrice:num("steelPrice")||0,coverPrice:num("coverPrice")||0,coverType:$("coverType").value}}
+function calculateGeometry(){
+ const p=geometryParams();
+ if(!(p.bayWidth>0&&p.length>0&&p.height>0&&p.slope>0&&p.slope<89)){status("projectStatus","ابعاد هندسی معتبر نیستند.",true);return null}
+ const width=p.bays*p.bayWidth,frames=Math.ceil(p.length/p.spacing)+1;
+ const slopeLength=(p.bayWidth/2)/Math.cos(p.slope*Math.PI/180);
+ const roofArea=2*p.bays*slopeLength*p.length,sideWalls=2*p.length*p.height,endWalls=2*(width*p.height+.5*width*p.ridge);
+ const cover=roofArea+sideWalls+endWalls,floor=width*p.length;
+ const columns=frames*(p.bays+1)*p.height,longitudinal=2*(p.bays+1)*p.length,roofMembers=frames*2*p.bays*slopeLength;
+ const totalSteelLength=columns+longitudinal+roofMembers,weight=p.mass>0?totalSteelLength*p.mass:null;
+ const steelCost=weight!==null&&p.steelPrice>0?weight*p.steelPrice:null,coverCost=p.coverPrice>0?cover*p.coverPrice:null;
+ geomResult={...p,width,frames,slopeLength,roofArea,sideWalls,endWalls,cover,floor,columns,longitudinal,roofMembers,totalSteelLength,weight,steelCost,coverCost};
+ $("widthStat").textContent=fmt(width)+" m";$("floorStat").textContent=fmt(floor)+" m²";$("frameStat").textContent=fmt(frames,0);$("coverStat").textContent=fmt(cover)+" m²";
+ $("vWidth").textContent=fmt(width)+" m";$("vLength").textContent=fmt(p.length)+" m";$("vHeight").textContent=fmt(p.height)+" m";$("vRidge").textContent=fmt(p.height+p.ridge)+" m";$("vSlope").textContent=fmt(slopeLength)+" m";$("vRoof").textContent=fmt(roofArea)+" m²";$("vWalls").textContent=fmt(sideWalls+endWalls)+" m²";
+ $("steelLength").textContent=fmt(totalSteelLength)+" m";$("weight").textContent=weight===null?"نیازمند دیتاشیت":fmt(weight,0)+" kg";$("steelCost").textContent=steelCost===null?"نامشخص":fmt(steelCost,0)+" تومان";$("coverCost").textContent=coverCost===null?"نامشخص":fmt(coverCost,0)+" تومان";
+ $("totalCost").textContent="جمع هزینه اقلام قابل محاسبه: "+(steelCost===null&&coverCost===null?"نامشخص":fmt((steelCost||0)+(coverCost||0),0)+" تومان");
+ const rows=[["ستون‌ها",frames*(p.bays+1),"عدد",columns,"تعداد قاب × خطوط ستون × ارتفاع"],["تیرهای طولی",2*(p.bays+1),"خط",longitudinal,"دو برابر خطوط طولی × طول"],["اعضای شیبدار سقف",frames*2*p.bays,"عضو",roofMembers,"قاب × دو شیب × دهانه × طول شیب"],["طول کل فولاد","—","متر",totalSteelLength,"جمع طول اعضای تعریف‌شده"],["پوشش سقف","—","m²",roofArea,"سطح شیبدار سقف"],["پوشش دیوارها","—","m²",sideWalls+endWalls,"دیواره جانبی و پیشانی"],["کل پوشش","—","m²",cover,"سقف + دیواره‌ها"]];
+ $("quantityRows").innerHTML=rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${fmt(r[3])}</td><td>${r[4]}</td></tr>`).join("");
+ $("geometryWarning").textContent="نتایج صرفاً برآورد هندسی مقدماتی هستند. "+(p.mass>0?"وزن فولاد با جرم واحد طول واردشده محاسبه شده است.":"وزن فولاد به دیتاشیت معتبر مقطع نیاز دارد.")+" تحلیل بار باد، برف، زلزله، کمانش، اتصالات، فونداسیون و کنترل استاندارد انجام نشده است.";
+ drawModel(p);$("activeProjectText").textContent="پروژه فعال: "+(p.project||"بدون نام");return geomResult;
+}
+function drawModel(p){
+ const c=$("model"),r=c.getBoundingClientRect(),ratio=window.devicePixelRatio||1;if(!r.width||!r.height)return;
+ c.width=r.width*ratio;c.height=r.height*ratio;const ctx=c.getContext("2d");ctx.setTransform(ratio,0,0,ratio,0,0);const w=r.width,h=r.height;ctx.clearRect(0,0,w,h);
+ const scale=Math.min(w/(p.bays*p.bayWidth+p.length*.5),h/(p.height+p.ridge+8))*1.25,ox=w*.48,oy=h*.76;
+ const pt=(x,y,z)=>({x:ox+(x-y*.45)*scale,y:oy+(x*.18+y*.13-z)*scale});
+ function line(a,b,col,width=2){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=col;ctx.lineWidth=width;ctx.stroke()}
+ const count=Math.max(2,Math.min(18,Math.ceil(p.length/p.spacing)+1));
+ for(let i=0;i<count;i++){const y=i*p.length/(count-1);for(let j=0;j<p.bays;j++){const x=j*p.bayWidth,a=pt(x,y,0),b=pt(x,y,p.height),ridge=pt(x+p.bayWidth/2,y,p.height+p.ridge),d=pt(x+p.bayWidth,y,p.height),e=pt(x+p.bayWidth,y,0);line(a,b,"#087f5b",2);line(b,ridge,"#d69b3d",2);line(ridge,d,"#d69b3d",2);line(d,e,"#087f5b",2)}}
+ for(let j=0;j<=p.bays;j++){const x=j*p.bayWidth;line(pt(x,0,p.height),pt(x,p.length,p.height),"#79b79f",1);line(pt(x,0,0),pt(x,p.length,0),"#79b79f",1)}
+ ctx.fillStyle="#547568";ctx.font="12px Tahoma";ctx.fillText("نمای شماتیک ایزومتریک",12,20);
+}
+
+/* IndexedDB project repository */
+const DB=(()=>{let promise;const dbName="SAHROUD_Greenhouse_Pro_v35",storeName="projects";
+ function open(){if(promise)return promise;promise=new Promise((resolve,reject)=>{const req=indexedDB.open(dbName,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(storeName)){const s=db.createObjectStore(storeName,{keyPath:"id"});s.createIndex("updatedAt","updatedAt")}};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});return promise}
+ async function request(mode,action){const db=await open();return new Promise((resolve,reject)=>{const tx=db.transaction(storeName,mode),req=action(tx.objectStore(storeName));let out; if(req&&"result"in req){req.onsuccess=()=>out=req.result;req.onerror=()=>reject(req.error)}tx.oncomplete=()=>resolve(out);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}
+ return {open,put:p=>request("readwrite",s=>s.put(p)),get:id=>request("readonly",s=>s.get(id)),all:()=>request("readonly",s=>s.getAll()),del:id=>request("readwrite",s=>s.delete(id))};
+})();
+let activeProject=null;
+function newModel(){return {schemaVersion:"3.5.1",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:"",country:"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
+function collectModel(){
+ const p=activeProject||newModel();p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
+ p.notes=$("metaNotes").value;p.geometry={...geomResult};p.hydroponics={input:hydroInput(),last:hydroResult};p.results={structural:structuralLast,beam:beamLast};return p;
+}
+function applyModel(p){
+ activeProject=p;
+ $("metaName").value=p.meta?.name||"";$("metaClient").value=p.meta?.client||"";$("metaCity").value=p.meta?.city||"";$("metaCountry").value=p.meta?.country||"ایران";$("metaType").value=p.meta?.type||"چنددهانه";$("metaCrop").value=p.meta?.crop||"";$("metaNotes").value=p.notes||"";
+ if(p.geometry){const g=p.geometry;for(const [k,id] of Object.entries({project:"project",bays:"bays",bayWidth:"bayWidth",length:"length",spacing:"spacing",height:"height",slope:"slope",ridge:"ridge",mass:"mass",steelPrice:"steelPrice",coverPrice:"coverPrice",coverType:"coverType"})){if(g[k]!==undefined)$(id).value=g[k]}calculateGeometry()}
+ if(p.climate){climateLast=p.climate;renderClimate(p.climate)}
+ if(p.hydroponics?.input){Object.entries(p.hydroponics.input).forEach(([k,v])=>{if($(k))$(k).value=v})}
+ hydroResult=p.hydroponics?.last||null;if(hydroResult)renderHydro(hydroResult);
+ structuralLast=p.results?.structural||null;beamLast=p.results?.beam||null;
+ renderProjects();renderReport();
+}
+async function newProject(){activeProject=newModel();applyModel(activeProject);status("projectStatus","پرونده جدید ایجاد شد. اطلاعات را وارد و ذخیره کنید.")}
+function syncMetaFromGeometry(){$("metaName").value=$("project").value;$("metaCity").value=$("cityQuery").value}
+async function saveProject(){
+ try{calculateGeometry();const p=collectModel();if(!p.meta.name)p.meta.name="پروژه بدون نام";p.updatedAt=new Date().toISOString();await DB.put(p);activeProject=p;status("projectStatus","پروژه با موفقیت ذخیره شد.");renderProjects();renderReport()}
+ catch(e){status("projectStatus","خطا در ذخیره: "+e.message,true)}
+}
+async function renderProjects(){const el=$("projectList");if(!el)return;const all=(await DB.all()||[]).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));if(!all.length){el.textContent="هنوز پروژه‌ای ذخیره نشده است.";return}el.innerHTML=all.map(p=>`<div class="projectitem"><div><b>${esc(p.meta?.name||"بدون نام")}</b><small>${esc(p.meta?.city||"شهر نامشخص")} · ${esc(p.meta?.type||"")}</small></div><div class="toolbar"><button class="btn-soft" onclick="loadProject('${esc(p.id)}')">بازکردن</button><button class="btn-red" onclick="deleteProject('${esc(p.id)}')">حذف</button></div></div>`).join("")}
+async function loadProject(id){const p=await DB.get(id);if(p){applyModel(p);status("projectStatus","پروژه بارگذاری شد.")}}
+async function deleteProject(id){if(!confirm("پروژه حذف شود؟"))return;await DB.del(id);if(activeProject?.id===id)activeProject=null;renderProjects()}
+async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.5.1",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
+async function importBackup(ev){const f=ev.target.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text()),arr=Array.isArray(d)?d:d.projects;if(!Array.isArray(arr))throw Error("ساختار فایل نامعتبر است");for(const p of arr)if(p?.id&&p.meta)await DB.put(p);await renderProjects();status("projectStatus","بازیابی فایل انجام شد.")}catch(e){status("projectStatus",e.message,true)}ev.target.value=""}
+
+/* Climate search and historic archive */
+let cityResults=[],climateLast=null;
+async function api(url){const r=await fetch(url);if(!r.ok)throw Error("خطای سرویس: HTTP "+r.status);return r.json()}
+async function searchClimateCities(){
+ const q=$("cityQuery").value.trim();if(q.length<2){status("climateStatus","حداقل دو حرف وارد کنید.",true);return}
+ status("climateStatus","در حال جست‌وجوی شهر...");
+ try{const u=new URL("https://geocoding-api.open-meteo.com/v1/search");u.search=new URLSearchParams({name:q,count:15,language:"fa",format:"json"});const d=await api(u);cityResults=d.results||[];const s=$("citySelect");s.innerHTML="";s.add(new Option("یک شهر انتخاب کنید",""));cityResults.forEach((c,i)=>s.add(new Option([c.name,c.admin1,c.country].filter(Boolean).join("، "),String(i))));status("climateStatus",cityResults.length?`${fmt(cityResults.length,0)} نتیجه پیدا شد.`:"شهری پیدا نشد.",!cityResults.length)}
+ catch(e){status("climateStatus",e.message,true)}
+}
+function renderClimate(r){if(!r)return;const c=r.climate;$("cMax").textContent=fmt(c.maxTemp)+" °C";$("cMin").textContent=fmt(c.minTemp)+" °C";$("cHum").textContent=fmt(c.humidity)+" %";$("cWind").textContent=fmt(c.maxGust)+" m/s";$("cRain").textContent=fmt(c.maxRain)+" mm";$("cElev").textContent=fmt(r.city.elevation)+" m";$("cLat").textContent=fmt(r.city.lat,4);$("cLon").textContent=fmt(r.city.lon,4);$("climateSource").textContent=`منبع: ${r.source} | دوره: ${r.period.start} تا ${r.period.end} | تعداد روزها: ${fmt(r.records,0)}`}
+async function loadClimate(){
+ const idx=$("citySelect").value;if(idx===""){status("climateStatus","ابتدا شهر را انتخاب کنید.",true);return}const city=cityResults[Number(idx)];if(!city)return;
+ const btn=$("climateBtn");btn.disabled=true;status("climateStatus","در حال دریافت داده تاریخی...");
+ try{
+  const endYear=new Date().getFullYear()-1,startYear=endYear-9,start=`${startYear}-01-01`,end=`${endYear}-12-31`;
+  const daily="temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,wind_gusts_10m_max,precipitation_sum";
+  const u=new URL("https://archive-api.open-meteo.com/v1/archive");u.search=new URLSearchParams({latitude:city.latitude,longitude:city.longitude,start_date:start,end_date:end,daily,timezone:city.timezone||"auto",wind_speed_unit:"ms"});
+  const d=await api(u),x=d.daily;if(!x?.time?.length)throw Error("داده تاریخی موجود نیست");
+  const max=a=>Math.max(...a.filter(Number.isFinite)),min=a=>Math.min(...a.filter(Number.isFinite)),avg=a=>{const v=a.filter(Number.isFinite);return v.length?v.reduce((s,n)=>s+n,0)/v.length:null};
+  climateLast={city:{name:city.name,country:city.country,lat:city.latitude,lon:city.longitude,elevation:d.elevation??city.elevation??null},period:{start,end},climate:{maxTemp:max(x.temperature_2m_max),minTemp:min(x.temperature_2m_min),humidity:avg(x.relative_humidity_2m_mean),maxGust:max(x.wind_gusts_10m_max),maxRain:max(x.precipitation_sum)},records:x.time.length,source:"Open-Meteo Historical Weather API (historical/reanalysis)",retrievedAt:new Date().toISOString()};
+  renderClimate(climateLast);if(activeProject){activeProject.climate=climateLast;activeProject.meta.city=city.name;$("metaCity").value=city.name;await DB.put(activeProject)}status("climateStatus","اطلاعات تاریخی دریافت و در پروژه فعال ذخیره شد.")
+ }catch(e){status("climateStatus",e.message,true)}finally{btn.disabled=false}
+}
+function showSavedClimate(){if(!activeProject?.climate){status("climateStatus","برای پروژه فعال داده اقلیمی ذخیره نشده است.",true);return}climateLast=activeProject.climate;renderClimate(climateLast);status("climateStatus","داده ذخیره‌شده نمایش داده شد.")}
+
+/* Hydroponic quantity takeoff and simplified hydraulics */
+let hydroResult=null;
+function hydroInput(){const ids=["hRows","hChannels","hLength","hSupport","hDiameter","hFlow","hMainLength","hBranchLength","hTank","hElbows","hTees","hValves","hFilters","hChannelPrice","hPipePrice"];return Object.fromEntries(ids.map(id=>[id,num(id)]))}
+function calculateHydro(){
+ const v=hydroInput();if(!(v.hRows>0&&v.hChannels>0&&v.hLength>0&&v.hSupport>0&&v.hDiameter>0)){status("hydroStatus","تعداد ردیف، کانال، طول، فاصله پایه و قطر باید مثبت باشند.",true);return}
+ const channels=v.hRows*v.hChannels,channelLength=channels*v.hLength,supports=channels*(Math.ceil(v.hLength/v.hSupport)+1),pipeLength=v.hMainLength+v.hBranchLength;
+ hydroResult={channels,channelLength,supports,pipeLength,elbows:v.hElbows,tees:v.hTees,valves:v.hValves,filters:v.hFilters,tankVolume:v.hTank,channelCost:v.hChannelPrice>0?channelLength*v.hChannelPrice:null,pipeCost:v.hPipePrice>0?pipeLength*v.hPipePrice:null};
+ renderHydro(hydroResult);status("hydroStatus","متره مقدماتی هیدروپونیک محاسبه شد.");
+}
+function renderHydro(r){$("hydroResults").innerHTML=`<div class="result"><h4>جدول متره سامانه</h4><table><thead><tr><th>شرح</th><th>مقدار</th><th>واحد</th></tr></thead><tbody>
+<tr><td>تعداد کل کانال</td><td>${fmt(r.channels,0)}</td><td>عدد</td></tr><tr><td>طول کل کانال</td><td>${fmt(r.channelLength)}</td><td>m</td></tr><tr><td>پایه نگهدارنده تخمینی</td><td>${fmt(r.supports,0)}</td><td>عدد</td></tr><tr><td>طول لوله اصلی و فرعی</td><td>${fmt(r.pipeLength)}</td><td>m</td></tr><tr><td>زانو / سه‌راهی / شیر</td><td>${fmt(r.elbows,0)} / ${fmt(r.tees,0)} / ${fmt(r.valves,0)}</td><td>عدد</td></tr><tr><td>فیلتر</td><td>${fmt(r.filters,0)}</td><td>عدد</td></tr><tr><td>مخزن</td><td>${fmt(r.tankVolume,0)}</td><td>لیتر</td></tr><tr><td>هزینه کانال</td><td>${r.channelCost===null?"قیمت وارد نشده":fmt(r.channelCost,0)}</td><td>تومان</td></tr><tr><td>هزینه لوله</td><td>${r.pipeCost===null?"قیمت وارد نشده":fmt(r.pipeCost,0)}</td><td>تومان</td></tr></tbody></table></div>`}
+function calculateHydraulics(){
+ const Q=num("hFlow"),D=num("hDiameter"),L=num("hMainLength"),H=num("hHead"),eta=num("hEfficiency"),f=num("hFriction");
+ if(!(Q>0&&D>0&&L>=0&&H>=0&&eta>0&&eta<=1&&f>0)){ $("hydraulicResults").textContent="ورودی‌های هیدرولیک معتبر نیستند.";return}
+ const q=Q/3600000,d=D/1000,A=Math.PI*d*d/4,v=q/A,g=9.81,headLoss=f*(L/d)*(v*v/(2*g)),totalHead=H+headLoss,power=1000*g*q*totalHead/eta;
+ $("hydraulicResults").innerHTML=`<div class="result"><table><tbody><tr><td>دبی</td><td>${fmt(q*1000,3)} L/s</td></tr><tr><td>سرعت در لوله با فرض عبور کل دبی</td><td>${fmt(v,3)} m/s</td></tr><tr><td>افت اصطکاک مستقیم تخمینی</td><td>${fmt(headLoss,3)} m</td></tr><tr><td>هد کل تخمینی</td><td>${fmt(totalHead,3)} m</td></tr><tr><td>توان ورودی نظری پمپ</td><td>${fmt(power/1000,3)} kW</td></tr></tbody></table></div>`;
+}
+
+/* Preliminary structural load conversion and beam */
+let structuralLast=null,beamLast=null;
+function runStructural(){
+ const spacing=num("sFrame"),D=num("sD"),L=num("sL"),W=num("sW"),S=num("sS"),standard=$("std").value;
+ if(!standard||!(spacing>0)||D===null||L===null||W===null||S===null||D<0||L<0||S<0){$("structuralOutput").textContent="استاندارد، فاصله قاب و مقادیر بار معتبر را وارد کنید.";return}
+ structuralLast={standard,spacing,surface:{D,L,W,S},line:{D:D*spacing,L:L*spacing,W:W*spacing,S:S*spacing},status:"preliminary"};
+ $("structuralOutput").innerHTML=`<div class="result"><h4>بار خطی معادل روی قاب</h4><table><thead><tr><th>بار</th><th>سطحی (kN/m²)</th><th>خطی (kN/m)</th></tr></thead><tbody>${["D","L","W","S"].map(k=>`<tr><td>${k}</td><td>${fmt(structuralLast.surface[k])}</td><td>${fmt(structuralLast.line[k])}</td></tr>`).join("")}</tbody></table><p class="muted">این تبدیل صرفاً ضرب بار سطحی در فاصله قاب است؛ توزیع واقعی بار روی اعضا، بارگذاری نامتقارن و تحلیل قاب انجام نشده است.</p></div>`;
+}
+function runBeam(){
+ const L=num("bL"),w=num("bW"),E=num("bE"),I=num("bI"),Z=num("bZ"),Fy=num("bFy"),lim=num("bLimit");
+ if(!(L>0&&w>=0&&E>0&&I>0&&Z>0&&Fy>0&&lim>0)){$("beamOutput").textContent="تمام ورودی‌ها را معتبر وارد کنید.";return}
+ const M=w*L*L/8,V=w*L/2,delta=5*w*L**4/(384*(E*1e6)*(I*1e-8))*1000,stress=(M/(Z*1e-6))/1000,allow=L*1000/lim;
+ beamLast={M,V,delta,stress,allow,stressRatio:stress/Fy,deflectionRatio:delta/allow};
+ $("beamOutput").innerHTML=`<div class="result"><table><tbody><tr><td>لنگر حداکثر</td><td>${fmt(M)} kN.m</td></tr><tr><td>برش حداکثر</td><td>${fmt(V)} kN</td></tr><tr><td>تنش خمشی الاستیک</td><td>${fmt(stress)} MPa</td></tr><tr><td>خیز محاسبه‌شده</td><td>${fmt(delta)} mm</td></tr><tr><td>حد خیز ورودی</td><td>${fmt(allow)} mm</td></tr><tr><td>نسبت تنش به Fy</td><td>${fmt(stress/Fy)}</td></tr><tr><td>نسبت خیز به حد</td><td>${fmt(delta/allow)}</td></tr></tbody></table></div>`;
+}
+
+/* Exports */
+function exportCSV(){if(!geomResult.width)calculateGeometry();const r=geomResult;const rows=[["شرح","مقدار","واحد"],["نام پروژه",r.project,""],["عرض کل",r.width,"m"],["طول",r.length,"m"],["مساحت کف",r.floor,"m2"],["تعداد قاب",r.frames,"عدد"],["مساحت سقف",r.roofArea,"m2"],["مساحت پوشش",r.cover,"m2"],["طول فولاد",r.totalSteelLength,"m"],["وزن فولاد",r.weight??"نیازمند دیتاشیت","kg"]];download("SAHROUD_Quantity.csv","\uFEFF"+rows.map(a=>a.join(",")).join("\n"),"text/csv;charset=utf-8");status("exportStatus","فایل CSV آماده شد.")}
+function dxfLine(x1,y1,x2,y2,layer="PLAN"){return `0\nLINE\n8\n${layer}\n10\n${x1*1000}\n20\n${y1*1000}\n30\n0\n11\n${x2*1000}\n21\n${y2*1000}\n31\n0\n`}
+function exportDXF(){if(!geomResult.width)calculateGeometry();const p=geomResult;let e="";e+=dxfLine(0,0,p.width,0)+dxfLine(p.width,0,p.width,p.length)+dxfLine(p.width,p.length,0,p.length)+dxfLine(0,p.length,0,0);for(let i=1;i<p.bays;i++)e+=dxfLine(i*p.bayWidth,0,i*p.bayWidth,p.length);for(let y=0;y<=p.length+1e-6;y+=p.spacing)e+=dxfLine(0,y,p.width,y,"FRAMES");const d=`0\nSECTION\n2\nHEADER\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n${e}0\nENDSEC\n0\nEOF\n`;download("SAHROUD_Greenhouse_Plan.dxf",d,"application/dxf");status("exportStatus","DXF شماتیک پلان دانلود شد.")}
+function exportHydroDXF(){if(!hydroResult)calculateHydro();if(!hydroResult)return;const v=hydroInput();let e="";for(let r=0;r<v.hRows;r++){const y=r*3;e+=dxfLine(0,y,v.hLength*v.hChannels,y,"CHANNELS")}e+=dxfLine(-3,-3,-3,v.hRows*3,"MAIN_PIPE");const d=`0\nSECTION\n2\nHEADER\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n${e}0\nENDSEC\n0\nEOF\n`;download("SAHROUD_Hydroponics_Schematic.dxf",d,"application/dxf")}
+function reportData(){return {project:activeProject?.meta||{name:$("project").value},geometry:geomResult,climate:activeProject?.climate||climateLast,hydro:hydroResult,structural:structuralLast,beam:beamLast}}
+function exportXLSX(){
+ if(!window.XLSX){status("exportStatus","کتابخانه Excel بارگذاری نشده است؛ اتصال اینترنت را بررسی کنید.",true);return}
+ if(!geomResult.width)calculateGeometry();const d=reportData(),wb=XLSX.utils.book_new();
+ const add=(name,rows)=>{const ws=XLSX.utils.aoa_to_sheet(rows);ws["!views"]=[{rightToLeft:true}];XLSX.utils.book_append_sheet(wb,ws,name)};
+ add("مشخصات پروژه",[["عنوان","مقدار"],["نام",d.project.name||""],["کارفرما",d.project.client||""],["شهر",d.project.city||""],["کشور",d.project.country||""]]);
+ add("هندسه",[["شرح","مقدار","واحد"],["عرض کل",d.geometry.width,"m"],["طول",d.geometry.length,"m"],["مساحت کف",d.geometry.floor,"m2"],["تعداد قاب",d.geometry.frames,"عدد"],["مساحت سقف",d.geometry.roofArea,"m2"],["مساحت پوشش",d.geometry.cover,"m2"],["طول فولاد",d.geometry.totalSteelLength,"m"],["وزن فولاد",d.geometry.weight??"نیازمند دیتاشیت","kg"]]);
+ if(d.hydro)add("هیدروپونیک",[["شرح","مقدار"],["کانال",d.hydro.channels],["طول کانال",d.hydro.channelLength],["پایه",d.hydro.supports],["طول لوله",d.hydro.pipeLength],["حجم مخزن",d.hydro.tankVolume]]);
+ if(d.climate)add("اقلیم",[["پارامتر","مقدار"],["شهر",d.climate.city.name],["دوره",d.climate.period.start+" تا "+d.climate.period.end],["بیشینه دما",d.climate.climate.maxTemp],["کمینه دما",d.climate.climate.minTemp],["رطوبت میانگین",d.climate.climate.humidity],["بیشینه تندباد",d.climate.climate.maxGust]]);
+ XLSX.writeFile(wb,"SAHROUD_Project_Report.xlsx");status("exportStatus","فایل XLSX ساخته شد.")
+}
+function renderReport(){
+ const d=reportData(),g=d.geometry,c=d.climate,h=d.hydro,s=d.structural,b=d.beam;
+ $("reportBody").innerHTML=`<h3>گزارش پروژه – SAHROUD Greenhouse Pro</h3><table><tbody><tr><th>نام پروژه</th><td>${esc(d.project.name||g.project||"")}</td><th>کارفرما</th><td>${esc(d.project.client||"")}</td></tr><tr><th>شهر</th><td>${esc(d.project.city||"")}</td><th>کشور</th><td>${esc(d.project.country||"")}</td></tr></tbody></table>
+ <h4 style="margin-top:18px">هندسه و متره</h4><p>عرض کل: ${fmt(g.width)} m | طول: ${fmt(g.length)} m | کف: ${fmt(g.floor)} m² | پوشش: ${fmt(g.cover)} m² | فولاد: ${fmt(g.totalSteelLength)} m | وزن: ${g.weight===null?"نامشخص":fmt(g.weight)+" kg"}</p>
+ <h4>اقلیم</h4>${c?`<p>${esc(c.city.name)}، ${esc(c.city.country)} | دوره ${esc(c.period.start)} تا ${esc(c.period.end)} | Tmax ${fmt(c.climate.maxTemp)} °C | Tmin ${fmt(c.climate.minTemp)} °C | RH ${fmt(c.climate.humidity)} % | gust ${fmt(c.climate.maxGust)} m/s</p><p class="muted">${esc(c.source)}</p>`:"<p>اطلاعات اقلیمی ثبت نشده است.</p>"}
+ <h4>هیدروپونیک</h4>${h?`<p>کانال: ${fmt(h.channels,0)} عدد | طول کانال: ${fmt(h.channelLength)} m | پایه: ${fmt(h.supports,0)} عدد | لوله: ${fmt(h.pipeLength)} m | مخزن: ${fmt(h.tankVolume)} L</p>`:"<p>متره هیدروپونیک اجرا نشده است.</p>"}
+ <h4>سازه</h4>${s?`<p>بارهای خطی قاب: ${Object.entries(s.line).map(([k,v])=>k+"="+fmt(v)+" kN/m").join("، ")}</p>`:"<p>بارگذاری مقدماتی اجرا نشده است.</p>"}${b?`<p>تیر ساده: Mmax=${fmt(b.M)} kN.m، Vmax=${fmt(b.V)} kN، خیز=${fmt(b.delta)} mm</p>`:""}
+ <div class="notice">این گزارش مقدماتی است. محاسبات هندسی، متره، هیدرولیک و سازه‌ای این نسخه جایگزین طراحی اجرایی، تحلیل کامل، بررسی آیین‌نامه‌ای یا تأیید مهندس ذی‌صلاح نیست.</div>`;
+}
+function printReport(){renderReport();showPage("reports");setTimeout(()=>window.print(),150)}
+
+/* autosync geometry only; don't autosave project on every keystroke */
+document.querySelectorAll("#geometry input,#geometry select").forEach(e=>e.addEventListener("input",calculateGeometry));
+window.addEventListener("resize",()=>{if(geomResult.width)drawModel(geomResult)});
+(async function init(){try{await DB.open();const all=await DB.all();if(all?.length)applyModel(all.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0]);else calculateGeometry();await renderProjects()}catch(e){console.error(e);status("projectStatus","خطا در راه‌اندازی ذخیره‌سازی مرورگر: "+e.message,true)}})();
+</script>
+</body>
+</html>
