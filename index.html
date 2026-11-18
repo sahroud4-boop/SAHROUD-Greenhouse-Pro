@@ -333,7 +333,8 @@ function generateGreenhouseFrame(){
   const toLocal=(qgx,qgy,c,ss)=>({qx:qgx*c+qgy*ss,qy:-qgx*ss+qgy*c});
   const sideLineLoad=sideWind*tributary; // kN/m² × m = kN/m = N/mm
   if(sideLineLoad!==0){
-   for(let j=0;j<=p.bays;j++){
+   // Transverse in-plane load on the two exterior sidewall columns only.
+   for(const j of [0,p.bays]){
     const elIndex=j,load=toLocal(sideLineLoad,0,0,1);
     elementLoads.push({element:elIndex,...load});
    }
