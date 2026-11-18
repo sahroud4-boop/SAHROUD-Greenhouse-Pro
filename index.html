@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.9.0</title>
+<title>SAHROUD Greenhouse Pro v3.9.1</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -207,14 +207,21 @@ function calculateGeometry(){
  $("widthStat").textContent=fmt(width)+" m";$("floorStat").textContent=fmt(floor)+" m²";$("frameStat").textContent=fmt(frames,0);$("coverStat").textContent=fmt(cover)+" m²";
  $("vWidth").textContent=fmt(width)+" m";$("vLength").textContent=fmt(p.length)+" m";$("vHeight").textContent=fmt(p.height)+" m";$("vRidge").textContent=fmt(p.height+p.ridge)+" m";$("vSlope").textContent=fmt(slopeLength)+" m";$("vRoof").textContent=fmt(roofArea)+" m²";$("vWalls").textContent=fmt(sideWalls+endWalls)+" m²";
  $("steelLength").textContent=fmt(totalSteelLength)+" m";$("weight").textContent=weight===null?"نیازمند دیتاشیت":fmt(weight,0)+" kg";$("steelCost").textContent=steelCost===null?"نامشخص":fmt(steelCost,0)+" تومان";$("coverCost").textContent=coverCost===null?"نامشخص":fmt(coverCost,0)+" تومان";
- const costRows=[["فولاد",totalSteelLength,steelOrderLength-totalSteelLength,steelOrderLength,"m",steelCost],["پوشش",cover,coverOrderArea-cover,coverOrderArea,"m²",coverCost],["ناودان",gutterLength,0,gutterLength,"m",gutterCost],["پیچ/بست",fastenersCount??"نرخ وارد نشده",0,fastenersCount??"—","عدد",fastenerCost]];
+ const memberProcurement=members.map(m=>{const orderLength=m.totalLength*(1+p.steelWaste/100),orderWeight=m.weight===null?null:m.weight*(1+p.steelWaste/100),cost=orderWeight!==null&&p.steelPrice>0?orderWeight*p.steelPrice:null;return [m.name+" ("+(m.profile||"مقطع نامشخص")+")",m.totalLength,orderLength-m.totalLength,orderLength,"m",cost,orderWeight]});
+ const costRows=[...memberProcurement,["پوشش",cover,coverOrderArea-cover,coverOrderArea,"m²",coverCost,null],["ناودان (مفهومی)",gutterLength,0,gutterLength,"m",gutterCost,null],["پیچ/بست",fastenersCount??"نرخ وارد نشده",0,fastenersCount??"—","عدد",fastenerCost,null]];
  $("procurementRows").innerHTML=costRows.map(x=>'<tr><td>'+x[0]+'</td><td>'+fmt(x[1])+'</td><td>'+fmt(x[2])+'</td><td>'+fmt(x[3])+'</td><td>'+x[4]+'</td><td>'+(x[5]===null?"قیمت/مقدار ناقص":fmt(x[5],0)+" تومان")+'</td></tr>').join("");
  const totalCost=[steelCost,coverCost,gutterCost,fastenerCost].filter(Number.isFinite).reduce((a,b)=>a+b,0),hasCost=[steelCost,coverCost,gutterCost,fastenerCost].some(Number.isFinite);
  $("totalCost").textContent="جمع هزینه اقلام قابل محاسبه: "+(hasCost?fmt(totalCost,0)+" تومان":"نامشخص");
  const rows=[["ستون‌ها",members[0].count,"عدد",members[0].totalLength,"تعداد قاب × خطوط ستون"],["رفترهای سقف",members[1].count,"عضو",members[1].totalLength,"دو عضو شیبدار در هر دهانه و قاب"],["تیرهای طولی لبه",members[2].count,"خط",members[2].totalLength,"خطوط طولی مرزی"],["تیرهای طولی تاج",members[3].count,"خط",members[3].totalLength,"یک خط تاج در هر دهانه"],["لاپه‌های میانی سقف",members[4].count,"خط",members[4].totalLength,"دو خط مفهومی در هر دهانه"],["طول کل فولاد","—","m",totalSteelLength,"جمع اعضای فهرست‌شده"],["پوشش سقف","—","m²",roofArea,"سطح شیبدار سقف"],["پوشش دیوارها","—","m²",sideWalls+endWalls,"دیواره جانبی و پیشانی"],["کل پوشش خالص","—","m²",cover,"سقف + دیواره‌ها"],["پرت پوشش","—","m²",coverOrderArea-cover,"درصد پرت ورودی"],["پوشش قابل سفارش","—","m²",coverOrderArea,"مساحت خالص + پرت"],["ناودان طولی مفهومی","—","m",gutterLength,"یک خط در هر مرز دهانه؛ نیازمند بازبینی نقشه"],["پرت طول فولاد","—","m",steelOrderLength-totalSteelLength,"درصد پرت ورودی"],["طول فولاد قابل سفارش","—","m",steelOrderLength,"طول خالص + پرت"],["پیچ/بست پوشش","—","عدد",fastenersCount??"نرخ وارد نشده","مساحت پوشش سفارش × نرخ کاربر"]];
  $("quantityRows").innerHTML=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+fmt(r[3])+'</td><td>'+r[4]+'</td></tr>').join("");
  $("memberRows").innerHTML=members.map(m=>'<tr><td>'+m.name+'</td><td>'+esc(m.profile||"—")+'</td><td>'+fmt(m.count,0)+'</td><td>'+fmt(m.unitLength)+'</td><td>'+fmt(m.totalLength)+'</td><td>'+(m.massPerM===null?"—":fmt(m.massPerM))+'</td><td>'+(m.weight===null?"—":fmt(m.weight,1))+'</td></tr>').join("");
- $("geometryWarning").textContent="متره اعضا هندسی و مقدماتی است؛ اتصالات، وصله‌ها، پرت، مهاربندی، ضخامت/مقطع و کنترل سازه‌ای در آن منظور نشده است. "+(p.mass>0?"وزن با جرم واحد طول عمومی واردشده محاسبه شده است.":"برای وزن دقیق، مقطع و دیتاشیت هر عضو لازم است.");
+ const missingProfiles=members.filter(m=>!m.profile).map(m=>m.name),missingMass=members.filter(m=>m.massPerM===null).map(m=>m.name);
+ const audit=[];
+ if(missingProfiles.length)audit.push("کد مقطع ثبت نشده: "+missingProfiles.join("، "));
+ if(missingMass.length)audit.push("جرم واحد طول ناقص: "+missingMass.join("، "));
+ if(!(p.steelPrice>0))audit.push("قیمت فولاد وارد نشده؛ هزینه فولاد محاسبه نمی‌شود.");
+ audit.push("اقلام خارج از مدل فعلی: بادبندها، اتصالات، ورق‌های اتصال، بیس‌پلیت، انکربولت، برش/وصله و پرت برش بهینه.");
+ $("geometryWarning").textContent="کنترل کیفیت متره: "+(audit.length?audit.join(" | "):"ورودی‌های پایه کامل‌اند.")+" این متره همچنان هندسی و مقدماتی است و باید با نقشه اجرایی تطبیق داده شود.";
  drawModel(p);$("activeProjectText").textContent="پروژه فعال: "+(p.project||"بدون نام");return geomResult;
 }
 /* Interactive 3D orthographic greenhouse viewer */
@@ -341,7 +348,7 @@ async function saveProject(){
 async function renderProjects(){const el=$("projectList");if(!el)return;const all=(await DB.all()||[]).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));if(!all.length){el.textContent="هنوز پروژه‌ای ذخیره نشده است.";return}el.innerHTML=all.map(p=>`<div class="projectitem"><div><b>${esc(p.meta?.name||"بدون نام")}</b><small>${esc(p.meta?.city||"شهر نامشخص")} · ${esc(p.meta?.type||"")}</small></div><div class="toolbar"><button class="btn-soft" onclick="loadProject('${esc(p.id)}')">بازکردن</button><button class="btn-red" onclick="deleteProject('${esc(p.id)}')">حذف</button></div></div>`).join("")}
 async function loadProject(id){const p=await DB.get(id);if(p){applyModel(p);status("projectStatus","پروژه بارگذاری شد.")}}
 async function deleteProject(id){if(!confirm("پروژه حذف شود؟"))return;await DB.del(id);if(activeProject?.id===id)activeProject=null;renderProjects()}
-async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.8.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
+async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.9.1",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
 async function importBackup(ev){const f=ev.target.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text()),arr=Array.isArray(d)?d:d.projects;if(!Array.isArray(arr))throw Error("ساختار فایل نامعتبر است");for(const p of arr)if(p?.id&&p.meta)await DB.put(p);await renderProjects();status("projectStatus","بازیابی فایل انجام شد.")}catch(e){status("projectStatus",e.message,true)}ev.target.value=""}
 
 /* Climate search and historic archive */
