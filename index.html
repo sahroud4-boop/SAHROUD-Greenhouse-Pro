@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.9.1</title>
+<title>SAHROUD Greenhouse Pro v3.10.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -51,6 +51,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <button data-page="climate">بانک اقلیمی</button>
  <button data-page="hydro">هیدروپونیک</button>
  <button data-page="structure">محاسبات سازه</button>
+ <button data-page="profiles">بانک مقاطع</button>
  <button data-page="reports">گزارش و خروجی</button>
 </nav>
 <main>
@@ -94,6 +95,36 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
    <div class="notice" id="geometryWarning">این نرم‌افزار ابزار مقدماتی هندسه و متره است و تأییدیه ایمنی سازه صادر نمی‌کند.</div>
   </section>
  </div>
+</section>
+
+<!-- SECTION DATABASE -->
+<section id="profiles" class="page">
+ <div class="pagehead"><div><h2>بانک مقاطع فولادی پروژه</h2><p>ثبت دیتاشیت‌های معتبر، اتصال به متره اعضا و مدیریت داده‌های مقاطع</p></div></div>
+ <div class="card">
+  <div class="notice">این بانک در ابتدا خالی است و هیچ مشخصه مقطعی ساختگی در آن قرار ندارد. فقط اطلاعات استخراج‌شده از استاندارد یا دیتاشیت معتبر را وارد کنید. ثبت یک مقطع در بانک به معنی تأیید ظرفیت سازه‌ای آن نیست.</div>
+  <h3>ثبت مقطع جدید</h3>
+  <div class="g3">
+   <div><label>نام / کد مقطع</label><input id="profileName" placeholder="کد دقیق دیتاشیت"></div>
+   <div><label>استاندارد / سری</label><input id="profileStandard" placeholder="مثلاً استاندارد سازنده"></div>
+   <div><label>جنس / گرید فولاد</label><input id="profileGrade" placeholder="گرید مطابق مدرک"></div>
+   <div><label>جرم واحد طول (kg/m)</label><input id="profileMass" type="number" min="0" step=".001"></div>
+   <div><label>مساحت مقطع Ag (mm²)</label><input id="profileArea" type="number" min="0" step=".1"></div>
+   <div><label>ممان اینرسی Ix (mm⁴)</label><input id="profileIx" type="number" min="0" step="any"></div>
+   <div><label>ممان اینرسی Iy (mm⁴)</label><input id="profileIy" type="number" min="0" step="any"></div>
+   <div><label>مدول مقطع Wx (mm³)</label><input id="profileWx" type="number" min="0" step="any"></div>
+   <div><label>مدول مقطع Wy (mm³)</label><input id="profileWy" type="number" min="0" step="any"></div>
+   <div><label>شعاع ژیراسیون rx (mm)</label><input id="profileRx" type="number" min="0" step="any"></div>
+   <div><label>شعاع ژیراسیون ry (mm)</label><input id="profileRy" type="number" min="0" step="any"></div>
+   <div><label>منبع / شماره دیتاشیت</label><input id="profileSource" placeholder="عنوان، ناشر، شماره صفحه"></div>
+  </div>
+  <label>یادداشت و تاریخ اعتبار منبع</label><input id="profileNotes" placeholder="تاریخ انتشار/دریافت، لینک مرجع یا توضیح">
+  <div class="toolbar" style="margin-top:12px"><button onclick="addSectionProfile()">افزودن به بانک مقاطع</button><button class="btn-soft" onclick="exportSectionProfiles()">خروجی بانک JSON</button><label class="btn btn-soft" for="profileImport">ورود بانک JSON</label><input id="profileImport" type="file" accept=".json,application/json" hidden onchange="importSectionProfiles(event)"></div>
+  <div class="status" id="profileStatus"></div>
+ </div>
+ <div class="card"><h3>مقاطع ثبت‌شده</h3><div class="tablewrap"><table><thead><tr><th>مقطع</th><th>استاندارد</th><th>گرید</th><th>جرم (kg/m)</th><th>Ag</th><th>Ix</th><th>Iy</th><th>منبع</th><th>عملیات</th></tr></thead><tbody id="profileBankRows"></tbody></table></div><p class="muted" id="profileBankSummary">بانک خالی است.</p></div>
+ <div class="card"><h3>اتصال مقطع به گروه اعضا</h3><p>با واردکردن کد دقیق یک مقطع ثبت‌شده در فیلد مقطع اعضا در صفحه «هندسه و متره»، جرم واحد طول از بانک خوانده می‌شود. مقادیر دستی همچنان قابل استفاده‌اند.</p>
+ <div class="toolbar"><button class="btn-soft" onclick="applyProfileBankToMembers()">تطبیق مقاطع واردشده با بانک</button><button class="btn-soft" onclick="showPage('geometry')">بازگشت به هندسه و متره</button></div>
+ <div class="notice">نسخه فعلی هنوز انتخاب خودکار مهندسی انجام نمی‌دهد. پارامترهای Ix/Iy و سایر خواص صرفاً ذخیره می‌شوند تا در مرحله تحلیل و کنترل مقطع مصرف شوند.</div></div>
 </section>
 
 <!-- PROJECTS -->
@@ -162,7 +193,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.8.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.10.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -173,8 +204,46 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 function status(id,msg,error=false){const e=$(id);if(e){e.textContent=msg;e.classList.toggle("error",error)}}
 function download(name,data,type="application/octet-stream"){const blob=new Blob([data],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200)}
 function uid(){return "sah-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7)}
-function showPage(id){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===id));document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===id));if(id==="reports")renderReport()}
+function showPage(id){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===id));document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===id));if(id==="reports")renderReport();if(id==="profiles")renderSectionProfileBank()}
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.page)));
+
+/* User-supplied section database; no fabricated catalogue values */
+const PROFILE_BANK_KEY="sahroud.profileBank.v1";
+let sectionProfileBank=[];
+function loadSectionProfileBank(){try{const raw=localStorage.getItem(PROFILE_BANK_KEY);const parsed=raw?JSON.parse(raw):[];sectionProfileBank=Array.isArray(parsed)?parsed.filter(p=>p&&typeof p.name==="string"&&p.name.trim()):[]}catch(e){sectionProfileBank=[];status("profileStatus","خواندن بانک محلی ناموفق بود: "+e.message,true)}renderSectionProfileBank()}
+function persistSectionProfileBank(){localStorage.setItem(PROFILE_BANK_KEY,JSON.stringify(sectionProfileBank));renderSectionProfileBank()}
+function profileField(id){const e=$(id);if(!e||e.value.trim()==="")return null;const v=Number(e.value);return Number.isFinite(v)&&v>=0?v:null}
+function addSectionProfile(){
+ const name=$("profileName").value.trim(),mass=profileField("profileMass");
+ if(!name||mass===null||mass<=0){status("profileStatus","نام مقطع و جرم واحد طول مثبت الزامی است.",true);return}
+ const item={id:"sp-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6),name,standard:$("profileStandard").value.trim(),grade:$("profileGrade").value.trim(),mass,area:profileField("profileArea"),Ix:profileField("profileIx"),Iy:profileField("profileIy"),Wx:profileField("profileWx"),Wy:profileField("profileWy"),rx:profileField("profileRx"),ry:profileField("profileRy"),source:$("profileSource").value.trim(),notes:$("profileNotes").value.trim(),updatedAt:new Date().toISOString()};
+ const duplicate=sectionProfileBank.findIndex(p=>p.name.toLowerCase()===name.toLowerCase());
+ if(duplicate>=0){if(!confirm("این کد مقطع وجود دارد. جایگزین شود؟"))return;sectionProfileBank[duplicate]=item}else sectionProfileBank.push(item);
+ persistSectionProfileBank();status("profileStatus","مقطع ثبت شد. برای اتصال به اعضا، کد آن را در فیلد مقطع وارد کنید.");
+}
+function renderSectionProfileBank(){
+ const body=$("profileBankRows");if(!body)return;
+ body.innerHTML=sectionProfileBank.map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+esc(p.standard||"—")+'</td><td>'+esc(p.grade||"—")+'</td><td>'+fmt(p.mass,3)+'</td><td>'+fmt(p.area)+'</td><td>'+fmt(p.Ix)+'</td><td>'+fmt(p.Iy)+'</td><td>'+esc(p.source||"ثبت نشده")+'</td><td><button class="btn-red" onclick="deleteSectionProfile(\''+esc(p.id)+'\')">حذف</button></td></tr>').join("");
+ $("profileBankSummary").textContent="تعداد مقاطع ثبت‌شده: "+fmt(sectionProfileBank.length,0)+" | بانک فقط شامل داده‌های واردشده توسط کاربر است.";
+}
+function deleteSectionProfile(id){if(!confirm("این مقطع از بانک محلی حذف شود؟"))return;sectionProfileBank=sectionProfileBank.filter(p=>p.id!==id);persistSectionProfileBank()}
+function exportSectionProfiles(){download("SAHROUD_Profile_Bank.json",JSON.stringify({schemaVersion:"1.0",exportedAt:new Date().toISOString(),profiles:sectionProfileBank},null,2),"application/json")}
+async function importSectionProfiles(event){
+ const file=event.target.files?.[0];if(!file)return;
+ try{const parsed=JSON.parse(await file.text()),items=Array.isArray(parsed)?parsed:parsed.profiles;if(!Array.isArray(items))throw new Error("ساختار فایل معتبر نیست");
+ const valid=items.filter(p=>p&&typeof p.name==="string"&&p.name.trim()&&Number.isFinite(Number(p.mass))&&Number(p.mass)>0);
+ if(!valid.length)throw new Error("فایل شامل مقاطع معتبر با جرم مثبت نیست");
+ for(const p of valid){const i=sectionProfileBank.findIndex(x=>x.name.toLowerCase()===p.name.toLowerCase());const clean={...p,id:p.id||"sp-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6)};if(i>=0)sectionProfileBank[i]=clean;else sectionProfileBank.push(clean)}
+ persistSectionProfileBank();status("profileStatus",valid.length+" مقطع وارد/به‌روزرسانی شد.")
+ }catch(e){status("profileStatus","خطا در ورود بانک: "+e.message,true)}finally{event.target.value=""}
+}
+function findSectionProfile(name){return sectionProfileBank.find(p=>p.name.trim().toLowerCase()===String(name||"").trim().toLowerCase())}
+function applyProfileBankToMembers(){
+ const keys=["columns","rafters","eaves","ridges","purlins"];let count=0;
+ for(const k of keys){const profile=$("profile_"+k)?.value||"",item=findSectionProfile(profile);if(item){$("mass_"+k).value=item.mass;count++}}
+ calculateGeometry();status("profileStatus",count+" گروه عضو با بانک مقاطع تطبیق داده شد.")
+}
+for(const k of ["columns","rafters","eaves","ridges","purlins"]){const field=$("profile_"+k);field?.addEventListener("change",()=>{const item=findSectionProfile(field.value);if(item){$("mass_"+k).value=item.mass;calculateGeometry()}})}
 
 /* Geometry calculation based on uploaded v2.12 source */
 let geomResult={};
@@ -441,7 +510,7 @@ function printReport(){renderReport();showPage("reports");setTimeout(()=>window.
 /* autosync geometry only; don't autosave project on every keystroke */
 document.querySelectorAll("#geometry input,#geometry select").forEach(e=>e.addEventListener("input",calculateGeometry));
 window.addEventListener("resize",()=>{if(geomResult.width)drawModel(geomResult)});
-(async function init(){try{await DB.open();const all=await DB.all();if(all?.length)applyModel(all.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0]);else calculateGeometry();await renderProjects()}catch(e){console.error(e);status("projectStatus","خطا در راه‌اندازی ذخیره‌سازی مرورگر: "+e.message,true)}})();
+(async function init(){try{loadSectionProfileBank();await DB.open();const all=await DB.all();if(all?.length)applyModel(all.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0]);else calculateGeometry();await renderProjects()}catch(e){console.error(e);status("projectStatus","خطا در راه‌اندازی ذخیره‌سازی مرورگر: "+e.message,true)}})();
 </script>
 </body>
 </html>
