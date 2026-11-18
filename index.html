@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.13.0</title>
+<title>SAHROUD Greenhouse Pro v3.14.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -38,7 +38,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.13.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.14.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -191,7 +191,9 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
   <div><label>سطح مقطع A (mm²)</label><input id="autoFrameA" type="number" min="0.01" placeholder="ورودی مهندس"></div>
   <div><label>مدول الاستیسیته E (MPa)</label><input id="autoFrameE" type="number" min="1" value="200000"></div>
   <div><label>ممان اینرسی I (mm⁴)</label><input id="autoFrameI" type="number" min="0.01" placeholder="از دیتاشیت"></div>
-  <div><label>بار قائم سقف (kN/m²)</label><input id="autoRoofLoad" type="number" step="0.01" value="0"></div>
+  <div><label>بار قائم سقف سمت چپ (kN/m²)</label><input id="autoRoofLeft" type="number" step="0.01" value="0"></div>
+  <div><label>بار قائم سقف سمت راست (kN/m²)</label><input id="autoRoofRight" type="number" step="0.01" value="0"></div>
+  <div><label>فشار افقی دیوار جانبی (kN/m²)</label><input id="autoSideWind" type="number" step="0.01" value="0"></div>
  </div>
  <div class="toolbar" style="margin-top:10px"><button onclick="generateGreenhouseFrame()">ساخت مدل قاب از هندسه فعلی</button></div>
  <div class="status" id="autoFrameStatus"></div>
@@ -212,7 +214,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.13.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.14.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -314,10 +316,11 @@ function analyzeFrame2D(model){
 }
 function generateGreenhouseFrame(){
  try{
-  const p=geometryParams(),A=num("autoFrameA"),E=num("autoFrameE"),I=num("autoFrameI"),surface=num("autoRoofLoad");
+  const p=geometryParams(),A=num("autoFrameA"),E=num("autoFrameE"),I=num("autoFrameI");
+  const roofLeft=num("autoRoofLeft"),roofRight=num("autoRoofRight"),sideWind=num("autoSideWind");
   if(!(p.bays>0&&p.bayWidth>0&&p.height>0&&p.ridge>0))throw new Error("ابتدا هندسه معتبر گلخانه را محاسبه کنید؛ افزایش ارتفاع تاج باید مثبت باشد.");
   if(!(A>0&&E>0&&I>0))throw new Error("برای تحلیل، A و I باید از مشخصات مقطع معتبر وارد شوند و E نیز مثبت باشد.");
-  if(surface===null||surface<0)throw new Error("بار قائم سقف باید عددی و نامنفی باشد.");
+  if([roofLeft,roofRight,sideWind].some(v=>v===null||!Number.isFinite(v)))throw new Error("تمام بارهای سطحی باید عددی باشند.");
   const nodes=[],elements=[],restraints=[],elementLoads=[],base=[],eave=[];
   for(let j=0;j<=p.bays;j++){
    const x=j*p.bayWidth*1000;
@@ -326,21 +329,29 @@ function generateGreenhouseFrame(){
    restraints.push({node:base[j],dofs:[true,true,true]});
    elements.push({id:"ستون-"+(j+1),i:base[j],j:eave[j],A,E,I});
   }
-  const tributary=p.spacing,globalQy=-surface*tributary; // kN/m² × m = kN/m = N/mm
+  const tributary=p.spacing;
+  const toLocal=(qgx,qgy,c,ss)=>({qx:qgx*c+qgy*ss,qy:-qgx*ss+qgy*c});
+  const sideLineLoad=sideWind*tributary; // kN/m² × m = kN/m = N/mm
+  if(sideLineLoad!==0){
+   for(let j=0;j<=p.bays;j++){
+    const elIndex=j,load=toLocal(sideLineLoad,0,0,1);
+    elementLoads.push({element:elIndex,...load});
+   }
+  }
   for(let j=0;j<p.bays;j++){
    const x=(j+.5)*p.bayWidth*1000;
    const ridge=nodes.length;nodes.push({x,y:(p.height+p.ridge)*1000});
-   const pairs=[[eave[j],ridge,"رفتر چپ دهانه "+(j+1)],[ridge,eave[j+1],"رفتر راست دهانه "+(j+1)]];
-   for(const [ni,nj,id] of pairs){
+   const pairs=[[eave[j],ridge,"رفتر چپ دهانه "+(j+1),roofLeft],[ridge,eave[j+1],"رفتر راست دهانه "+(j+1),roofRight]];
+   for(const [ni,nj,id,pressure] of pairs){
     const elIndex=elements.length,dx=nodes[nj].x-nodes[ni].x,dy=nodes[nj].y-nodes[ni].y,L=Math.hypot(dx,dy),c=dx/L,ss=dy/L;
     elements.push({id,i:ni,j:nj,A,E,I});
-    const qx=globalQy*ss,qy=globalQy*c;
-    if(surface!==0)elementLoads.push({element:elIndex,qx,qy});
+    const globalQy=-pressure*tributary,load=toLocal(0,globalQy,c,ss);
+    if(pressure!==0)elementLoads.push({element:elIndex,...load});
    }
   }
-  const model={units:"N, mm, MPa, mm2, mm4",assumptions:"قاب عرضی دوبعدی، اتصالات صلب، پای ستون گیردار، مقاطع ثابت و بار قائم یکنواخت سقف؛ مدل مقدماتی غیرقابل استفاده مستقیم برای طراحی اجرایی",nodes,elements,restraints,loads:[],elementLoads};
+  const model={units:"N, mm, MPa, mm2, mm4",assumptions:"قاب عرضی دوبعدی داخلی، اتصالات صلب، پای ستون گیردار، مقاطع ثابت؛ بارهای سطحی واردشده صرفاً بارهای سناریویی و نه بارهای طراحی آیین‌نامه‌ای",nodes,elements,restraints,loads:[],elementLoads};
   $("frameModel").value=JSON.stringify(model,null,2);
-  status("autoFrameStatus","مدل قاب "+p.bays+" دهانه‌ای ساخته شد؛ "+nodes.length+" گره، "+elements.length+" عضو. بار قائم سقف با فاصله قاب "+fmt(tributary)+" متر به بار گسترده محلی رفترها تبدیل شد.");
+  status("autoFrameStatus","مدل قاب "+p.bays+" دهانه‌ای ساخته شد؛ "+nodes.length+" گره، "+elements.length+" عضو. بارهای سقف چپ/راست و فشار افقی دیوار با فاصله قاب "+fmt(tributary)+" متر به بار خطی محلی تبدیل شدند.");
   status("frameStatus","مدل از هندسه فعلی ساخته شد. اکنون «اجرای تحلیل قاب 2D» را انتخاب کنید.");
  }catch(e){status("autoFrameStatus","خطا: "+e.message,true)}
 }
