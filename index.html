@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.10.0</title>
+<title>SAHROUD Greenhouse Pro v3.11.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -38,7 +38,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.10.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.11.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -182,6 +182,15 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
   <div><label>ممان دوم سطح I (cm⁴)</label><input id="bI" type="number" min=".01" value="1000"></div><div><label>مدول مقطع Z (cm³)</label><input id="bZ" type="number" min=".01" value="100"></div><div><label>تنش تسلیم Fy (MPa)</label><input id="bFy" type="number" min="1" value="240"></div><div><label>حد خیز L /</label><input id="bLimit" type="number" min="1" value="240"></div>
  </div><button onclick="runBeam()">کنترل تیر</button><div id="beamOutput"></div>
  <div class="notice">این مدل تنها تیر ایده‌آل دوسر ساده با بار گسترده یکنواخت است. کمانش جانبی-پیچشی، کمانش موضعی، برش، اتصالات، اندرکنش نیروها و پایداری قاب کنترل نمی‌شود. نتیجه، تأیید طراحی نیست.</div></div>
+
+ <div class="card"><h3>هسته آزمایشی تحلیل قاب دوبعدی با روش ماتریس سختی</h3>
+ <p class="muted">مدل عمومی گره-عضو با سه درجه آزادی در هر گره (ux، uy، دوران)، المان الاستیک Euler–Bernoulli، مونتاژ ماتریس سختی سراسری، اعمال قیود و بارهای گره‌ای، حل جابه‌جایی و استخراج واکنش‌ها/نیروهای انتهایی.</p>
+ <label>تعریف مدل به‌صورت JSON — واحدها: مختصات mm، نیرو N، لنگر N·mm، E بر حسب MPa، A بر حسب mm² و I بر حسب mm⁴</label>
+ <textarea id="frameModel" rows="13" spellcheck="false" style="direction:ltr;text-align:left;font-family:Consolas,monospace;font-size:11px" placeholder="مدل JSON را بارگذاری کنید یا دکمه نمونه را بزنید"></textarea>
+ <div class="toolbar" style="margin-top:10px"><button class="btn-soft" onclick="loadFrameExample()">بارگذاری نمونه تیر طره‌ای</button><button onclick="runFrameAnalysis()">اجرای تحلیل قاب 2D</button></div>
+ <div class="status" id="frameStatus"></div><div id="frameOutput"></div>
+ <div class="notice">محدودیت این مرحله: فقط بارهای گره‌ای، رفتار خطی الاستیک و تغییرشکل کوچک؛ بار گسترده عضو، تحلیل مرتبه دوم، مفصل/فنر، اندرکنش محوری-خمشی، کمانش، طراحی مقطع و کنترل آیین‌نامه‌ای هنوز پیاده‌سازی نشده‌اند. این هسته هنوز به هندسه خودکار گلخانه متصل نیست و نباید مبنای ساخت قرار گیرد. نمونه پیش‌فرض صرفاً تست عددی است.</div>
+ </div>
 </section>
 
 <!-- REPORTS -->
@@ -244,6 +253,61 @@ function applyProfileBankToMembers(){
  calculateGeometry();status("profileStatus",count+" گروه عضو با بانک مقاطع تطبیق داده شد.")
 }
 for(const k of ["columns","rafters","eaves","ridges","purlins"]){const field=$("profile_"+k);field?.addEventListener("change",()=>{const item=findSectionProfile(field.value);if(item){$("mass_"+k).value=item.mass;calculateGeometry()}})}
+
+
+/* 2D frame stiffness solver: consistent N-mm-MPa units; elastic Euler-Bernoulli elements */
+function frame2DStiffness(L,A,E,I){
+ if(!(L>0&&A>0&&E>0&&I>0))throw new Error("طول، A، E و I باید مثبت باشند.");
+ const a=A*E/L,b=12*E*I/(L**3),c=6*E*I/(L**2),d=4*E*I/L,e=2*E*I/L;
+ return [[a,0,0,-a,0,0],[0,b,c,0,-b,c],[0,c,d,0,-c,e],[-a,0,0,a,0,0],[0,-b,-c,0,b,-c],[0,c,e,0,-c,d]];
+}
+function frame2DTransform(c,s){
+ return [[c,s,0,0,0,0],[-s,c,0,0,0,0],[0,0,1,0,0,0],[0,0,0,c,s,0],[0,0,0,-s,c,0],[0,0,0,0,0,1]];
+}
+function matVec(A,x){return A.map(row=>row.reduce((v,a,j)=>v+a*x[j],0))}
+function transpose(A){return A[0].map((_,j)=>A.map(row=>row[j]))}
+function matMul(A,B){return A.map(row=>B[0].map((_,j)=>row.reduce((v,a,k)=>v+a*B[k][j],0)))}
+function solveLinearSystem(A,b){
+ const n=b.length,M=A.map((row,i)=>row.slice().concat([b[i]]));
+ for(let k=0;k<n;k++){
+  let p=k;for(let i=k+1;i<n;i++)if(Math.abs(M[i][k])>Math.abs(M[p][k]))p=i;
+  if(Math.abs(M[p][k])<1e-12)throw new Error("ماتریس سختی تکین است؛ تکیه‌گاه‌ها یا اتصال اعضا را بررسی کنید.");
+  [M[k],M[p]]=[M[p],M[k]];
+  const pivot=M[k][k];for(let j=k;j<=n;j++)M[k][j]/=pivot;
+  for(let i=0;i<n;i++)if(i!==k){const q=M[i][k];for(let j=k;j<=n;j++)M[i][j]-=q*M[k][j]}
+ }
+ return M.map(row=>row[n]);
+}
+function analyzeFrame2D(model){
+ if(!model||!Array.isArray(model.nodes)||!Array.isArray(model.elements)||!Array.isArray(model.restraints)||!Array.isArray(model.loads))throw new Error("ساختار مدل ناقص است.");
+ const n=model.nodes.length,nd=3*n;if(n<2||!model.elements.length)throw new Error("حداقل دو گره و یک عضو لازم است.");
+ const K=Array.from({length:nd},()=>Array(nd).fill(0)),F=Array(nd).fill(0),elementData=[];
+ for(const load of model.loads){if(!Number.isInteger(load.node)||!model.nodes[load.node])throw new Error("شماره گره بار نامعتبر است.");F[3*load.node]+=Number(load.fx||0);F[3*load.node+1]+=Number(load.fy||0);F[3*load.node+2]+=Number(load.mz||0)}
+ for(const el of model.elements){
+  const ni=model.nodes[el.i],nj=model.nodes[el.j];if(!ni||!nj||el.i===el.j)throw new Error("اتصال عضو نامعتبر است.");
+  const dx=nj.x-ni.x,dy=nj.y-ni.y,L=Math.hypot(dx,dy),c=dx/L,ss=dy/L;
+  const A=Number(el.A),E=Number(el.E),I=Number(el.I);const kl=frame2DStiffness(L,A,E,I),T=frame2DTransform(c,ss),kg=matMul(transpose(T),matMul(kl,T));
+  const dofs=[3*el.i,3*el.i+1,3*el.i+2,3*el.j,3*el.j+1,3*el.j+2];
+  for(let a=0;a<6;a++)for(let b=0;b<6;b++)K[dofs[a]][dofs[b]]+=kg[a][b];
+  elementData.push({id:el.id||("E"+(elementData.length+1)),dofs,kl,T,L});
+ }
+ const restrained=new Set();for(const item of model.restraints){if(!Number.isInteger(item.node)||!model.nodes[item.node]||!Array.isArray(item.dofs)||item.dofs.length!==3)throw new Error("تعریف تکیه‌گاه نامعتبر است.");item.dofs.forEach((v,j)=>{if(v)restrained.add(3*item.node+j)})}
+ const free=Array.from({length:nd},(_,i)=>i).filter(i=>!restrained.has(i));if(!free.length)throw new Error("تمام درجات آزادی مقید شده‌اند.");
+ const uf=solveLinearSystem(free.map(i=>free.map(j=>K[i][j])),free.map(i=>F[i])),u=Array(nd).fill(0);free.forEach((d,i)=>u[d]=uf[i]);
+ const reactions=matVec(K,u).map((v,i)=>v-F[i]);
+ const members=elementData.map(ed=>{const ug=ed.dofs.map(i=>u[i]),ul=matVec(ed.T,ug),q=matVec(ed.kl,ul);return {id:ed.id,length_mm:ed.L,local_end_forces_N_Nmm:q}});
+ return {displacements:u.map((v,i)=>({node:Math.floor(i/3),dof:["ux_mm","uy_mm","rz_rad"][i%3],value:v})),reactions:reactions.map((v,i)=>({node:Math.floor(i/3),dof:["Fx_N","Fy_N","Mz_Nmm"][i%3],value:v})).filter(x=>restrained.has(3*x.node+["Fx_N","Fy_N","Mz_Nmm"].indexOf(x.dof))),members};
+}
+function loadFrameExample(){
+ $("frameModel").value=JSON.stringify({units:"N, mm, MPa, mm2, mm4",nodes:[{x:0,y:0},{x:3000,y:0}],elements:[{id:"تیر طره",i:0,j:1,A:2000,E:200000,I:8e7}],restraints:[{node:0,dofs:[true,true,true]}],loads:[{node:1,fx:0,fy:-10000,mz:0}]},null,2);
+ status("frameStatus","نمونه تیر طره‌ای بارگذاری شد؛ مقادیر صرفاً برای آزمون نرم‌افزار هستند.");
+}
+function runFrameAnalysis(){
+ try{const model=JSON.parse($("frameModel").value),out=analyzeFrame2D(model);
+ $("frameOutput").innerHTML='<h4>جابجایی‌ها</h4><div class="tablewrap"><table><tr><th>گره</th><th>درجه آزادی</th><th>مقدار</th></tr>'+out.displacements.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toExponential(4)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">واکنش تکیه‌گاهی</h4><div class="tablewrap"><table><tr><th>گره</th><th>مؤلفه</th><th>مقدار</th></tr>'+out.reactions.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toFixed(3)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">نیروهای انتهایی محلی اعضا</h4><div class="tablewrap"><table><tr><th>عضو</th><th>طول (mm)</th><th>نیروهای محلی [N,N,Nmm] در دو انتها</th></tr>'+out.members.map(x=>'<tr><td>'+esc(x.id)+'</td><td>'+x.length_mm.toFixed(1)+'</td><td>'+x.local_end_forces_N_Nmm.map(v=>v.toFixed(2)).join(" | ")+'</td></tr>').join("")+'</table></div>';
+ status("frameStatus","تحلیل عددی اجرا شد. این خروجی نمونه/آزمایشی است و تأیید طراحی اجرایی نیست.");
+ }catch(e){$("frameOutput").innerHTML="";status("frameStatus","خطا: "+e.message,true)}
+}
 
 /* Geometry calculation based on uploaded v2.12 source */
 let geomResult={};
