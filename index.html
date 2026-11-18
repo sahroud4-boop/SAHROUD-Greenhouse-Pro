@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.5.1</title>
+<title>SAHROUD Greenhouse Pro v3.6.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -38,7 +38,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.5.1</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.6.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -78,7 +78,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
     <div class="stat"><small>عرض کل</small><strong id="widthStat">—</strong></div><div class="stat"><small>مساحت کف</small><strong id="floorStat">—</strong></div><div class="stat"><small>تعداد قاب</small><strong id="frameStat">—</strong></div><div class="stat"><small>سطح پوشش</small><strong id="coverStat">—</strong></div>
    </div>
    <div class="columns">
-    <div class="card"><h3>مدل شماتیک گلخانه</h3><div class="visual"><canvas id="model"></canvas></div><p class="muted">نمای ایزومتریک دوبعدی از قاب‌ها؛ این تصویر مدل CAD یا تحلیل سه‌بعدی واقعی نیست.</p></div>
+    <div class="card"><div class="pagehead"><h3>مدل سه‌بعدی تعاملی گلخانه</h3><div class="toolbar"><button class="btn-soft" onclick="setModelView('iso')">نمای ایزومتریک</button><button class="btn-soft" onclick="setModelView('top')">نمای بالا</button><button class="btn-soft" onclick="setModelView('side')">نمای جانبی</button><button class="btn-soft" onclick="resetModelView()">بازنشانی</button></div></div><div class="visual"><canvas id="model" aria-label="مدل سه‌بعدی تعاملی گلخانه" tabindex="0"></canvas></div><p class="muted">با کشیدن ماوس مدل را بچرخانید؛ با چرخ ماوس بزرگ‌نمایی کنید. این مدل هندسی تعاملی برای مشاهده است و جایگزین مدل BIM/CAD اجرایی یا تحلیل سازه‌ای نیست.</p></div>
     <div class="card"><h3>خلاصه هندسی</h3><table><tbody>
      <tr><td>عرض کل</td><td id="vWidth">—</td></tr><tr><td>طول</td><td id="vLength">—</td></tr><tr><td>ارتفاع ستون</td><td id="vHeight">—</td></tr><tr><td>ارتفاع تاج</td><td id="vRidge">—</td></tr><tr><td>طول شیب سقف</td><td id="vSlope">—</td></tr><tr><td>مساحت سقف</td><td id="vRoof">—</td></tr><tr><td>مساحت دیوارها</td><td id="vWalls">—</td></tr>
     </tbody></table></div>
@@ -193,17 +193,97 @@ function calculateGeometry(){
  $("geometryWarning").textContent="نتایج صرفاً برآورد هندسی مقدماتی هستند. "+(p.mass>0?"وزن فولاد با جرم واحد طول واردشده محاسبه شده است.":"وزن فولاد به دیتاشیت معتبر مقطع نیاز دارد.")+" تحلیل بار باد، برف، زلزله، کمانش، اتصالات، فونداسیون و کنترل استاندارد انجام نشده است.";
  drawModel(p);$("activeProjectText").textContent="پروژه فعال: "+(p.project||"بدون نام");return geomResult;
 }
-function drawModel(p){
- const c=$("model"),r=c.getBoundingClientRect(),ratio=window.devicePixelRatio||1;if(!r.width||!r.height)return;
- c.width=r.width*ratio;c.height=r.height*ratio;const ctx=c.getContext("2d");ctx.setTransform(ratio,0,0,ratio,0,0);const w=r.width,h=r.height;ctx.clearRect(0,0,w,h);
- const scale=Math.min(w/(p.bays*p.bayWidth+p.length*.5),h/(p.height+p.ridge+8))*1.25,ox=w*.48,oy=h*.76;
- const pt=(x,y,z)=>({x:ox+(x-y*.45)*scale,y:oy+(x*.18+y*.13-z)*scale});
- function line(a,b,col,width=2){ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=col;ctx.lineWidth=width;ctx.stroke()}
- const count=Math.max(2,Math.min(18,Math.ceil(p.length/p.spacing)+1));
- for(let i=0;i<count;i++){const y=i*p.length/(count-1);for(let j=0;j<p.bays;j++){const x=j*p.bayWidth,a=pt(x,y,0),b=pt(x,y,p.height),ridge=pt(x+p.bayWidth/2,y,p.height+p.ridge),d=pt(x+p.bayWidth,y,p.height),e=pt(x+p.bayWidth,y,0);line(a,b,"#087f5b",2);line(b,ridge,"#d69b3d",2);line(ridge,d,"#d69b3d",2);line(d,e,"#087f5b",2)}}
- for(let j=0;j<=p.bays;j++){const x=j*p.bayWidth;line(pt(x,0,p.height),pt(x,p.length,p.height),"#79b79f",1);line(pt(x,0,0),pt(x,p.length,0),"#79b79f",1)}
- ctx.fillStyle="#547568";ctx.font="12px Tahoma";ctx.fillText("نمای شماتیک ایزومتریک",12,20);
+/* Interactive 3D orthographic greenhouse viewer */
+const modelCamera={yaw:-0.72,pitch:0.48,zoom:1};
+let modelPointer=null;
+function setModelView(view){
+ if(view==="top"){modelCamera.yaw=0;modelCamera.pitch=1.48;modelCamera.zoom=1}
+ else if(view==="side"){modelCamera.yaw=0;modelCamera.pitch=0.08;modelCamera.zoom=1}
+ else {modelCamera.yaw=-0.72;modelCamera.pitch=0.48;modelCamera.zoom=1}
+ if(geomResult.width)drawModel(geomResult);
 }
+function resetModelView(){setModelView("iso")}
+function drawModel(p){
+ const c=$("model"),r=c.getBoundingClientRect(),ratio=window.devicePixelRatio||1;
+ if(!r.width||!r.height||!p)return;
+ c.width=Math.round(r.width*ratio);c.height=Math.round(r.height*ratio);
+ const ctx=c.getContext("2d");ctx.setTransform(ratio,0,0,ratio,0,0);
+ const w=r.width,h=r.height;ctx.clearRect(0,0,w,h);
+ const yaw=modelCamera.yaw,pitch=Math.max(-0.15,Math.min(1.52,modelCamera.pitch));
+ const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+ const cx=p.bays*p.bayWidth/2,cy0=p.length/2;
+ const projectRaw=(x,y,z)=>{
+  const X=x-cx,Y=y-cy0;
+  const xr=X*cy-Y*sy,yr=X*sy+Y*cy;
+  return {x:xr,y:yr*cp-z*sp,depth:yr*sp+z*cp};
+ };
+ const xs=[0,p.bays*p.bayWidth],ys=[0,p.length],zs=[0,p.height,p.height+p.ridge];
+ const bounds=[];
+ for(const x of xs)for(const y of ys)for(const z of zs)bounds.push(projectRaw(x,y,z));
+ for(let j=0;j<p.bays;j++)for(const y of ys)bounds.push(projectRaw((j+.5)*p.bayWidth,y,p.height+p.ridge));
+ const minX=Math.min(...bounds.map(v=>v.x)),maxX=Math.max(...bounds.map(v=>v.x));
+ const minY=Math.min(...bounds.map(v=>v.y)),maxY=Math.max(...bounds.map(v=>v.y));
+ const rangeX=Math.max(1,maxX-minX),rangeY=Math.max(1,maxY-minY);
+ const scale=Math.max(.01,Math.min((w-70)/rangeX,(h-76)/rangeY)*.88*modelCamera.zoom);
+ const midX=(minX+maxX)/2,midY=(minY+maxY)/2;
+ const pt=(x,y,z)=>{const q=projectRaw(x,y,z);return {x:w/2+(q.x-midX)*scale,y:h/2-(q.y-midY)*scale,depth:q.depth}};
+ const segments=[];
+ const add=(a,b,color,width=1.6)=>segments.push({a:pt(...a),b:pt(...b),color,width});
+ const bays=Math.max(1,Math.floor(p.bays)),bw=p.bayWidth,L=p.length,H=p.height,R=p.ridge;
+ add([0,0,0],[bays*bw,0,0],"#8aa99a",1);
+ add([bays*bw,0,0],[bays*bw,L,0],"#8aa99a",1);
+ add([bays*bw,L,0],[0,L,0],"#8aa99a",1);
+ add([0,L,0],[0,0,0],"#8aa99a",1);
+ const frameCount=Math.max(1,Math.ceil(L/Math.max(.1,p.spacing)));
+ const frameYs=Array.from({length:frameCount+1},(_,i)=>Math.min(L,i*p.spacing));
+ if(frameYs[frameYs.length-1]<L-1e-6)frameYs.push(L);
+ const stride=Math.max(1,Math.ceil(frameYs.length/100));
+ const shownYs=frameYs.filter((_,i)=>i%stride===0||i===frameYs.length-1);
+ for(const y of shownYs){
+  for(let j=0;j<bays;j++){
+   const x=j*bw;
+   add([x,y,0],[x,y,H],"#087f5b",2.1);
+   add([x,y,H],[x+bw/2,y,H+R],"#c58a32",2.2);
+   add([x+bw/2,y,H+R],[x+bw,y,H],"#c58a32",2.2);
+   add([x+bw,y,H],[x+bw,y,0],"#087f5b",2.1);
+  }
+ }
+ for(let j=0;j<=bays;j++){
+  const x=j*bw;add([x,0,H],[x,L,H],"#4d9b7b",1.5);
+ }
+ for(let j=0;j<bays;j++){
+  const x=(j+.5)*bw;add([x,0,H+R],[x,L,H+R],"#d69b3d",1.7);
+ }
+ const gridStep=Math.max(5,Math.ceil(Math.max(bw*bays,L)/8/5)*5);
+ for(let x=gridStep;x<bw*bays;x+=gridStep)add([x,0,0],[x,L,0],"#dce9e1",.55);
+ for(let y=gridStep;y<L;y+=gridStep)add([0,y,0],[bays*bw,y,0],"#dce9e1",.55);
+ segments.sort((a,b)=>(a.a.depth+a.b.depth)-(b.a.depth+b.b.depth));
+ for(const q of segments){
+  ctx.beginPath();ctx.moveTo(q.a.x,q.a.y);ctx.lineTo(q.b.x,q.b.y);
+  ctx.strokeStyle=q.color;ctx.lineWidth=q.width;ctx.stroke();
+ }
+ ctx.fillStyle="#365d4c";ctx.font="12px Tahoma";ctx.textAlign="right";
+ ctx.fillText("مدل هندسی سه‌بعدی · نمای تعاملی",w-12,20);
+ ctx.fillStyle="#60786c";ctx.font="11px Tahoma";
+ ctx.fillText("عرض: "+fmt(p.bays*bw)+" m",w-12,39);
+ ctx.fillText("طول: "+fmt(L)+" m",w-12,56);
+ ctx.textAlign="left";ctx.fillText("ارتفاع تاج: "+fmt(H+R)+" m",12,h-14);
+}
+(function bindModelControls(){
+ const c=$("model");if(!c)return;
+ c.style.touchAction="none";
+ c.addEventListener("pointerdown",e=>{modelPointer={x:e.clientX,y:e.clientY};if(c.setPointerCapture)c.setPointerCapture(e.pointerId)});
+ c.addEventListener("pointermove",e=>{
+  if(!modelPointer)return;
+  const dx=e.clientX-modelPointer.x,dy=e.clientY-modelPointer.y;
+  modelPointer={x:e.clientX,y:e.clientY};
+  modelCamera.yaw+=dx*.009;modelCamera.pitch=Math.max(-.15,Math.min(1.52,modelCamera.pitch+dy*.007));
+  if(geomResult.width)drawModel(geomResult);
+ });
+ const release=()=>{modelPointer=null};
+ c.addEventListener("pointerup",release);c.addEventListener("pointercancel",release);c.addEventListener("lostpointercapture",release);
+ c.addEventListener("wheel",e=>{e.preventDefault();modelCamera.zoom=Math.max(.45,Math.min(3.2,modelCamera.zoom*(e.deltaY<0?1.1:.91)));if(geomResult.width)drawModel(geomResult)},{passive:false});
+})();
 
 /* IndexedDB project repository */
 const DB=(()=>{let promise;const dbName="SAHROUD_Greenhouse_Pro_v35",storeName="projects";
@@ -212,7 +292,7 @@ const DB=(()=>{let promise;const dbName="SAHROUD_Greenhouse_Pro_v35",storeName="
  return {open,put:p=>request("readwrite",s=>s.put(p)),get:id=>request("readonly",s=>s.get(id)),all:()=>request("readonly",s=>s.getAll()),del:id=>request("readwrite",s=>s.delete(id))};
 })();
 let activeProject=null;
-function newModel(){return {schemaVersion:"3.5.1",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:"",country:"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
+function newModel(){return {schemaVersion:"3.6.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:"",country:"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
 function collectModel(){
  const p=activeProject||newModel();p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
  p.notes=$("metaNotes").value;p.geometry={...geomResult};p.hydroponics={input:hydroInput(),last:hydroResult};p.results={structural:structuralLast,beam:beamLast};return p;
