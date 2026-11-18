@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.15.0</title>
+<title>SAHROUD Greenhouse Pro v3.16.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -38,7 +38,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.15.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.16.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -195,7 +195,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
   <div><label>بار قائم سقف راست بر مبنای سطح افقی (kN/m²)</label><input id="autoRoofRight" type="number" step="0.01" value="0"></div>
   <div><label>فشار افقی دیوار جانبی (kN/m²)</label><input id="autoSideWind" type="number" step="0.01" value="0"></div>
  </div>
- <div class="toolbar" style="margin-top:10px"><button onclick="generateGreenhouseFrame()">ساخت مدل قاب از هندسه فعلی</button></div>
+ <div class="toolbar" style="margin-top:10px"><button onclick="generateGreenhouseFrame()">ساخت مدل قاب از هندسه فعلی</button><button class="btn-soft" onclick="evaluateSectionCandidates()">ارزیابی خودکار مقاطع بانک</button></div>
  <div class="status" id="autoFrameStatus"></div>
  <label>تعریف مدل به‌صورت JSON — واحدها: مختصات mm، نیرو N، لنگر N·mm، E بر حسب MPa، A بر حسب mm² و I بر حسب mm⁴</label>
  <textarea id="frameModel" rows="13" spellcheck="false" style="direction:ltr;text-align:left;font-family:Consolas,monospace;font-size:11px" placeholder="مدل JSON را بارگذاری کنید یا دکمه نمونه را بزنید"></textarea>
@@ -214,7 +214,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.15.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.16.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -380,6 +380,52 @@ function generateGreenhouseFrame(){
 function loadFrameExample(){
  $("frameModel").value=JSON.stringify({units:"N, mm, MPa, mm2, mm4",nodes:[{x:0,y:0},{x:3000,y:0}],elements:[{id:"تیر طره",i:0,j:1,A:2000,E:200000,I:8e7}],restraints:[{node:0,dofs:[true,true,true]}],loads:[],elementLoads:[{element:0,qx:0,qy:-10}]},null,2);
  status("frameStatus","نمونه تیر طره‌ای با بار گسترده یکنواخت محلی qy=-10 N/mm بارگذاری شد.");
+}
+let frameCandidateResults={columns:[],rafters:[]};
+function evaluateSectionCandidates(){
+ try{
+  const baseModel=JSON.parse($("frameModel").value);
+  if(!Array.isArray(baseModel.elements)||!baseModel.elements.some(e=>String(e.id||"").startsWith("ستون-"))||!baseModel.elements.some(e=>String(e.id||"").startsWith("رفتر ")))throw new Error("ابتدا مدل قاب را با دکمه «ساخت مدل قاب از هندسه فعلی» تولید کنید.");
+  if(!sectionProfileBank.length)throw new Error("بانک مقاطع خالی است؛ ابتدا دیتاشیت مقاطع معتبر را وارد کنید.");
+  const roles=[{key:"columns",prefix:"ستون-",label:"ستون‌ها"},{key:"rafters",prefix:"رفتر ",label:"رفترها"}];
+  frameCandidateResults={columns:[],rafters:[]};
+  const results=[];
+  for(const role of roles){
+   const members=baseModel.elements.filter(e=>String(e.id||"").startsWith(role.prefix));
+   const candidates=sectionProfileBank.filter(p=>Number(p.area)>0&&Number(p.Ix)>0&&Number(p.E)>0&&Number(p.Fy)>0&&[Number(p.Wx),Number(p.Wy)].some(v=>Number.isFinite(v)&&v>0));
+   const ranked=[];
+   for(const profile of candidates){
+    const W=Math.min(...[Number(profile.Wx),Number(profile.Wy)].filter(v=>Number.isFinite(v)&&v>0));
+    const testModel=JSON.parse(JSON.stringify(baseModel));
+    testModel.elements=testModel.elements.map(el=>String(el.id||"").startsWith(role.prefix)?{...el,A:Number(profile.area),E:Number(profile.E),I:Number(profile.Ix),section:{A:Number(profile.area),W,Fy:Number(profile.Fy),profile:profile.name}}:el);
+    try{
+     const out=analyzeFrame2D(testModel),target=out.members.filter(m=>String(m.id).startsWith(role.prefix));
+     if(target.length!==members.length)continue;
+     const ratios=target.map(m=>{const q=m.local_end_forces_N_Nmm,N=Math.max(Math.abs(q[0]),Math.abs(q[3])),M=Math.max(Math.abs(q[2]),Math.abs(q[5]));return (N/Number(profile.area)+M/W)/Number(profile.Fy)});
+     const maxRatio=Math.max(...ratios);
+     if(Number.isFinite(maxRatio))ranked.push({name:profile.name,mass:Number(profile.mass),ratio:maxRatio,fy:Number(profile.Fy)});
+    }catch(err){/* candidate singularity or invalid data: skip */}
+   }
+   ranked.sort((a,b)=>a.ratio-b.ratio||a.mass-b.mass);
+   frameCandidateResults[role.key]=ranked;results.push({role,ranked});
+  }
+  let html='<h4 style="margin-top:16px">مقایسه آزمایشی مقاطع بانک</h4><div class="notice">برای هر گزینه، تحلیل قاب دوباره با همان بارها و هندسه و با جایگزینی مقطع آن گروه اجرا شده است. رتبه‌بندی بر اساس کمترین بیشینه نسبت تنش الاستیک در همان گروه است؛ این رتبه‌بندی طراحی نهایی یا تأیید ایمنی نیست و اثر کمانش، پایداری، اتصالات، ضوابط آیین‌نامه‌ای و محدودیت‌های اجرایی را لحاظ نمی‌کند.</div>';
+  for(const item of results){
+   html+='<h4>'+item.role.label+'</h4>';
+   if(!item.ranked.length){html+='<p class="muted">مقطع قابل ارزیابی یافت نشد. برای هر مقطع باید Ag، Ix، E، Fy و حداقل یکی از Wx یا Wy مثبت باشد.</p>';continue}
+   html+='<div class="tablewrap"><table><tr><th>رتبه</th><th>کد مقطع</th><th>جرم (kg/m)</th><th>Fy (MPa)</th><th>بیشینه σ/Fy</th><th>عملیات</th></tr>';
+   html+=item.ranked.slice(0,10).map((p,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(p.name)+'</td><td>'+fmt(p.mass,3)+'</td><td>'+fmt(p.fy,1)+'</td><td>'+fmt(p.ratio,3)+'</td><td><button class="btn-soft" onclick="applyRecommendedProfile(\''+item.role.key+'\','+i+')">انتخاب و بازتحلیل</button></td></tr>').join("");
+   html+='</table></div>';
+  }
+  $("frameOutput").innerHTML+=html;
+  status("frameStatus","مقایسه مقاطع انجام شد. گزینه‌ها بر اساس شاخص تنش الاستیک مقدماتی رتبه‌بندی شده‌اند؛ بررسی مهندسی مستقل لازم است.");
+ }catch(e){status("frameStatus","خطا در ارزیابی مقاطع: "+e.message,true)}
+}
+function applyRecommendedProfile(role,index){
+ const candidate=(frameCandidateResults[role]||[])[index];if(!candidate)return;
+ const id=role==="columns"?"frameColumnProfile":"frameRafterProfile";
+ $(id).value=sectionProfileBank.find(p=>p.name===candidate.name)?.name||"";
+ applyFrameProfile(role);generateGreenhouseFrame();runFrameAnalysis();
 }
 function runFrameAnalysis(){
  try{const model=JSON.parse($("frameModel").value),out=analyzeFrame2D(model);
