@@ -191,8 +191,8 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
   <div><label>سطح مقطع A (mm²)</label><input id="autoFrameA" type="number" min="0.01" placeholder="ورودی مهندس"></div>
   <div><label>مدول الاستیسیته E (MPa)</label><input id="autoFrameE" type="number" min="1" value="200000"></div>
   <div><label>ممان اینرسی I (mm⁴)</label><input id="autoFrameI" type="number" min="0.01" placeholder="از دیتاشیت"></div>
-  <div><label>بار قائم سقف سمت چپ (kN/m²)</label><input id="autoRoofLeft" type="number" step="0.01" value="0"></div>
-  <div><label>بار قائم سقف سمت راست (kN/m²)</label><input id="autoRoofRight" type="number" step="0.01" value="0"></div>
+  <div><label>بار قائم سقف چپ بر مبنای سطح افقی (kN/m²)</label><input id="autoRoofLeft" type="number" step="0.01" value="0"></div>
+  <div><label>بار قائم سقف راست بر مبنای سطح افقی (kN/m²)</label><input id="autoRoofRight" type="number" step="0.01" value="0"></div>
   <div><label>فشار افقی دیوار جانبی (kN/m²)</label><input id="autoSideWind" type="number" step="0.01" value="0"></div>
  </div>
  <div class="toolbar" style="margin-top:10px"><button onclick="generateGreenhouseFrame()">ساخت مدل قاب از هندسه فعلی</button></div>
@@ -346,7 +346,8 @@ function generateGreenhouseFrame(){
    for(const [ni,nj,id,pressure] of pairs){
     const elIndex=elements.length,dx=nodes[nj].x-nodes[ni].x,dy=nodes[nj].y-nodes[ni].y,L=Math.hypot(dx,dy),c=dx/L,ss=dy/L;
     elements.push({id,i:ni,j:nj,A,E,I});
-    const globalQy=-pressure*tributary,load=toLocal(0,globalQy,c,ss);
+    // Roof pressure is defined per horizontal projected area; cos(theta) converts it to load per sloped member length.
+    const globalQy=-pressure*tributary*Math.abs(c),load=toLocal(0,globalQy,c,ss);
     if(pressure!==0)elementLoads.push({element:elIndex,...load});
    }
   }
