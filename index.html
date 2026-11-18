@@ -285,7 +285,7 @@ function analyzeFrame2D(model){
  for(const load of model.loads){if(!Number.isInteger(load.node)||!model.nodes[load.node])throw new Error("شماره گره بار نامعتبر است.");F[3*load.node]+=Number(load.fx||0);F[3*load.node+1]+=Number(load.fy||0);F[3*load.node+2]+=Number(load.mz||0)}
  for(const el of model.elements){
   const ni=model.nodes[el.i],nj=model.nodes[el.j];if(!ni||!nj||el.i===el.j)throw new Error("اتصال عضو نامعتبر است.");
-  const dx=nj.x-ni.x,dy=nj.y-ni.y,L=Math.hypot(dx,dy),c=dx/L,ss=dy/L;
+  const dx=nj.x-ni.x,dy=nj.y-ni.y,L=Math.hypot(dx,dy);if(!(L>1e-9))throw new Error("طول عضو صفر یا نامعتبر است.");const c=dx/L,ss=dy/L;
   const A=Number(el.A),E=Number(el.E),I=Number(el.I);const kl=frame2DStiffness(L,A,E,I),T=frame2DTransform(c,ss),kg=matMul(transpose(T),matMul(kl,T));
   const dofs=[3*el.i,3*el.i+1,3*el.i+2,3*el.j,3*el.j+1,3*el.j+2];
   for(let a=0;a<6;a++)for(let b=0;b<6;b++)K[dofs[a]][dofs[b]]+=kg[a][b];
