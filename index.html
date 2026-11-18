@@ -107,7 +107,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
    <div><label>نام / کد مقطع</label><input id="profileName" placeholder="کد دقیق دیتاشیت"></div>
    <div><label>استاندارد / سری</label><input id="profileStandard" placeholder="مثلاً استاندارد سازنده"></div>
    <div><label>جنس / گرید فولاد</label><input id="profileGrade" placeholder="گرید مطابق مدرک"></div>
-   <div><label>جرم واحد طول (kg/m)</label><input id="profileMass" type="number" min="0" step=".001"></div>
+   <div><label>جرم واحد طول (kg/m)</label><input id="profileMass" type="number" min="0" step=".001"></div><div><label>تنش تسلیم Fy (MPa)</label><input id="profileFy" type="number" min="0" step="any"></div><div><label>مدول الاستیسیته E (MPa)</label><input id="profileE" type="number" min="0" step="any"></div>
    <div><label>مساحت مقطع Ag (mm²)</label><input id="profileArea" type="number" min="0" step=".1"></div>
    <div><label>ممان اینرسی Ix (mm⁴)</label><input id="profileIx" type="number" min="0" step="any"></div>
    <div><label>ممان اینرسی Iy (mm⁴)</label><input id="profileIy" type="number" min="0" step="any"></div>
@@ -121,7 +121,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
   <div class="toolbar" style="margin-top:12px"><button onclick="addSectionProfile()">افزودن به بانک مقاطع</button><button class="btn-soft" onclick="exportSectionProfiles()">خروجی بانک JSON</button><label class="btn btn-soft" for="profileImport">ورود بانک JSON</label><input id="profileImport" type="file" accept=".json,application/json" hidden onchange="importSectionProfiles(event)"></div>
   <div class="status" id="profileStatus"></div>
  </div>
- <div class="card"><h3>مقاطع ثبت‌شده</h3><div class="tablewrap"><table><thead><tr><th>مقطع</th><th>استاندارد</th><th>گرید</th><th>جرم (kg/m)</th><th>Ag</th><th>Ix</th><th>Iy</th><th>منبع</th><th>عملیات</th></tr></thead><tbody id="profileBankRows"></tbody></table></div><p class="muted" id="profileBankSummary">بانک خالی است.</p></div>
+ <div class="card"><h3>مقاطع ثبت‌شده</h3><div class="tablewrap"><table><thead><tr><th>مقطع</th><th>استاندارد</th><th>گرید</th><th>جرم (kg/m)</th><th>Fy (MPa)</th><th>E (MPa)</th><th>Ag</th><th>Ix</th><th>Iy</th><th>منبع</th><th>عملیات</th></tr></thead><tbody id="profileBankRows"></tbody></table></div><p class="muted" id="profileBankSummary">بانک خالی است.</p></div>
  <div class="card"><h3>اتصال مقطع به گروه اعضا</h3><p>با واردکردن کد دقیق یک مقطع ثبت‌شده در فیلد مقطع اعضا در صفحه «هندسه و متره»، جرم واحد طول از بانک خوانده می‌شود. مقادیر دستی همچنان قابل استفاده‌اند.</p>
  <div class="toolbar"><button class="btn-soft" onclick="applyProfileBankToMembers()">تطبیق مقاطع واردشده با بانک</button><button class="btn-soft" onclick="showPage('geometry')">بازگشت به هندسه و متره</button></div>
  <div class="notice">نسخه فعلی هنوز انتخاب خودکار مهندسی انجام نمی‌دهد. پارامترهای Ix/Iy و سایر خواص صرفاً ذخیره می‌شوند تا در مرحله تحلیل و کنترل مقطع مصرف شوند.</div></div>
@@ -188,7 +188,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <h4>تولید خودکار قاب از هندسه گلخانه</h4>
  <p class="muted">یک قاب عرضی دوبعدی از تعداد دهانه، عرض دهانه، ارتفاع ستون و افزایش ارتفاع تاج ساخته می‌شود. مدل فعلی اتصال صلب گره‌ها و پای ستون گیردار را فرض می‌کند؛ این فرض برای همه سیستم‌های گلخانه معتبر نیست.</p>
  <div class="g3">
-  <div><label>سطح مقطع A (mm²)</label><input id="autoFrameA" type="number" min="0.01" placeholder="ورودی مهندس"></div>
+  <div><label>مقطع ستون‌ها از بانک</label><select id="frameColumnProfile" onchange="applyFrameProfile('columns')"><option value="">ورود دستی / انتخاب نشده</option></select></div><div><label>مقطع رفترها از بانک</label><select id="frameRafterProfile" onchange="applyFrameProfile('rafters')"><option value="">ورود دستی / انتخاب نشده</option></select></div><div><label>سطح مقطع A (mm²)</label><input id="autoFrameA" type="number" min="0.01" placeholder="ورودی مهندس"></div>
   <div><label>مدول الاستیسیته E (MPa)</label><input id="autoFrameE" type="number" min="1" value="200000"></div>
   <div><label>ممان اینرسی I (mm⁴)</label><input id="autoFrameI" type="number" min="0.01" placeholder="از دیتاشیت"></div>
   <div><label>بار قائم سقف چپ بر مبنای سطح افقی (kN/m²)</label><input id="autoRoofLeft" type="number" step="0.01" value="0"></div>
@@ -237,15 +237,15 @@ function profileField(id){const e=$(id);if(!e||e.value.trim()==="")return null;c
 function addSectionProfile(){
  const name=$("profileName").value.trim(),mass=profileField("profileMass");
  if(!name||mass===null||mass<=0){status("profileStatus","نام مقطع و جرم واحد طول مثبت الزامی است.",true);return}
- const item={id:"sp-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6),name,standard:$("profileStandard").value.trim(),grade:$("profileGrade").value.trim(),mass,area:profileField("profileArea"),Ix:profileField("profileIx"),Iy:profileField("profileIy"),Wx:profileField("profileWx"),Wy:profileField("profileWy"),rx:profileField("profileRx"),ry:profileField("profileRy"),source:$("profileSource").value.trim(),notes:$("profileNotes").value.trim(),updatedAt:new Date().toISOString()};
+ const item={id:"sp-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6),name,standard:$("profileStandard").value.trim(),grade:$("profileGrade").value.trim(),mass,area:profileField("profileArea"),Fy:profileField("profileFy"),E:profileField("profileE"),Ix:profileField("profileIx"),Iy:profileField("profileIy"),Wx:profileField("profileWx"),Wy:profileField("profileWy"),rx:profileField("profileRx"),ry:profileField("profileRy"),source:$("profileSource").value.trim(),notes:$("profileNotes").value.trim(),updatedAt:new Date().toISOString()};
  const duplicate=sectionProfileBank.findIndex(p=>p.name.toLowerCase()===name.toLowerCase());
  if(duplicate>=0){if(!confirm("این کد مقطع وجود دارد. جایگزین شود؟"))return;sectionProfileBank[duplicate]=item}else sectionProfileBank.push(item);
  persistSectionProfileBank();status("profileStatus","مقطع ثبت شد. برای اتصال به اعضا، کد آن را در فیلد مقطع وارد کنید.");
 }
 function renderSectionProfileBank(){
  const body=$("profileBankRows");if(!body)return;
- body.innerHTML=sectionProfileBank.map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+esc(p.standard||"—")+'</td><td>'+esc(p.grade||"—")+'</td><td>'+fmt(p.mass,3)+'</td><td>'+fmt(p.area)+'</td><td>'+fmt(p.Ix)+'</td><td>'+fmt(p.Iy)+'</td><td>'+esc(p.source||"ثبت نشده")+'</td><td><button class="btn-red" onclick="deleteSectionProfile(\''+esc(p.id)+'\')">حذف</button></td></tr>').join("");
- $("profileBankSummary").textContent="تعداد مقاطع ثبت‌شده: "+fmt(sectionProfileBank.length,0)+" | بانک فقط شامل داده‌های واردشده توسط کاربر است.";
+ body.innerHTML=sectionProfileBank.map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+esc(p.standard||"—")+'</td><td>'+esc(p.grade||"—")+'</td><td>'+fmt(p.mass,3)+'</td><td>'+fmt(p.Fy)+'</td><td>'+fmt(p.E)+'</td><td>'+fmt(p.area)+'</td><td>'+fmt(p.Ix)+'</td><td>'+fmt(p.Iy)+'</td><td>'+esc(p.source||"ثبت نشده")+'</td><td><button class="btn-red" onclick="deleteSectionProfile(\''+esc(p.id)+'\')">حذف</button></td></tr>').join("");
+ $("profileBankSummary").textContent="تعداد مقاطع ثبت‌شده: "+fmt(sectionProfileBank.length,0)+" | بانک فقط شامل داده‌های واردشده توسط کاربر است.";renderFrameProfileOptions();
 }
 function deleteSectionProfile(id){if(!confirm("این مقطع از بانک محلی حذف شود؟"))return;sectionProfileBank=sectionProfileBank.filter(p=>p.id!==id);persistSectionProfileBank()}
 function exportSectionProfiles(){download("SAHROUD_Profile_Bank.json",JSON.stringify({schemaVersion:"1.0",exportedAt:new Date().toISOString(),profiles:sectionProfileBank},null,2),"application/json")}
@@ -259,6 +259,20 @@ async function importSectionProfiles(event){
  }catch(e){status("profileStatus","خطا در ورود بانک: "+e.message,true)}finally{event.target.value=""}
 }
 function findSectionProfile(name){return sectionProfileBank.find(p=>p.name.trim().toLowerCase()===String(name||"").trim().toLowerCase())}
+function renderFrameProfileOptions(){
+ for(const id of ["frameColumnProfile","frameRafterProfile"]){
+  const el=$(id);if(!el)continue;const current=el.value||"";
+  el.innerHTML='<option value="">ورود دستی / انتخاب نشده</option>'+sectionProfileBank.map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join("");
+  if(sectionProfileBank.some(p=>p.name===current))el.value=current;
+ }
+}
+function applyFrameProfile(role){
+ const id=role==="columns"?"frameColumnProfile":"frameRafterProfile",p=findSectionProfile($(id)?.value);
+ if(!p)return;
+ if(!(Number(p.area)>0&&Number(p.Ix)>0&&Number(p.E)>0&&Number(p.Fy)>0)){status("autoFrameStatus","برای استفاده تحلیلی از این مقطع، Ag، Ix، E و Fy مثبت و معتبر باید در بانک ثبت شده باشند.",true);return}
+ $("autoFrameA").value=p.area;$("autoFrameE").value=p.E;$("autoFrameI").value=p.Ix;
+ status("autoFrameStatus","مشخصات A، E و Ix مقطع "+p.name+" برای ورودی قاب درج شد. کنترل تنش فقط در صورت وجود W معتبر انجام می‌شود.");
+}
 function applyProfileBankToMembers(){
  const keys=["columns","rafters","eaves","ridges","purlins"];let count=0;
  for(const k of keys){const profile=$("profile_"+k)?.value||"",item=findSectionProfile(profile);if(item){$("mass_"+k).value=item.mass;count++}}
@@ -305,21 +319,27 @@ function analyzeFrame2D(model){
   if(!Number.isFinite(qx)||!Number.isFinite(qy))throw new Error("بار گسترده عضو باید عددی باشد.");
   const fe=[qx*L/2,qy*L/2,qy*L*L/12,qx*L/2,qy*L/2,-qy*L*L/12],feg=matVec(transpose(T),fe);
   for(let a=0;a<6;a++)F[dofs[a]]+=feg[a];
-  elementData.push({id:el.id||("E"+(elementData.length+1)),dofs,kl,T,L,fe});
+  elementData.push({id:el.id||("E"+(elementData.length+1)),section:el.section||null,dofs,kl,T,L,fe});
  }
  const restrained=new Set();for(const item of model.restraints){if(!Number.isInteger(item.node)||!model.nodes[item.node]||!Array.isArray(item.dofs)||item.dofs.length!==3)throw new Error("تعریف تکیه‌گاه نامعتبر است.");item.dofs.forEach((v,j)=>{if(v)restrained.add(3*item.node+j)})}
  const free=Array.from({length:nd},(_,i)=>i).filter(i=>!restrained.has(i));if(!free.length)throw new Error("تمام درجات آزادی مقید شده‌اند.");
  const uf=solveLinearSystem(free.map(i=>free.map(j=>K[i][j])),free.map(i=>F[i])),u=Array(nd).fill(0);free.forEach((d,i)=>u[d]=uf[i]);
  const reactions=matVec(K,u).map((v,i)=>v-F[i]);
- const members=elementData.map(ed=>{const ug=ed.dofs.map(i=>u[i]),ul=matVec(ed.T,ug),q=matVec(ed.kl,ul).map((v,i)=>v-ed.fe[i]);return {id:ed.id,length_mm:ed.L,local_end_forces_N_Nmm:q,uniform_load_local_N_per_mm:{qx:ed.fe[0]===0?0:(ed.fe[0]*2/ed.L),qy:ed.fe[1]*2/ed.L}}});
+ const members=elementData.map(ed=>{const ug=ed.dofs.map(i=>u[i]),ul=matVec(ed.T,ug),q=matVec(ed.kl,ul).map((v,i)=>v-ed.fe[i]);return {id:ed.id,section:ed.section||null,length_mm:ed.L,local_end_forces_N_Nmm:q,uniform_load_local_N_per_mm:{qx:ed.fe[0]===0?0:(ed.fe[0]*2/ed.L),qy:ed.fe[1]*2/ed.L}}});
  return {displacements:u.map((v,i)=>({node:Math.floor(i/3),dof:["ux_mm","uy_mm","rz_rad"][i%3],value:v})),reactions:reactions.map((v,i)=>({node:Math.floor(i/3),dof:["Fx_N","Fy_N","Mz_Nmm"][i%3],value:v})).filter(x=>restrained.has(3*x.node+["Fx_N","Fy_N","Mz_Nmm"].indexOf(x.dof))),members};
 }
 function generateGreenhouseFrame(){
  try{
-  const p=geometryParams(),A=num("autoFrameA"),E=num("autoFrameE"),I=num("autoFrameI");
+  const p=geometryParams(),manualA=num("autoFrameA"),manualE=num("autoFrameE"),manualI=num("autoFrameI");
+   const colProfile=findSectionProfile($("frameColumnProfile")?.value),rafProfile=findSectionProfile($("frameRafterProfile")?.value);
+   const sectionFor=profile=>profile?{A:Number(profile.area),E:Number(profile.E),I:Number(profile.Ix),W:[Number(profile.Wx),Number(profile.Wy)].filter(v=>Number.isFinite(v)&&v>0).sort((a,b)=>a-b)[0]||null,Fy:Number(profile.Fy),profile:profile.name}:null;
+   const colSection=sectionFor(colProfile),rafSection=sectionFor(rafProfile);
+   const A=colSection?.A||manualA,E=colSection?.E||manualE,I=colSection?.I||manualI;
   const roofLeft=num("autoRoofLeft"),roofRight=num("autoRoofRight"),sideWind=num("autoSideWind");
   if(!(p.bays>0&&p.bayWidth>0&&p.height>0&&p.ridge>0))throw new Error("ابتدا هندسه معتبر گلخانه را محاسبه کنید؛ افزایش ارتفاع تاج باید مثبت باشد.");
   if(!(A>0&&E>0&&I>0))throw new Error("برای تحلیل، A و I باید از مشخصات مقطع معتبر وارد شوند و E نیز مثبت باشد.");
+   if(colProfile&&!(colSection.A>0&&colSection.E>0&&colSection.I>0&&colSection.Fy>0))throw new Error("مشخصات مقطع ستون ناقص است؛ Ag، Ix، E و Fy را در بانک تکمیل کنید.");
+   if(rafProfile&&!(rafSection.A>0&&rafSection.E>0&&rafSection.I>0&&rafSection.Fy>0))throw new Error("مشخصات مقطع رفتر ناقص است؛ Ag، Ix، E و Fy را در بانک تکمیل کنید.");
   if([roofLeft,roofRight,sideWind].some(v=>v===null||!Number.isFinite(v)))throw new Error("تمام بارهای سطحی باید عددی باشند.");
   const nodes=[],elements=[],restraints=[],elementLoads=[],base=[],eave=[];
   for(let j=0;j<=p.bays;j++){
@@ -327,7 +347,7 @@ function generateGreenhouseFrame(){
    base[j]=nodes.length;nodes.push({x,y:0});
    eave[j]=nodes.length;nodes.push({x,y:p.height*1000});
    restraints.push({node:base[j],dofs:[true,true,true]});
-   elements.push({id:"ستون-"+(j+1),i:base[j],j:eave[j],A,E,I});
+   elements.push({id:"ستون-"+(j+1),i:base[j],j:eave[j],A:colSection?.A||A,E:colSection?.E||E,I:colSection?.I||I,section:colSection?{A:colSection.A,W:colSection.W,Fy:colSection.Fy,profile:colSection.profile}:null});
   }
   const tributary=p.spacing;
   const toLocal=(qgx,qgy,c,ss)=>({qx:qgx*c+qgy*ss,qy:-qgx*ss+qgy*c});
@@ -345,7 +365,7 @@ function generateGreenhouseFrame(){
    const pairs=[[eave[j],ridge,"رفتر چپ دهانه "+(j+1),roofLeft],[ridge,eave[j+1],"رفتر راست دهانه "+(j+1),roofRight]];
    for(const [ni,nj,id,pressure] of pairs){
     const elIndex=elements.length,dx=nodes[nj].x-nodes[ni].x,dy=nodes[nj].y-nodes[ni].y,L=Math.hypot(dx,dy),c=dx/L,ss=dy/L;
-    elements.push({id,i:ni,j:nj,A,E,I});
+    elements.push({id,i:ni,j:nj,A:rafSection?.A||A,E:rafSection?.E||E,I:rafSection?.I||I,section:rafSection?{A:rafSection.A,W:rafSection.W,Fy:rafSection.Fy,profile:rafSection.profile}:null});
     // Roof pressure is defined per horizontal projected area; cos(theta) converts it to load per sloped member length.
     const globalQy=-pressure*tributary*Math.abs(c),load=toLocal(0,globalQy,c,ss);
     if(pressure!==0)elementLoads.push({element:elIndex,...load});
@@ -363,8 +383,17 @@ function loadFrameExample(){
 }
 function runFrameAnalysis(){
  try{const model=JSON.parse($("frameModel").value),out=analyzeFrame2D(model);
- $("frameOutput").innerHTML='<h4>جابجایی‌ها</h4><div class="tablewrap"><table><tr><th>گره</th><th>درجه آزادی</th><th>مقدار</th></tr>'+out.displacements.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toExponential(4)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">واکنش تکیه‌گاهی</h4><div class="tablewrap"><table><tr><th>گره</th><th>مؤلفه</th><th>مقدار</th></tr>'+out.reactions.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toFixed(3)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">نیروهای انتهایی محلی اعضا (پس از کسر بار معادل گسترده)</h4><div class="tablewrap"><table><tr><th>عضو</th><th>طول (mm)</th><th>نیروهای محلی [N,N,Nmm] در دو انتها</th></tr>'+out.members.map(x=>'<tr><td>'+esc(x.id)+'</td><td>'+x.length_mm.toFixed(1)+'</td><td>'+x.local_end_forces_N_Nmm.map(v=>v.toFixed(2)).join(" | ")+'</td></tr>').join("")+'</table></div>';
- status("frameStatus","تحلیل عددی اجرا شد. بارهای گسترده عضو در دستگاه محلی اعمال شده‌اند؛ خروجی آزمایشی است و تأیید طراحی اجرایی نیست.");
+ const screened=out.members.map(m=>{
+   const q=m.local_end_forces_N_Nmm,s=m.section;
+   if(!s||!(Number(s.A)>0&&Number(s.W)>0&&Number(s.Fy)>0))return {id:m.id,missing:true};
+   const N=Math.max(Math.abs(q[0]),Math.abs(q[3])),M=Math.max(Math.abs(q[2]),Math.abs(q[5]));
+   const sigma=N/s.A+M/s.W,ratio=sigma/s.Fy;
+   return {id:m.id,profile:s.profile,N,M,sigma,ratio};
+  });
+  const screenHtml='<h4 style="margin-top:14px">شاخص تنش الاستیک مقدماتی اعضا</h4><div class="tablewrap"><table><tr><th>عضو</th><th>مقطع</th><th>Nmax (kN)</th><th>Mmax (kN·m)</th><th>σ برآوردی (MPa)</th><th>σ/Fy</th></tr>'+screened.map(x=>x.missing?'<tr><td>'+esc(x.id)+'</td><td colspan="5">داده A/W/Fy متصل نیست؛ کنترل انجام نشد</td></tr>':'<tr><td>'+esc(x.id)+'</td><td>'+esc(x.profile)+'</td><td>'+fmt(x.N/1000,3)+'</td><td>'+fmt(x.M/1e6,3)+'</td><td>'+fmt(x.sigma,2)+'</td><td>'+fmt(x.ratio,3)+'</td></tr>').join("")+'</table></div><div class="notice">این شاخص صرفاً غربالگری تنش الاستیک با رابطه |N|/A + |M|/W و بیشینه نیروهای دو انتهاست؛ W کوچک‌ترِ Wx و Wy موجود انتخاب شده است. جهت‌گیری مقطع، کمانش، کمانش پیچشی-جانبی، لاغری موضعی، برش، اندرکنش کامل، ضرایب مقاومت و ترکیبات بار آیین‌نامه‌ای کنترل نشده‌اند. نسبت کمتر از ۱ به معنی ایمنی یا تأیید طراحی نیست.</div>';
+  $("frameOutput").innerHTML='<h4>جابجایی‌ها</h4><div class="tablewrap"><table><tr><th>گره</th><th>درجه آزادی</th><th>مقدار</th></tr>'+out.displacements.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toExponential(4)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">واکنش تکیه‌گاهی</h4><div class="tablewrap"><table><tr><th>گره</th><th>مؤلفه</th><th>مقدار</th></tr>'+out.reactions.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toFixed(3)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">نیروهای انتهایی محلی اعضا (پس از کسر بار معادل گسترده)</h4><div class="tablewrap"><table><tr><th>عضو</th><th>طول (mm)</th><th>نیروهای محلی [N,N,Nmm] در دو انتها</th></tr>'+out.members.map(x=>'<tr><td>'+esc(x.id)+'</td><td>'+x.length_mm.toFixed(1)+'</td><td>'+x.local_end_forces_N_Nmm.map(v=>v.toFixed(2)).join(" | ")+'</td></tr>').join("")+'</table></div>';
+ $("frameOutput").innerHTML+=screenHtml;
+  status("frameStatus","تحلیل عددی اجرا شد. شاخص تنش فقط برای اعضای دارای A، W و Fy متصل نمایش داده می‌شود؛ خروجی آزمایشی و غیرآیین‌نامه‌ای است.");
  }catch(e){$("frameOutput").innerHTML="";status("frameStatus","خطا: "+e.message,true)}
 }
 
@@ -633,7 +662,7 @@ function printReport(){renderReport();showPage("reports");setTimeout(()=>window.
 /* autosync geometry only; don't autosave project on every keystroke */
 document.querySelectorAll("#geometry input,#geometry select").forEach(e=>e.addEventListener("input",calculateGeometry));
 window.addEventListener("resize",()=>{if(geomResult.width)drawModel(geomResult)});
-(async function init(){try{loadSectionProfileBank();await DB.open();const all=await DB.all();if(all?.length)applyModel(all.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0]);else calculateGeometry();await renderProjects()}catch(e){console.error(e);status("projectStatus","خطا در راه‌اندازی ذخیره‌سازی مرورگر: "+e.message,true)}})();
+(async function init(){try{loadSectionProfileBank();renderFrameProfileOptions();await DB.open();const all=await DB.all();if(all?.length)applyModel(all.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0]);else calculateGeometry();await renderProjects()}catch(e){console.error(e);status("projectStatus","خطا در راه‌اندازی ذخیره‌سازی مرورگر: "+e.message,true)}})();
 </script>
 </body>
 </html>
