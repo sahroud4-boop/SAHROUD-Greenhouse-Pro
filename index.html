@@ -223,7 +223,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <label>مدل فضایی JSON — مختصات mm، نیرو N، سطح مقطع mm² و E بر حسب MPa</label>
  <textarea id="longTrussModel" rows="12" spellcheck="false" style="direction:ltr;text-align:left;font-family:Consolas,monospace;font-size:11px" placeholder="ابتدا مدل مهاربندی طولی را از هندسه فعلی تولید کنید."></textarea>
  <div class="status" id="longTrussTestStatus"></div><div id="longTrussTestOutput"></div><div id="longTrussOutput"></div>
- <div class="notice">محدودیت‌ها: این ماژول خرپای محوری ایده‌آل‌شده است، نه قاب فضایی خمشی کامل و نه مدل کاملاً کوپل‌شده با حل‌گر قاب 2D. برای کنترل سرعت حل متراکم، پنج مقطع طولی نماینده در طول گلخانه ساخته می‌شود و حداکثر شش دهانه پذیرفته می‌شود. مهاربندها در دو پنل انتهایی فرض می‌شوند. برای جلوگیری از مکانیزم هندسی، در هر مقطع عرضی قطری‌های معادل از پای دهانه به گره تاج اضافه می‌شوند؛ همه اعضا در این مرحله از یک مقطع مرجع استفاده می‌کنند. سختی خمشی، کمانش، رفتار کششی/فشاری واقعی مهاربند، اتصالات، دیافراگم پوشش، لغزش پایه و اندرکنش با قاب‌های عرضی مدل نشده‌اند. نیروی طولی یک سناریوی کاربر است و فشار طراحی باد از شهر استخراج نمی‌شود؛ نتیجه برای طراحی اجرایی یا تأیید ایمنی کافی نیست.</div>
+ <div class="notice">محدودیت‌ها: این ماژول خرپای محوری ایده‌آل‌شده است، نه قاب فضایی خمشی کامل و نه مدل کاملاً کوپل‌شده با حل‌گر قاب 2D. برای کنترل سرعت حل متراکم، پنج مقطع طولی نماینده در طول گلخانه ساخته می‌شود و حداکثر شش دهانه پذیرفته می‌شود. مهاربندها در دو پنل انتهایی فرض می‌شوند. برای جلوگیری از مکانیزم هندسی، در هر مقطع عرضی قطری‌های معادل از پای دهانه به گره تاج اضافه می‌شوند؛ برای ستون‌ها، رفترها، اعضای طولی، مهاربندهای سقف/دیوار و کلاف/قطری‌های عرضی می‌توان مقاطع مستقل از بانک انتخاب کرد؛ گروه‌های بدون انتخاب از مقطع پیش‌فرض استفاده می‌کنند. سختی خمشی، کمانش، رفتار کششی/فشاری واقعی مهاربند، اتصالات، دیافراگم پوشش، لغزش پایه و اندرکنش با قاب‌های عرضی مدل نشده‌اند. نیروی طولی یک سناریوی کاربر است و فشار طراحی باد از شهر استخراج نمی‌شود؛ نتیجه برای طراحی اجرایی یا تأیید ایمنی کافی نیست.</div>
  </div>
 </section>
 
@@ -284,7 +284,7 @@ function findSectionProfile(name){return sectionProfileBank.find(p=>p.name.trim(
 function renderFrameProfileOptions(){
  for(const id of ["frameColumnProfile","frameRafterProfile","longTrussProfile","longTrussColumnProfile","longTrussRafterProfile","longTrussLongProfile","longTrussBraceProfile","longTrussTieProfile"]){
   const el=$(id);if(!el)continue;const current=el.value||"";
-  el.innerHTML='<option value="">ورود دستی / انتخاب نشده</option>'+sectionProfileBank.map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join("");
+  const placeholder=id==="longTrussProfile"?"ورود دستی / مقطع پیش‌فرض":id.startsWith("longTruss")?"استفاده از پیش‌فرض":"ورود دستی / انتخاب نشده";el.innerHTML='<option value="">'+placeholder+'</option>'+sectionProfileBank.map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join("");
   if(sectionProfileBank.some(p=>p.name===current))el.value=current;
  }
 }
