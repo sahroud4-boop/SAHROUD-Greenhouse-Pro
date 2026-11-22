@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.19.0</title>
+<title>SAHROUD Greenhouse Pro v3.20.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -38,7 +38,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.19.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.20.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -203,6 +203,23 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="status" id="frameStatus"></div><div id="frameOutput"></div><div class="status" id="frameSelfTestStatus"></div><div id="frameSelfTestOutput"></div>
  <div class="notice">محدودیت این مرحله: فقط بارهای گره‌ای و بار گسترده یکنواخت عضو در محورهای محلی؛ رفتار خطی الاستیک و تغییرشکل کوچک. بارهای غیر یکنواخت/مثلثی، تحلیل مرتبه دوم، مفصل/فنر، اندرکنش محوری-خمشی، کمانش، طراحی مقطع و کنترل آیین‌نامه‌ای هنوز پیاده‌سازی نشده‌اند. این هسته هنوز به هندسه خودکار گلخانه متصل نیست و نباید مبنای ساخت قرار گیرد. نمونه پیش‌فرض صرفاً تست عددی است.</div>
  </div>
+
+ <div class="card"><h3>تحلیل خرپای فضایی طولی سه‌بعدی (3D)</h3>
+ <p class="muted">شبکه محوری سه‌بعدی مفهومی برای مسیر انتقال بار طولی؛ دستگاه مختصات X عرض، Y طول و Z ارتفاع گلخانه است. مدل شامل خطوط طولی لبه/تاج، اتصالات عرضی و مهاربندهای ضربدری در پنل‌های ابتدا و انتهای طول است.</p>
+ <div class="g3">
+  <div><label>مقطع مهاربند از بانک</label><select id="longTrussProfile" onchange="applyLongTrussProfile()"><option value="">ورود دستی</option></select></div>
+  <div><label>سطح مقطع A (mm²)</label><input id="longTrussA" type="number" min=".01" step="any" value="1000"></div>
+  <div><label>مدول الاستیسیته E (MPa)</label><input id="longTrussE" type="number" min="1" step="any" value="200000"></div>
+  <div><label>تنش تسلیم Fy (MPa؛ اختیاری)</label><input id="longTrussFy" type="number" min=".01" step="any" placeholder="از دیتاشیت"></div>
+  <div><label>نیروی طولی کل قاب انتهایی (kN)</label><input id="longTrussForce" type="number" step="any" value="20"></div>
+ </div>
+ <div class="toolbar" style="margin-top:10px"><button onclick="generateLongitudinalTruss()">تولید مدل مهاربندی طولی</button><button onclick="runLongitudinalTruss()">تحلیل خرپای فضایی 3D</button><button class="btn-soft" onclick="runTruss3DSelfTests()">آزمون هسته 3D</button></div>
+ <div class="status" id="longTrussStatus"></div>
+ <label>مدل فضایی JSON — مختصات mm، نیرو N، سطح مقطع mm² و E بر حسب MPa</label>
+ <textarea id="longTrussModel" rows="12" spellcheck="false" style="direction:ltr;text-align:left;font-family:Consolas,monospace;font-size:11px" placeholder="ابتدا مدل مهاربندی طولی را از هندسه فعلی تولید کنید."></textarea>
+ <div class="status" id="longTrussTestStatus"></div><div id="longTrussTestOutput"></div><div id="longTrussOutput"></div>
+ <div class="notice">محدودیت‌ها: این ماژول خرپای محوری ایده‌آل‌شده است، نه قاب فضایی خمشی کامل و نه مدل کاملاً کوپل‌شده با حل‌گر قاب 2D. برای کنترل سرعت حل متراکم، پنج مقطع طولی نماینده در طول گلخانه ساخته می‌شود و حداکثر شش دهانه پذیرفته می‌شود. مهاربندها در دو پنل انتهایی فرض می‌شوند. سختی خمشی، کمانش، رفتار کششی/فشاری واقعی مهاربند، اتصالات، دیافراگم پوشش، لغزش پایه و اندرکنش با قاب‌های عرضی مدل نشده‌اند. نیروی طولی یک سناریوی کاربر است و فشار طراحی باد از شهر استخراج نمی‌شود؛ نتیجه برای طراحی اجرایی یا تأیید ایمنی کافی نیست.</div>
+ </div>
 </section>
 
 <!-- REPORTS -->
@@ -214,7 +231,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.19.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.20.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -260,7 +277,7 @@ async function importSectionProfiles(event){
 }
 function findSectionProfile(name){return sectionProfileBank.find(p=>p.name.trim().toLowerCase()===String(name||"").trim().toLowerCase())}
 function renderFrameProfileOptions(){
- for(const id of ["frameColumnProfile","frameRafterProfile"]){
+ for(const id of ["frameColumnProfile","frameRafterProfile","longTrussProfile"]){
   const el=$(id);if(!el)continue;const current=el.value||"";
   el.innerHTML='<option value="">ورود دستی / انتخاب نشده</option>'+sectionProfileBank.map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join("");
   if(sectionProfileBank.some(p=>p.name===current))el.value=current;
@@ -333,6 +350,81 @@ function analyzeFrame2D(model){
  const members=elementData.map(ed=>{const ug=ed.dofs.map(i=>u[i]),ul=matVec(ed.T,ug),q=matVec(ed.kl,ul).map((v,i)=>v-ed.fe[i]);return {id:ed.id,section:ed.section||null,length_mm:ed.L,local_end_forces_N_Nmm:q,uniform_load_local_N_per_mm:{qx:ed.fe[0]===0?0:(ed.fe[0]*2/ed.L),qy:ed.fe[1]*2/ed.L}}});
  return {displacements:u.map((v,i)=>({node:Math.floor(i/3),dof:["ux_mm","uy_mm","rz_rad"][i%3],value:v})),reactions:reactions.map((v,i)=>({node:Math.floor(i/3),dof:["Fx_N","Fy_N","Mz_Nmm"][i%3],value:v})).filter(x=>restrained.has(3*x.node+["Fx_N","Fy_N","Mz_Nmm"].indexOf(x.dof))),members,equilibrium};
 }
+
+/* 3D axial truss solver: three translational DOFs per node, N-mm-MPa units */
+function analyzeTruss3D(model){
+ if(!model||!Array.isArray(model.nodes)||!Array.isArray(model.elements)||!Array.isArray(model.restraints)||!Array.isArray(model.loads))throw new Error("ساختار مدل خرپای فضایی ناقص است.");
+ const n=model.nodes.length,nd=3*n;if(n<2||n>100||!model.elements.length)throw new Error("تعداد گره باید بین ۲ تا ۱۰۰ و تعداد اعضا حداقل یک باشد.");
+ if(model.nodes.some(p=>!p||![p.x,p.y,p.z].every(v=>Number.isFinite(Number(v)))))throw new Error("مختصات X، Y و Z تمام گره‌ها باید عددی و متناهی باشند.");
+ const K=Array.from({length:nd},()=>Array(nd).fill(0)),F=Array(nd).fill(0),elementData=[];
+ for(const load of model.loads){if(!Number.isInteger(load.node)||load.node<0||load.node>=n)throw new Error("شماره گره بارگذاری نامعتبر است.");const fx=Number(load.fx??0),fy=Number(load.fy??0),fz=Number(load.fz??0);if(![fx,fy,fz].every(Number.isFinite))throw new Error("مؤلفه‌های نیرو باید عددی و متناهی باشند.");F[3*load.node]+=fx;F[3*load.node+1]+=fy;F[3*load.node+2]+=fz}
+ for(const el of model.elements){
+  if(!Number.isInteger(el.i)||!Number.isInteger(el.j)||el.i<0||el.j<0||el.i>=n||el.j>=n||el.i===el.j)throw new Error("اتصال یا شماره گره عضو خرپایی نامعتبر است.");
+  const ni=model.nodes[el.i],nj=model.nodes[el.j],dx=Number(nj.x)-Number(ni.x),dy=Number(nj.y)-Number(ni.y),dz=Number(nj.z)-Number(ni.z),L=Math.hypot(dx,dy,dz),A=Number(el.A),E=Number(el.E);
+  if(!(L>1e-9&&A>0&&E>0&&Number.isFinite(A)&&Number.isFinite(E)))throw new Error("طول، سطح مقطع و مدول الاستیسیته هر عضو باید معتبر و مثبت باشند.");
+  const dir=[dx/L,dy/L,dz/L],b=[-dir[0],-dir[1],-dir[2],dir[0],dir[1],dir[2]],k=A*E/L,dofs=[3*el.i,3*el.i+1,3*el.i+2,3*el.j,3*el.j+1,3*el.j+2];
+  for(let a=0;a<6;a++)for(let c=0;c<6;c++)K[dofs[a]][dofs[c]]+=k*b[a]*b[c];
+  elementData.push({id:el.id||("T"+(elementData.length+1)),kind:el.kind||"عضو محوری",A,E,Fy:Number(el.Fy)>0?Number(el.Fy):null,profile:el.profile||null,dofs,dir,L,k});
+ }
+ const restrained=new Set();
+ for(const item of model.restraints){if(!Number.isInteger(item.node)||item.node<0||item.node>=n||!Array.isArray(item.dofs)||item.dofs.length!==3||item.dofs.some(v=>typeof v!=="boolean"))throw new Error("تکیه‌گاه باید سه مقدار true/false داشته باشد.");item.dofs.forEach((v,j)=>{if(v)restrained.add(3*item.node+j)})}
+ const free=Array.from({length:nd},(_,i)=>i).filter(i=>!restrained.has(i));if(!free.length)throw new Error("تمام درجات آزادی مقید شده‌اند.");
+ const uf=solveLinearSystem(free.map(i=>free.map(j=>K[i][j])),free.map(i=>F[i])),u=Array(nd).fill(0);free.forEach((d,i)=>u[d]=uf[i]);
+ const reactionVector=matVec(K,u).map((v,i)=>v-F[i]),reactions=reactionVector.map((v,i)=>({node:Math.floor(i/3),dof:["Fx_N","Fy_N","Fz_N"][i%3],value:v})).filter(x=>restrained.has(3*x.node+["Fx_N","Fy_N","Fz_N"].indexOf(x.dof)));
+ const members=elementData.map(ed=>{const d=[u[ed.dofs[3]]-u[ed.dofs[0]],u[ed.dofs[4]]-u[ed.dofs[1]],u[ed.dofs[5]]-u[ed.dofs[2]]],extension=d.reduce((v,x,i)=>v+x*ed.dir[i],0),N=ed.k*extension,stress=N/ed.A;return {id:ed.id,kind:ed.kind,profile:ed.profile,length_mm:ed.L,A_mm2:ed.A,E_MPa:ed.E,Fy_MPa:ed.Fy,extension_mm:extension,axialForce_N:N,stress_MPa:stress,stressRatio:ed.Fy?Math.abs(stress)/ed.Fy:null}});
+ const resultant=vector=>{let fx=0,fy=0,fz=0,mx=0,my=0,mz=0;for(let i=0;i<n;i++){const p=model.nodes[i],x=Number(p.x),y=Number(p.y),z=Number(p.z),px=vector[3*i],py=vector[3*i+1],pz=vector[3*i+2];fx+=px;fy+=py;fz+=pz;mx+=y*pz-z*py;my+=z*px-x*pz;mz+=x*py-y*px}return {fx,fy,fz,mx,my,mz}};
+ const applied=resultant(F),supportVector=Array(nd).fill(0);restrained.forEach(i=>supportVector[i]=reactionVector[i]);const support=resultant(supportVector),residual={},relative={};
+ for(const key of ["fx","fy","fz","mx","my","mz"]){residual[key]=applied[key]+support[key];relative[key]=Math.abs(residual[key])/Math.max(1,Math.abs(applied[key]),Math.abs(support[key]))}
+ const maxRelativeError=Math.max(...Object.values(relative)),equilibrium={applied,support,residual,relative,maxRelativeError,tolerance:1e-6,passed:maxRelativeError<=1e-6};
+ const displacements=Array.from({length:n},(_,node)=>({node,ux_mm:u[3*node],uy_mm:u[3*node+1],uz_mm:u[3*node+2],resultant_mm:Math.hypot(u[3*node],u[3*node+1],u[3*node+2])}));
+ return {displacements,reactions,members,equilibrium};
+}
+function applyLongTrussProfile(){
+ const p=findSectionProfile($("longTrussProfile")?.value);if(!p)return;
+ if(!(Number(p.area)>0&&Number(p.E)>0)){status("longTrussStatus","برای استفاده از مقطع، Ag و E معتبر باید در بانک ثبت شده باشند.",true);return}
+ $("longTrussA").value=p.area;$("longTrussE").value=p.E;$("longTrussFy").value=Number(p.Fy)>0?p.Fy:"";
+ status("longTrussStatus","مشخصات مقطع "+p.name+" دریافت شد؛ مقطع در تحلیل محوری استفاده می‌شود.");
+}
+function generateLongitudinalTruss(){
+ try{
+  const p=geometryParams(),profile=findSectionProfile($("longTrussProfile")?.value),A=profile?Number(profile.area):num("longTrussA"),E=profile?Number(profile.E):num("longTrussE"),Fy=profile&&Number(profile.Fy)>0?Number(profile.Fy):(num("longTrussFy")>0?num("longTrussFy"):null),totalForce=num("longTrussForce");
+  if(!(p.bays>=1&&p.bays<=6&&p.length>0&&p.bayWidth>0&&p.height>0&&p.ridge>0))throw new Error("برای تولید این مدل، ۱ تا ۶ دهانه، طول و عرض مثبت، ارتفاع ستون و افزایش ارتفاع تاج مثبت لازم است.");
+  if(!(A>0&&E>0&&Number.isFinite(A)&&Number.isFinite(E)))throw new Error("سطح مقطع A و مدول E را از دیتاشیت معتبر یا ورودی مهندس تکمیل کنید.");
+  if(totalForce===null)throw new Error("نیروی طولی کل باید عددی باشد؛ مثبت در جهت +Y و منفی در جهت -Y.");
+  const stationCount=5,ys=Array.from({length:stationCount},(_,i)=>p.length*1000*i/(stationCount-1)),nodes=[],elements=[],restraints=[],loads=[],base=[],eave=[],ridge=[];
+  const addNode=(x,y,z)=>{const id=nodes.length;nodes.push({x,y,z});return id};
+  for(let si=0;si<stationCount;si++){base[si]=[];eave[si]=[];ridge[si]=[];for(let j=0;j<=p.bays;j++){const x=j*p.bayWidth*1000;base[si][j]=addNode(x,ys[si],0);eave[si][j]=addNode(x,ys[si],p.height*1000)}for(let j=0;j<p.bays;j++)ridge[si][j]=addNode((j+.5)*p.bayWidth*1000,ys[si],(p.height+p.ridge)*1000)}
+  const addMember=(i,j,id,kind)=>elements.push({id,i,j,A,E,Fy,profile:profile?.name||null,kind});
+  for(let si=0;si<stationCount;si++){for(let j=0;j<=p.bays;j++){addMember(base[si][j],eave[si][j],"ستون محیطی "+(j+1)+" - مقطع "+(si+1),"ستون/تکیه‌گاه محیطی");if(j<p.bays)addMember(base[si][j],base[si][j+1],"کلاف پای عرضی "+(j+1)+" - مقطع "+(si+1),"کلاف عرضی مفهومی")}for(let j=0;j<p.bays;j++){addMember(eave[si][j],ridge[si][j],"رفتر چپ دهانه "+(j+1)+" - مقطع "+(si+1),"رفتر عرضی محوری");addMember(ridge[si][j],eave[si][j+1],"رفتر راست دهانه "+(j+1)+" - مقطع "+(si+1),"رفتر عرضی محوری")}}
+  for(let si=0;si<stationCount-1;si++){for(let j=0;j<=p.bays;j++){addMember(base[si][j],base[si+1][j],"ریل پای طولی "+(j+1)+" - پنل "+(si+1),"ریل طولی");addMember(eave[si][j],eave[si+1][j],"تیر لبه طولی "+(j+1)+" - پنل "+(si+1),"تیر لبه طولی")}for(let j=0;j<p.bays;j++)addMember(ridge[si][j],ridge[si+1][j],"تیر تاج طولی "+(j+1)+" - پنل "+(si+1),"تیر تاج طولی")}
+  for(const si of [0,stationCount-2]){for(const j of [0,p.bays]){addMember(base[si][j],eave[si+1][j],"مهاربند X دیوار جانبی A "+j+" پنل "+(si+1),"مهاربند دیوار جانبی");addMember(eave[si][j],base[si+1][j],"مهاربند X دیوار جانبی B "+j+" پنل "+(si+1),"مهاربند دیوار جانبی")}for(let j=0;j<p.bays;j++){addMember(eave[si][j],ridge[si+1][j],"مهاربند سقف چپ A دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی");addMember(ridge[si][j],eave[si+1][j],"مهاربند سقف چپ B دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی");addMember(ridge[si][j],eave[si+1][j+1],"مهاربند سقف راست A دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی");addMember(eave[si][j+1],ridge[si+1][j],"مهاربند سقف راست B دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی")}}
+  for(let si=0;si<stationCount;si++)for(let j=0;j<=p.bays;j++)restraints.push({node:base[si][j],dofs:[true,si===0||si===stationCount-1,true]});
+  const topNodes=[...eave[0],...ridge[0]],loadPerNode=totalForce*1000/topNodes.length;for(const node of topNodes)loads.push({node,fx:0,fy:loadPerNode,fz:0});
+  const model={units:"N, mm, MPa, mm2",modelType:"idealized-3D-axial-longitudinal-bracing",assumptions:"five representative longitudinal stations; base nodes restrained in X/Z and at both ends in Y; longitudinal sidewall and roof X-braces only in first and last panels; all bars axial-only; end-wall total Y force distributed equally to upper front nodes",stationY_mm:ys,section:{profile:profile?.name||"manual",A,Fy,E},nodes,elements,restraints,loads};
+  $("longTrussModel").value=JSON.stringify(model,null,2);longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";
+  status("longTrussStatus","مدل طولی 3D ساخته شد: "+nodes.length+" گره، "+elements.length+" عضو، ۵ مقطع طولی نماینده؛ نیروی کل "+fmt(totalForce)+" kN به "+topNodes.length+" گره جلویی توزیع شد.");
+ }catch(e){status("longTrussStatus","خطا در تولید مدل: "+e.message,true)}
+}
+function renderLongTrussOutput(model,out,runAt){
+ const maxDisp=Math.max(0,...out.displacements.map(x=>x.resultant_mm)),maxStress=Math.max(0,...out.members.map(x=>Math.abs(x.stress_MPa))),maxRatio=Math.max(0,...out.members.map(x=>x.stressRatio??0)),maxAxial=Math.max(0,...out.members.map(x=>Math.abs(x.axialForce_N))),eq=out.equilibrium;
+ const memberRows=out.members.map(m=>'<tr><td>'+esc(m.id)+'</td><td>'+esc(m.kind)+'</td><td>'+fmt(m.length_mm/1000,3)+'</td><td>'+fmt(m.axialForce_N/1000,3)+'</td><td>'+fmt(m.stress_MPa,2)+'</td><td>'+(m.stressRatio===null?"Fy وارد نشده":fmt(m.stressRatio,3))+'</td><td>'+(m.axialForce_N>=0?"کششی":"فشاری")+'</td></tr>').join("");
+ const reactionRows=out.reactions.filter(x=>Math.abs(x.value)>1e-6).map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+fmt(x.value,3)+'</td></tr>').join("");
+ $("longTrussOutput").innerHTML='<div class="result"><h4>خلاصه تحلیل خرپای فضایی</h4><p class="muted">زمان تحلیل: '+esc(runAt||"ثبت نشده")+' | گره: '+fmt(model.nodes.length,0)+' | عضو: '+fmt(model.elements.length,0)+'</p><div class="stats"><div class="stat"><small>بیشینه جابه‌جایی (mm)</small><strong>'+fmt(maxDisp,4)+'</strong></div><div class="stat"><small>بیشینه نیروی محوری (kN)</small><strong>'+fmt(maxAxial/1000,3)+'</strong></div><div class="stat"><small>بیشینه تنش محوری (MPa)</small><strong>'+fmt(maxStress,2)+'</strong></div><div class="stat"><small>بیشینه |σ/Fy|</small><strong>'+(model.section?.Fy?fmt(maxRatio,3):"—")+'</strong></div></div><h4>کنترل تعادل استاتیکی سه‌بعدی</h4><p>'+(eq.passed?"تعادل کلی برقرار است.":"عدم تعادل؛ مدل و قیود بازبینی شوند.")+' | بیشینه خطای نسبی: '+fmt(eq.maxRelativeError,10)+'</p><div class="tablewrap"><table><tr><th>کمیت</th><th>بار اعمالی</th><th>واکنش</th><th>باقیمانده</th><th>خطای نسبی</th></tr>'+["fx","fy","fz","mx","my","mz"].map(k=>'<tr><td>'+k.toUpperCase()+'</td><td>'+fmt(eq.applied[k],5)+'</td><td>'+fmt(eq.support[k],5)+'</td><td>'+fmt(eq.residual[k],7)+'</td><td>'+fmt(eq.relative[k]*100,8)+' %</td></tr>').join("")+'</table></div><h4>نیرو و تنش محوری اعضا</h4><div class="tablewrap"><table><tr><th>عضو</th><th>گروه</th><th>طول (m)</th><th>N (kN)</th><th>تنش (MPa)</th><th>|σ/Fy|</th><th>نوع نیرو</th></tr>'+memberRows+'</table></div><h4>واکنش‌های غیرصفر</h4><div class="tablewrap"><table><tr><th>گره</th><th>مؤلفه</th><th>مقدار</th></tr>'+reactionRows+'</table></div></div>';
+}
+function runLongitudinalTruss(){
+ try{const model=JSON.parse($("longTrussModel").value),out=analyzeTruss3D(model),runAt=new Date().toISOString();longTrussAnalysisLast={model,output:out,runAt};renderLongTrussOutput(model,out,runAt);status("longTrussStatus",out.equilibrium.passed?"تحلیل 3D انجام شد؛ کنترل تعادل کلی قبول است. نتایج محوری و جابه‌جایی را با محدودیت‌های مدل بررسی کنید.":"تحلیل انجام شد اما کنترل تعادل کلی ناموفق است؛ قیود و بارگذاری را بازبینی کنید.",!out.equilibrium.passed)}
+ catch(e){longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";status("longTrussStatus","خطا در تحلیل 3D: "+e.message,true)}
+}
+function runTruss3DSelfTests(){
+ const A=1000,E=200000,L=1000,bar={units:"N, mm, MPa",nodes:[{x:0,y:0,z:0},{x:L,y:0,z:0}],elements:[{id:"میله محوری",i:0,j:1,A,E,Fy:250}],restraints:[{node:0,dofs:[true,true,true]},{node:1,dofs:[false,true,true]}],loads:[{node:1,fx:1000,fy:0,fz:0}]};
+ const tetraNodes=[{x:0,y:0,z:0},{x:1000,y:0,z:0},{x:0,y:1000,z:0},{x:0,y:0,z:1000}],tetraElements=[];for(let i=0;i<4;i++)for(let j=i+1;j<4;j++)tetraElements.push({id:"T"+i+j,i,j,A,E});
+ const tetra={nodes:tetraNodes,elements:tetraElements,restraints:[{node:0,dofs:[true,true,true]},{node:1,dofs:[false,true,true]},{node:2,dofs:[false,false,true]}],loads:[{node:3,fx:0,fy:0,fz:-1000}]};
+ const tests=[{name:"میله محوری سه‌بعدی",model:bar,checks:[{label:"جابجایی محوری (mm)",actual:o=>o.displacements[1].ux_mm,expected:1000*L/(A*E)},{label:"نیروی محوری (N)",actual:o=>o.members[0].axialForce_N,expected:1000},{label:"تنش محوری (MPa)",actual:o=>o.members[0].stress_MPa,expected:1},{label:"تعادل کلی",actual:o=>o.equilibrium.maxRelativeError,expected:0,tolerance:1e-10}]},{name:"خرپای فضایی چهارگرهی",model:tetra,checks:[{label:"تعداد اعضا",actual:o=>o.members.length,expected:6},{label:"جابجایی‌ها متناهی",actual:o=>o.displacements.every(n=>[n.ux_mm,n.uy_mm,n.uz_mm].every(Number.isFinite))?1:0,expected:1},{label:"تعادل کلی",actual:o=>o.equilibrium.maxRelativeError,expected:0,tolerance:1e-10}]}];
+ let rows=[],allPass=true;for(const t of tests){try{const o=analyzeTruss3D(t.model);for(const c of t.checks){const actual=c.actual(o),error=Number.isFinite(actual)?Math.abs(actual-c.expected)/Math.max(1,Math.abs(c.expected)):Infinity,pass=error<(c.tolerance??1e-7);allPass=allPass&&pass;rows.push({test:t.name,label:c.label,actual,expected:c.expected,error,pass})}}catch(e){allPass=false;rows.push({test:t.name,label:"اجرای آزمون",actual:e.message,expected:"حل موفق",error:Infinity,pass:false})}}
+ $("longTrussTestOutput").innerHTML='<div class="result"><h4>آزمون مرجع حل‌گر خرپای سه‌بعدی</h4><div class="tablewrap"><table><tr><th>مدل</th><th>کمیت</th><th>مرجع</th><th>حل‌گر</th><th>خطای نسبی</th><th>نتیجه</th></tr>'+rows.map(r=>'<tr><td>'+esc(r.test)+'</td><td>'+esc(r.label)+'</td><td>'+fmt(r.expected,8)+'</td><td>'+fmt(r.actual,8)+'</td><td>'+fmt(r.error,10)+'</td><td>'+(r.pass?"قبول":"مردود")+'</td></tr>').join("")+'</table></div></div>';
+ status("longTrussTestStatus",allPass?"آزمون‌های هسته سه‌بعدی موفق بودند.":"یک یا چند آزمون هسته سه‌بعدی ناموفق بود؛ از نتیجه برای طراحی استفاده نکنید.",!allPass);return {passed:rows.filter(x=>x.pass).length,total:rows.length,allPass,rows};
+}
+
 function generateGreenhouseFrame(){
  try{
   const p=geometryParams(),manualA=num("autoFrameA"),manualE=num("autoFrameE"),manualI=num("autoFrameI");
@@ -639,10 +731,10 @@ const DB=(()=>{let promise;const dbName="SAHROUD_Greenhouse_Pro_v35",storeName="
  return {open,put:p=>request("readwrite",s=>s.put(p)),get:id=>request("readonly",s=>s.get(id)),all:()=>request("readonly",s=>s.getAll()),del:id=>request("readwrite",s=>s.delete(id))};
 })();
 let activeProject=null;
-function newModel(){return {schemaVersion:"3.19.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:"",country:"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
+function newModel(){return {schemaVersion:"3.20.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:"",country:"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
 function collectModel(){
  const p=activeProject||newModel();p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
- p.notes=$("metaNotes").value;p.geometry={...geomResult};p.hydroponics={input:hydroInput(),last:hydroResult};p.results={...(p.results||{}),structural:structuralLast,beam:beamLast,frameModel:$("frameModel").value,frameAnalysis:frameAnalysisLast};return p;
+ p.notes=$("metaNotes").value;p.geometry={...geomResult};p.hydroponics={input:hydroInput(),last:hydroResult};p.results={...(p.results||{}),structural:structuralLast,beam:beamLast,frameModel:$("frameModel").value,frameAnalysis:frameAnalysisLast,longTrussModel:$("longTrussModel").value,longTrussInput:{profile:$("longTrussProfile").value,area:num("longTrussA"),E:num("longTrussE"),Fy:num("longTrussFy"),force:num("longTrussForce")},longTrussAnalysis:longTrussAnalysisLast};return p;
 }
 function applyModel(p){
  activeProject=p;
@@ -651,7 +743,7 @@ function applyModel(p){
  if(p.climate){climateLast=p.climate;renderClimate(p.climate)}
  if(p.hydroponics?.input){Object.entries(p.hydroponics.input).forEach(([k,v])=>{if($(k))$(k).value=v})}
  hydroResult=p.hydroponics?.last||null;if(hydroResult)renderHydro(hydroResult);
- structuralLast=p.results?.structural||null;beamLast=p.results?.beam||null;frameAnalysisLast=p.results?.frameAnalysis||null;$("frameModel").value=p.results?.frameModel||"";if(frameAnalysisLast)status("frameStatus","مدل و نتیجه تحلیل ذخیره‌شده بازیابی شد؛ برای تغییر ورودی‌ها تحلیل را دوباره اجرا کنید.");else $("frameOutput").innerHTML="";
+ structuralLast=p.results?.structural||null;beamLast=p.results?.beam||null;frameAnalysisLast=p.results?.frameAnalysis||null;$("frameModel").value=p.results?.frameModel||"";if(frameAnalysisLast)status("frameStatus","مدل و نتیجه تحلیل ذخیره‌شده بازیابی شد؛ برای تغییر ورودی‌ها تحلیل را دوباره اجرا کنید.");else $("frameOutput").innerHTML="";const lt=p.results?.longTrussInput||{};if($("longTrussProfile"))$("longTrussProfile").value=lt.profile||"";if(lt.area!==undefined&&lt.area!==null)$("longTrussA").value=lt.area;if(lt.E!==undefined&&lt.E!==null)$("longTrussE").value=lt.E;if(lt.Fy!==undefined&&lt.Fy!==null)$("longTrussFy").value=lt.Fy;if(lt.force!==undefined&&lt.force!==null)$("longTrussForce").value=lt.force;longTrussAnalysisLast=p.results?.longTrussAnalysis||null;$("longTrussModel").value=p.results?.longTrussModel||"";if(longTrussAnalysisLast)renderLongTrussOutput(longTrussAnalysisLast.model,longTrussAnalysisLast.output,longTrussAnalysisLast.runAt);else $("longTrussOutput").innerHTML="";
  renderProjects();renderReport();
 }
 async function newProject(){activeProject=newModel();applyModel(activeProject);status("projectStatus","پرونده جدید ایجاد شد. اطلاعات را وارد و ذخیره کنید.")}
@@ -663,7 +755,7 @@ async function saveProject(){
 async function renderProjects(){const el=$("projectList");if(!el)return;const all=(await DB.all()||[]).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));if(!all.length){el.textContent="هنوز پروژه‌ای ذخیره نشده است.";return}el.innerHTML=all.map(p=>`<div class="projectitem"><div><b>${esc(p.meta?.name||"بدون نام")}</b><small>${esc(p.meta?.city||"شهر نامشخص")} · ${esc(p.meta?.type||"")}</small></div><div class="toolbar"><button class="btn-soft" onclick="loadProject('${esc(p.id)}')">بازکردن</button><button class="btn-red" onclick="deleteProject('${esc(p.id)}')">حذف</button></div></div>`).join("")}
 async function loadProject(id){const p=await DB.get(id);if(p){applyModel(p);status("projectStatus","پروژه بارگذاری شد.")}}
 async function deleteProject(id){if(!confirm("پروژه حذف شود؟"))return;await DB.del(id);if(activeProject?.id===id)activeProject=null;renderProjects()}
-async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.19.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
+async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.20.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
 async function importBackup(ev){const f=ev.target.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text()),arr=Array.isArray(d)?d:d.projects;if(!Array.isArray(arr))throw Error("ساختار فایل نامعتبر است");for(const p of arr)if(p?.id&&p.meta)await DB.put(p);await renderProjects();status("projectStatus","بازیابی فایل انجام شد.")}catch(e){status("projectStatus",e.message,true)}ev.target.value=""}
 
 /* Climate search and historic archive */
@@ -710,7 +802,7 @@ function calculateHydraulics(){
 }
 
 /* Preliminary structural load conversion and beam */
-let structuralLast=null,beamLast=null,frameAnalysisLast=null;
+let structuralLast=null,beamLast=null,frameAnalysisLast=null,longTrussAnalysisLast=null;
 function runStructural(){
  const spacing=num("sFrame"),D=num("sD"),L=num("sL"),W=num("sW"),S=num("sS"),standard=$("std").value;
  if(!standard||!(spacing>0)||D===null||L===null||W===null||S===null||D<0||L<0||S<0){$("structuralOutput").textContent="استاندارد، فاصله قاب و مقادیر بار معتبر را وارد کنید.";return}
@@ -730,7 +822,7 @@ function exportCSV(){if(!geomResult.width)calculateGeometry();const r=geomResult
 function dxfLine(x1,y1,x2,y2,layer="PLAN"){return `0\nLINE\n8\n${layer}\n10\n${x1*1000}\n20\n${y1*1000}\n30\n0\n11\n${x2*1000}\n21\n${y2*1000}\n31\n0\n`}
 function exportDXF(){if(!geomResult.width)calculateGeometry();const p=geomResult;let e="";e+=dxfLine(0,0,p.width,0)+dxfLine(p.width,0,p.width,p.length)+dxfLine(p.width,p.length,0,p.length)+dxfLine(0,p.length,0,0);for(let i=1;i<p.bays;i++)e+=dxfLine(i*p.bayWidth,0,i*p.bayWidth,p.length);for(let y=0;y<=p.length+1e-6;y+=p.spacing)e+=dxfLine(0,y,p.width,y,"FRAMES");const d=`0\nSECTION\n2\nHEADER\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n${e}0\nENDSEC\n0\nEOF\n`;download("SAHROUD_Greenhouse_Plan.dxf",d,"application/dxf");status("exportStatus","DXF شماتیک پلان دانلود شد.")}
 function exportHydroDXF(){if(!hydroResult)calculateHydro();if(!hydroResult)return;const v=hydroInput();let e="";for(let r=0;r<v.hRows;r++){const y=r*3;e+=dxfLine(0,y,v.hLength*v.hChannels,y,"CHANNELS")}e+=dxfLine(-3,-3,-3,v.hRows*3,"MAIN_PIPE");const d=`0\nSECTION\n2\nHEADER\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n${e}0\nENDSEC\n0\nEOF\n`;download("SAHROUD_Hydroponics_Schematic.dxf",d,"application/dxf")}
-function reportData(){return {project:activeProject?.meta||{name:$("project").value},geometry:geomResult,climate:activeProject?.climate||climateLast,hydro:hydroResult,structural:structuralLast,beam:beamLast,frameAnalysis:frameAnalysisLast}}
+function reportData(){return {project:activeProject?.meta||{name:$("project").value},geometry:geomResult,climate:activeProject?.climate||climateLast,hydro:hydroResult,structural:structuralLast,beam:beamLast,frameAnalysis:frameAnalysisLast,longTrussAnalysis:longTrussAnalysisLast}}
 function exportXLSX(){
  if(!window.XLSX){status("exportStatus","کتابخانه Excel بارگذاری نشده است؛ اتصال اینترنت را بررسی کنید.",true);return}
  if(!geomResult.width)calculateGeometry();const d=reportData(),wb=XLSX.utils.book_new();
@@ -740,6 +832,7 @@ function exportXLSX(){
  if(d.geometry.members)add("متره اعضا",[["عضو","مقطع","تعداد","طول واحد (m)","طول کل (m)","جرم واحد (kg/m)","وزن (kg)","مبنای هندسی"],...d.geometry.members.map(m=>[m.name,m.profile,m.count,m.unitLength,m.totalLength,m.massPerM??"",m.weight??"",m.basis])]);
  if(d.hydro)add("هیدروپونیک",[["شرح","مقدار"],["کانال",d.hydro.channels],["طول کانال",d.hydro.channelLength],["پایه",d.hydro.supports],["طول لوله",d.hydro.pipeLength],["حجم مخزن",d.hydro.tankVolume]]);
  if(d.frameAnalysis?.output){const fa=d.frameAnalysis,o=fa.output,rows=[["بخش","شناسه","درجه آزادی/شرح","مقدار","واحد"],["مدل","گره‌ها","",fa.model?.nodes?.length??"","عدد"],["مدل","اعضا","",fa.model?.elements?.length??"","عدد"],["مدل","واحدها","",fa.model?.units||"",""],...o.displacements.map(x=>["جابجایی",x.node,x.dof,x.value,x.dof==="rz_rad"?"rad":"mm"]),...o.reactions.map(x=>["واکنش",x.node,x.dof,x.value,x.dof==="Mz_Nmm"?"N·mm":"N"]),...o.members.flatMap(m=>m.local_end_forces_N_Nmm.map((v,i)=>["نیروی انتهایی",m.id,"مؤلفه "+(i+1),v,i%3===2?"N·mm":"N"]))];if(o.equilibrium){rows.push(["تعادل کلی","ΣFx","Applied",o.equilibrium.applied.fx,"N"],["تعادل کلی","ΣFx","Reaction",o.equilibrium.support.fx,"N"],["تعادل کلی","ΣFy","Applied",o.equilibrium.applied.fy,"N"],["تعادل کلی","ΣFy","Reaction",o.equilibrium.support.fy,"N"],["تعادل کلی","ΣM","Applied",o.equilibrium.applied.mz,"N·mm"],["تعادل کلی","ΣM","Reaction",o.equilibrium.support.mz,"N·mm"],["تعادل کلی","بیشینه خطای نسبی","",o.equilibrium.maxRelativeError,"ratio"],["تعادل کلی","وضعیت","",o.equilibrium.passed?"PASS":"CHECK",""])}add("تحلیل قاب 2D",rows)}
+ if(d.longTrussAnalysis?.output){const fa=d.longTrussAnalysis,o=fa.output,rows=[["بخش","شناسه","کمیت","مقدار","واحد"],["مدل","گره‌ها","",fa.model.nodes.length,"عدد"],["مدل","اعضا","",fa.model.elements.length,"عدد"],["مدل","زمان تحلیل","",fa.runAt||"",""],...o.displacements.flatMap(x=>[["جابجایی",x.node,"UX",x.ux_mm,"mm"],["جابجایی",x.node,"UY",x.uy_mm,"mm"],["جابجایی",x.node,"UZ",x.uz_mm,"mm"]]),...o.members.flatMap(m=>[["عضو",m.id,"نیروی محوری",m.axialForce_N,"N"],["عضو",m.id,"تنش محوری",m.stress_MPa,"MPa"],["عضو",m.id,"نسبت تنش به Fy",m.stressRatio??"Fy نامشخص",""]]),...o.reactions.map(x=>["واکنش",x.node,x.dof,x.value,"N"])];for(const key of ["fx","fy","fz","mx","my","mz"])rows.push(["تعادل کلی",key,"بار اعمالی",o.equilibrium.applied[key],key[0]==="m"?"N·mm":"N"],["تعادل کلی",key,"واکنش",o.equilibrium.support[key],key[0]==="m"?"N·mm":"N"]);rows.push(["تعادل کلی","وضعیت","",o.equilibrium.passed?"PASS":"CHECK",""]);add("خرپای فضایی 3D",rows)}
  if(d.climate)add("اقلیم",[["پارامتر","مقدار"],["شهر",d.climate.city.name],["دوره",d.climate.period.start+" تا "+d.climate.period.end],["بیشینه دما",d.climate.climate.maxTemp],["کمینه دما",d.climate.climate.minTemp],["رطوبت میانگین",d.climate.climate.humidity],["بیشینه تندباد",d.climate.climate.maxGust]]);
  XLSX.writeFile(wb,"SAHROUD_Project_Report.xlsx");status("exportStatus","فایل XLSX ساخته شد.")
 }
@@ -751,12 +844,13 @@ function renderReport(){
  <h4>هیدروپونیک</h4>${h?`<p>کانال: ${fmt(h.channels,0)} عدد | طول کانال: ${fmt(h.channelLength)} m | پایه: ${fmt(h.supports,0)} عدد | لوله: ${fmt(h.pipeLength)} m | مخزن: ${fmt(h.tankVolume)} L</p>`:"<p>متره هیدروپونیک اجرا نشده است.</p>"}
  <h4>سازه</h4>${s?`<p>بارهای خطی قاب: ${Object.entries(s.line).map(([k,v])=>k+"="+fmt(v)+" kN/m").join("، ")}</p>`:"<p>بارگذاری مقدماتی اجرا نشده است.</p>"}${b?`<p>تیر ساده: Mmax=${fmt(b.M)} kN.m، Vmax=${fmt(b.V)} kN، خیز=${fmt(b.delta)} mm</p>`:""}
  <h4>تحلیل قاب دوبعدی</h4>${f?`<p>زمان تحلیل: ${esc(f.runAt||"ثبت نشده")} | تعداد گره: ${fmt(f.model?.nodes?.length||0,0)} | تعداد عضو: ${fmt(f.output?.members?.length||0,0)} | بیشینه مؤلفه جابه‌جایی انتقالی: ${fmt(maxFrameDisp)} mm | کنترل تعادل: ${f.output?.equilibrium?.passed?"قبول":"نیازمند بازبینی"} | خطای نسبی: ${fmt((f.output?.equilibrium?.maxRelativeError||0)*100,8)} %</p>`:"<p>مدل/نتیجه تحلیل قاب ذخیره نشده است.</p>"}
+ <h4>خرپای فضایی طولی 3D</h4>${d.longTrussAnalysis?`<p>گره‌ها: ${fmt(d.longTrussAnalysis.model.nodes.length,0)} | اعضا: ${fmt(d.longTrussAnalysis.output.members.length,0)} | بیشینه جابه‌جایی: ${fmt(Math.max(0,...d.longTrussAnalysis.output.displacements.map(x=>x.resultant_mm)),4)} mm | بیشینه نیروی محوری: ${fmt(Math.max(0,...d.longTrussAnalysis.output.members.map(x=>Math.abs(x.axialForce_N)))/1000,3)} kN | تعادل: ${d.longTrussAnalysis.output.equilibrium.passed?"قبول":"نیازمند بازبینی"}</p>`:"<p>مدل/نتیجه خرپای فضایی ذخیره نشده است."}
  <div class="notice">این گزارش مقدماتی است. محاسبات هندسی، متره، هیدرولیک و سازه‌ای این نسخه جایگزین طراحی اجرایی، تحلیل کامل، بررسی آیین‌نامه‌ای یا تأیید مهندس ذی‌صلاح نیست.</div>`;
 }
 function printReport(){renderReport();showPage("reports");setTimeout(()=>window.print(),150)}
 
 /* autosync geometry only; don't autosave project on every keystroke */
-$("frameModel").addEventListener("input",()=>{frameAnalysisLast=null;});
+$("frameModel").addEventListener("input",()=>{frameAnalysisLast=null;});$("longTrussModel").addEventListener("input",()=>{longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";});
 document.querySelectorAll("#geometry input,#geometry select").forEach(e=>e.addEventListener("input",calculateGeometry));
 window.addEventListener("resize",()=>{if(geomResult.width)drawModel(geomResult)});
 (async function init(){try{loadSectionProfileBank();renderFrameProfileOptions();await DB.open();const all=await DB.all();if(all?.length)applyModel(all.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0]);else calculateGeometry();await renderProjects()}catch(e){console.error(e);status("projectStatus","خطا در راه‌اندازی ذخیره‌سازی مرورگر: "+e.message,true)}})();
