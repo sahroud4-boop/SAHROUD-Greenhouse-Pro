@@ -851,7 +851,8 @@ function printReport(){renderReport();showPage("reports");setTimeout(()=>window.
 
 /* autosync geometry only; don't autosave project on every keystroke */
 $("frameModel").addEventListener("input",()=>{frameAnalysisLast=null;});$("longTrussModel").addEventListener("input",()=>{longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";});
-document.querySelectorAll("#geometry input,#geometry select").forEach(e=>e.addEventListener("input",calculateGeometry));
+["longTrussProfile","longTrussA","longTrussE","longTrussFy","longTrussForce"].forEach(id=>$(id).addEventListener("input",()=>{longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";status("longTrussStatus","پارامترهای خرپای طولی تغییر کرده‌اند؛ برای اعمال آن‌ها، مدل را دوباره تولید و تحلیل کنید.")}));
+document.querySelectorAll("#geometry input,#geometry select").forEach(e=>e.addEventListener("input",()=>{calculateGeometry();if($("longTrussModel").value.trim()){longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";status("longTrussStatus","هندسه گلخانه تغییر کرده است؛ مدل طولی 3D را دوباره تولید و تحلیل کنید.")}}));
 window.addEventListener("resize",()=>{if(geomResult.width)drawModel(geomResult)});
 (async function init(){try{loadSectionProfileBank();renderFrameProfileOptions();await DB.open();const all=await DB.all();if(all?.length)applyModel(all.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0]);else calculateGeometry();await renderProjects()}catch(e){console.error(e);status("projectStatus","خطا در راه‌اندازی ذخیره‌سازی مرورگر: "+e.message,true)}})();
 </script>
