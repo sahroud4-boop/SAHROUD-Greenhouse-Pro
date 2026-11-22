@@ -399,8 +399,13 @@ function applyLongTrussProfile(role="default"){
 }
 function longTrussSections(){
  const fallbackName=$("longTrussProfile")?.value||"",fallback=fallbackName?longTrussProfileData(fallbackName):{profile:"manual",A:num("longTrussA"),E:num("longTrussE"),Fy:num("longTrussFy")>0?num("longTrussFy"):null};
- if(!(fallback.A>0&&fallback.E>0&&Number.isFinite(fallback.A)&&Number.isFinite(fallback.E)))throw new Error("مقطع پیش‌فرض باید Ag و E معتبر داشته باشد یا از بانک انتخاب شود.");
- const sections={};for(const role of ["columns","rafters","longitudinal","braces","ties"]){const name=$(longTrussProfileFields[role])?.value||"";sections[role]=name?longTrussProfileData(name):{...fallback}}
+ const labels={columns:"ستون‌ها",rafters:"رفترها",longitudinal:"اعضای طولی",braces:"مهاربندها",ties:"کلاف‌ها و قطری‌ها"},sections={};
+ for(const role of ["columns","rafters","longitudinal","braces","ties"]){
+  const name=$(longTrussProfileFields[role])?.value||"";
+  if(name)sections[role]=longTrussProfileData(name);
+  else if(fallback.A>0&&fallback.E>0&&Number.isFinite(fallback.A)&&Number.isFinite(fallback.E))sections[role]={...fallback};
+  else throw new Error("برای گروه "+labels[role]+" مقطع مستقل از بانک انتخاب کنید یا مقطع پیش‌فرض را با Ag و E معتبر تکمیل کنید.");
+ }
  return sections;
 }
 function generateLongitudinalTruss(){
