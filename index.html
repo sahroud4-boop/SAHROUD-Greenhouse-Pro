@@ -213,10 +213,10 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
   <div><label>مقطع اعضای طولی</label><select id="longTrussLongProfile" onchange="applyLongTrussProfile('longitudinal')"><option value="">استفاده از پیش‌فرض</option></select></div>
   <div><label>مقطع مهاربندهای سقف و دیوار</label><select id="longTrussBraceProfile" onchange="applyLongTrussProfile('braces')"><option value="">استفاده از پیش‌فرض</option></select></div>
   <div><label>مقطع کلاف‌ها و قطری‌های عرضی</label><select id="longTrussTieProfile" onchange="applyLongTrussProfile('ties')"><option value="">استفاده از پیش‌فرض</option></select></div>
-  <div><label>سطح مقطع پیش‌فرض A (mm²)</label><input id="longTrussA" type="number" min=".01" step="any" value="1000"></div>
-  <div><label>مدول الاستیسیته E (MPa)</label><input id="longTrussE" type="number" min="1" step="any" value="200000"></div>
+  <div><label>سطح مقطع پیش‌فرض A (mm²)</label><input id="longTrussA" type="number" min=".01" step="any" placeholder="از دیتاشیت معتبر"></div>
+  <div><label>مدول الاستیسیته E (MPa)</label><input id="longTrussE" type="number" min="1" step="any" placeholder="از دیتاشیت معتبر"></div>
   <div><label>تنش تسلیم Fy (MPa؛ اختیاری)</label><input id="longTrussFy" type="number" min=".01" step="any" placeholder="از دیتاشیت"></div>
-  <div><label>نیروی طولی کل قاب انتهایی (kN)</label><input id="longTrussForce" type="number" step="any" value="20"></div>
+  <div><label>نیروی طولی کل قاب انتهایی (kN)</label><input id="longTrussForce" type="number" step="any" placeholder="بار سناریوی محاسبه‌شده"></div>
  </div>
  <div class="toolbar" style="margin-top:10px"><button onclick="generateLongitudinalTruss()">تولید مدل مهاربندی طولی</button><button onclick="runLongitudinalTruss()">تحلیل خرپای فضایی 3D</button><button class="btn-soft" onclick="runTruss3DSelfTests()">آزمون هسته 3D</button></div>
  <div class="status" id="longTrussStatus"></div>
