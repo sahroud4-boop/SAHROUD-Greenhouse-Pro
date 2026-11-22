@@ -207,8 +207,13 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card"><h3>تحلیل خرپای فضایی طولی سه‌بعدی (3D)</h3>
  <p class="muted">شبکه محوری سه‌بعدی مفهومی برای مسیر انتقال بار طولی؛ دستگاه مختصات X عرض، Y طول و Z ارتفاع گلخانه است. مدل شامل خطوط طولی لبه/تاج، اتصالات عرضی و مهاربندهای ضربدری در پنل‌های ابتدا و انتهای طول است.</p>
  <div class="g3">
-  <div><label>مقطع مرجع شبکه محوری از بانک</label><select id="longTrussProfile" onchange="applyLongTrussProfile()"><option value="">ورود دستی</option></select></div>
-  <div><label>سطح مقطع مرجع A (mm²؛ برای همه اعضای مدل)</label><input id="longTrussA" type="number" min=".01" step="any" value="1000"></div>
+  <div><label>مقطع پیش‌فرض (برای گروه‌های بدون مقطع اختصاصی)</label><select id="longTrussProfile" onchange="applyLongTrussProfile('default')"><option value="">ورود دستی</option></select></div>
+  <div><label>مقطع ستون‌ها</label><select id="longTrussColumnProfile" onchange="applyLongTrussProfile('columns')"><option value="">استفاده از پیش‌فرض</option></select></div>
+  <div><label>مقطع رفترها</label><select id="longTrussRafterProfile" onchange="applyLongTrussProfile('rafters')"><option value="">استفاده از پیش‌فرض</option></select></div>
+  <div><label>مقطع اعضای طولی</label><select id="longTrussLongProfile" onchange="applyLongTrussProfile('longitudinal')"><option value="">استفاده از پیش‌فرض</option></select></div>
+  <div><label>مقطع مهاربندهای سقف و دیوار</label><select id="longTrussBraceProfile" onchange="applyLongTrussProfile('braces')"><option value="">استفاده از پیش‌فرض</option></select></div>
+  <div><label>مقطع کلاف‌ها و قطری‌های عرضی</label><select id="longTrussTieProfile" onchange="applyLongTrussProfile('ties')"><option value="">استفاده از پیش‌فرض</option></select></div>
+  <div><label>سطح مقطع پیش‌فرض A (mm²)</label><input id="longTrussA" type="number" min=".01" step="any" value="1000"></div>
   <div><label>مدول الاستیسیته E (MPa)</label><input id="longTrussE" type="number" min="1" step="any" value="200000"></div>
   <div><label>تنش تسلیم Fy (MPa؛ اختیاری)</label><input id="longTrussFy" type="number" min=".01" step="any" placeholder="از دیتاشیت"></div>
   <div><label>نیروی طولی کل قاب انتهایی (kN)</label><input id="longTrussForce" type="number" step="any" value="20"></div>
@@ -277,7 +282,7 @@ async function importSectionProfiles(event){
 }
 function findSectionProfile(name){return sectionProfileBank.find(p=>p.name.trim().toLowerCase()===String(name||"").trim().toLowerCase())}
 function renderFrameProfileOptions(){
- for(const id of ["frameColumnProfile","frameRafterProfile","longTrussProfile"]){
+ for(const id of ["frameColumnProfile","frameRafterProfile","longTrussProfile","longTrussColumnProfile","longTrussRafterProfile","longTrussLongProfile","longTrussBraceProfile","longTrussTieProfile"]){
   const el=$(id);if(!el)continue;const current=el.value||"";
   el.innerHTML='<option value="">ورود دستی / انتخاب نشده</option>'+sectionProfileBank.map(p=>'<option value="'+esc(p.name)+'">'+esc(p.name)+'</option>').join("");
   if(sectionProfileBank.some(p=>p.name===current))el.value=current;
@@ -379,11 +384,24 @@ function analyzeTruss3D(model){
  const displacements=Array.from({length:n},(_,node)=>({node,ux_mm:u[3*node],uy_mm:u[3*node+1],uz_mm:u[3*node+2],resultant_mm:Math.hypot(u[3*node],u[3*node+1],u[3*node+2])}));
  return {displacements,reactions,members,equilibrium};
 }
-function applyLongTrussProfile(){
- const p=findSectionProfile($("longTrussProfile")?.value);if(!p)return;
- if(!(Number(p.area)>0&&Number(p.E)>0)){status("longTrussStatus","برای استفاده از مقطع، Ag و E معتبر باید در بانک ثبت شده باشند.",true);return}
- $("longTrussA").value=p.area;$("longTrussE").value=p.E;$("longTrussFy").value=Number(p.Fy)>0?p.Fy:"";
- status("longTrussStatus","مشخصات مقطع "+p.name+" دریافت شد؛ مقطع در تحلیل محوری استفاده می‌شود.");
+const longTrussProfileFields={default:"longTrussProfile",columns:"longTrussColumnProfile",rafters:"longTrussRafterProfile",longitudinal:"longTrussLongProfile",braces:"longTrussBraceProfile",ties:"longTrussTieProfile"};
+function longTrussProfileData(name){
+ if(!name)return null;const p=findSectionProfile(name);if(!p)throw new Error("مقطع انتخاب‌شده در بانک پیدا نشد: "+name);
+ const A=Number(p.area),E=Number(p.E),Fy=Number(p.Fy)>0?Number(p.Fy):null;
+ if(!(A>0&&E>0&&Number.isFinite(A)&&Number.isFinite(E)))throw new Error("برای مقطع "+name+"، Ag و E معتبر لازم است.");
+ return {profile:p.name,A,E,Fy};
+}
+function applyLongTrussProfile(role="default"){
+ const id=longTrussProfileFields[role]||longTrussProfileFields.default,name=$(id)?.value||"";
+ if(!name){status("longTrussStatus",role==="default"?"ورود دستی به‌عنوان مقطع پیش‌فرض فعال است.":"این گروه از مقطع پیش‌فرض استفاده می‌کند.");return}
+ try{const p=longTrussProfileData(name);if(role==="default"){$("longTrussA").value=p.A;$("longTrussE").value=p.E;$("longTrussFy").value=p.Fy??""}status("longTrussStatus","مقطع "+p.profile+" برای گروه "+role+" انتخاب شد؛ مشخصات از بانک مقاطع خوانده می‌شود.")}
+ catch(e){status("longTrussStatus",e.message,true)}
+}
+function longTrussSections(){
+ const fallbackName=$("longTrussProfile")?.value||"",fallback=fallbackName?longTrussProfileData(fallbackName):{profile:"manual",A:num("longTrussA"),E:num("longTrussE"),Fy:num("longTrussFy")>0?num("longTrussFy"):null};
+ if(!(fallback.A>0&&fallback.E>0&&Number.isFinite(fallback.A)&&Number.isFinite(fallback.E)))throw new Error("مقطع پیش‌فرض باید Ag و E معتبر داشته باشد یا از بانک انتخاب شود.");
+ const sections={};for(const role of ["columns","rafters","longitudinal","braces","ties"]){const name=$(longTrussProfileFields[role])?.value||"";sections[role]=name?longTrussProfileData(name):{...fallback}}
+ return sections;
 }
 function generateLongitudinalTruss(){
  try{
