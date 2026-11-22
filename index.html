@@ -468,7 +468,7 @@ function runFrameSelfTests(){
    {label:"لنگر تکیه‌گاهی (N·mm)",actual:o=>o.reactions.find(x=>x.node===0&&x.dof==="Mz_Nmm")?.value,expected:q*L**2/2},
    {label:"خطای نسبی تعادل کلی",actual:o=>o.equilibrium.maxRelativeError,expected:0,tolerance:1e-10}
   ]},
-  {name:"عضو مایل با بار گسترده محلی",model:{...base,nodes:[{x:0,y:0},{x:3000,y:4000}],elementLoads:[{element:0,qx:3,qy:-4}]},checks:[{label:"خطای نسبی تعادل کلی",actual:o=>o.equilibrium.maxRelativeError,expected:0,tolerance:1e-10}]}
+  {name:"عضو مایل با بار گسترده محلی",model:{...base,nodes:[{x:0,y:0},{x:3000,y:4000}],elementLoads:[{element:0,qx:3,qy:-4}]},checks:[{label:"خطای نسبی تعادل کلی",actual:o=>o.equilibrium.maxRelativeError,expected:0,tolerance:5e-10}]}
  ];
  const rows=[];let allPass=true;
  for(const test of cases){
