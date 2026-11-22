@@ -453,7 +453,17 @@ function runFrameAnalysis(){
 function runFrameSelfTests(){
  const L=3000,E=200000,I=8e7,A=2000,P=10000,q=10;
  const base={units:"N, mm, MPa, mm2, mm4",nodes:[{x:0,y:0},{x:L,y:0}],elements:[{i:0,j:1,A,E,I}],restraints:[{node:0,dofs:[true,true,true]}],loads:[]};
+ const gb=5,gw=8000,gh=5200,gr=2130,gs=4000,gA=2000,gE=200000,gI=8e7,gnodes=[],gelements=[],grestraints=[],geloads=[],gbase=[],geave=[];
+ for(let j=0;j<=gb;j++){const x=j*gw;gbase[j]=gnodes.length;gnodes.push({x,y:0});geave[j]=gnodes.length;gnodes.push({x,y:gh});grestraints.push({node:gbase[j],dofs:[true,true,true]});gelements.push({id:"ستون-"+(j+1),i:gbase[j],j:geave[j],A:gA,E:gE,I:gI})}
+ for(let j=0;j<gb;j++){const ridge=gnodes.length;gnodes.push({x:(j+.5)*gw,y:gh+gr});for(const [ni,nj,id,pressure] of [[geave[j],ridge,"رفتر چپ "+(j+1),.6],[ridge,geave[j+1],"رفتر راست "+(j+1),.9]]){const idx=gelements.length,dx=gnodes[nj].x-gnodes[ni].x,dy=gnodes[nj].y-gnodes[ni].y,L=Math.hypot(dx,dy),c=dx/L,ss=dy/L,globalQy=-pressure*(gs/1000)*Math.abs(c);gelements.push({id,i:ni,j:nj,A:gA,E:gE,I:gI});geloads.push({element:idx,qx:globalQy*ss,qy:globalQy*c})}}
+ for(const j of [0,gb])geloads.push({element:j,qx:0,qy:-.4*(gs/1000)});
+ const greenhouseBenchmark={nodes:gnodes,elements:gelements,restraints:grestraints,loads:[],elementLoads:geloads};
  const cases=[
+  {name:"قاب نمونه پنج‌دهانه با بار نامتقارن و جانبی",model:greenhouseBenchmark,checks:[
+   {label:"تعداد اعضای قاب",actual:o=>o.members.length,expected:16,tolerance:1e-12},
+   {label:"بیشینه خطای نسبی تعادل",actual:o=>o.equilibrium.maxRelativeError,expected:0,tolerance:1e-8},
+   {label:"بیشینه جابه‌جایی انتقالی متناهی",actual:o=>Number.isFinite(Math.max(...o.displacements.filter(x=>x.dof!=="rz_rad").map(x=>Math.abs(x.value))))?1:0,expected:1,tolerance:1e-12}
+  ]},
   {name:"تیر طره با نیروی متمرکز انتهایی",model:{...base,loads:[{node:1,fy:-P}]},checks:[
    {label:"خیز نوک (mm)",actual:o=>o.displacements.find(x=>x.node===1&&x.dof==="uy_mm")?.value,expected:-P*L**3/(3*E*I)},
    {label:"دوران نوک (rad)",actual:o=>o.displacements.find(x=>x.node===1&&x.dof==="rz_rad")?.value,expected:-P*L**2/(2*E*I)},
