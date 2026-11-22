@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.18.0</title>
+<title>SAHROUD Greenhouse Pro v3.19.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -38,7 +38,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.18.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.19.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -214,7 +214,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.18.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.19.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -325,8 +325,13 @@ function analyzeFrame2D(model){
  const free=Array.from({length:nd},(_,i)=>i).filter(i=>!restrained.has(i));if(!free.length)throw new Error("تمام درجات آزادی مقید شده‌اند.");
  const uf=solveLinearSystem(free.map(i=>free.map(j=>K[i][j])),free.map(i=>F[i])),u=Array(nd).fill(0);free.forEach((d,i)=>u[d]=uf[i]);
  const reactions=matVec(K,u).map((v,i)=>v-F[i]);
+ const resultant=vector=>{let fx=0,fy=0,mz=0;for(let i=0;i<n;i++){const x=Number(model.nodes[i].x),y=Number(model.nodes[i].y),px=vector[3*i],py=vector[3*i+1],pm=vector[3*i+2];fx+=px;fy+=py;mz+=x*py-y*px+pm}return {fx,fy,mz}};
+ const applied=resultant(F),supportVector=Array(nd).fill(0);restrained.forEach(i=>supportVector[i]=reactions[i]);const support=resultant(supportVector);
+ const residual={fx:applied.fx+support.fx,fy:applied.fy+support.fy,mz:applied.mz+support.mz};
+ const relative={fx:Math.abs(residual.fx)/Math.max(1,Math.abs(applied.fx),Math.abs(support.fx)),fy:Math.abs(residual.fy)/Math.max(1,Math.abs(applied.fy),Math.abs(support.fy)),mz:Math.abs(residual.mz)/Math.max(1,Math.abs(applied.mz),Math.abs(support.mz))};
+ const equilibrium={applied,support,residual,relative,maxRelativeError:Math.max(relative.fx,relative.fy,relative.mz),tolerance:1e-6,passed:Math.max(relative.fx,relative.fy,relative.mz)<=1e-6};
  const members=elementData.map(ed=>{const ug=ed.dofs.map(i=>u[i]),ul=matVec(ed.T,ug),q=matVec(ed.kl,ul).map((v,i)=>v-ed.fe[i]);return {id:ed.id,section:ed.section||null,length_mm:ed.L,local_end_forces_N_Nmm:q,uniform_load_local_N_per_mm:{qx:ed.fe[0]===0?0:(ed.fe[0]*2/ed.L),qy:ed.fe[1]*2/ed.L}}});
- return {displacements:u.map((v,i)=>({node:Math.floor(i/3),dof:["ux_mm","uy_mm","rz_rad"][i%3],value:v})),reactions:reactions.map((v,i)=>({node:Math.floor(i/3),dof:["Fx_N","Fy_N","Mz_Nmm"][i%3],value:v})).filter(x=>restrained.has(3*x.node+["Fx_N","Fy_N","Mz_Nmm"].indexOf(x.dof))),members};
+ return {displacements:u.map((v,i)=>({node:Math.floor(i/3),dof:["ux_mm","uy_mm","rz_rad"][i%3],value:v})),reactions:reactions.map((v,i)=>({node:Math.floor(i/3),dof:["Fx_N","Fy_N","Mz_Nmm"][i%3],value:v})).filter(x=>restrained.has(3*x.node+["Fx_N","Fy_N","Mz_Nmm"].indexOf(x.dof))),members,equilibrium};
 }
 function generateGreenhouseFrame(){
  try{
@@ -436,10 +441,11 @@ function runFrameAnalysis(){
    const sigma=N/s.A+M/s.W,ratio=sigma/s.Fy;
    return {id:m.id,profile:s.profile,N,M,sigma,ratio};
   });
+  const eq=out.equilibrium,eqHtml='<h4 style="margin-top:14px">کنترل تعادل کلی مدل</h4><div class="result"><p>'+(eq.passed?"تعادل نیروها و لنگرها در محدوده تلرانس برقرار است.":"عدم تعادل بیش از تلرانس؛ مدل و ورودی‌ها بازبینی شوند.")+'</p><table><tr><th>کمیت</th><th>بار اعمالی</th><th>واکنش تکیه‌گاهی</th><th>باقیمانده</th><th>خطای نسبی</th></tr><tr><td>ΣFx (N)</td><td>'+fmt(eq.applied.fx,4)+'</td><td>'+fmt(eq.support.fx,4)+'</td><td>'+fmt(eq.residual.fx,6)+'</td><td>'+fmt(eq.relative.fx*100,6)+' %</td></tr><tr><td>ΣFy (N)</td><td>'+fmt(eq.applied.fy,4)+'</td><td>'+fmt(eq.support.fy,4)+'</td><td>'+fmt(eq.residual.fy,6)+'</td><td>'+fmt(eq.relative.fy*100,6)+' %</td></tr><tr><td>ΣM (N·mm)</td><td>'+fmt(eq.applied.mz,4)+'</td><td>'+fmt(eq.support.mz,4)+'</td><td>'+fmt(eq.residual.mz,6)+'</td><td>'+fmt(eq.relative.mz*100,6)+' %</td></tr></table><p class="muted">کنترل تعادل با برآیند بارهای گره‌ای و بارهای گسترده معادل و واکنش‌های قیود انجام می‌شود. تلرانس نسبی هر مؤلفه: ۱۰⁻⁶.</p></div>';
   const screenHtml='<h4 style="margin-top:14px">شاخص تنش الاستیک مقدماتی اعضا</h4><div class="tablewrap"><table><tr><th>عضو</th><th>مقطع</th><th>Nmax (kN)</th><th>Mmax (kN·m)</th><th>σ برآوردی (MPa)</th><th>σ/Fy</th></tr>'+screened.map(x=>x.missing?'<tr><td>'+esc(x.id)+'</td><td colspan="5">داده A/W/Fy متصل نیست؛ کنترل انجام نشد</td></tr>':'<tr><td>'+esc(x.id)+'</td><td>'+esc(x.profile)+'</td><td>'+fmt(x.N/1000,3)+'</td><td>'+fmt(x.M/1e6,3)+'</td><td>'+fmt(x.sigma,2)+'</td><td>'+fmt(x.ratio,3)+'</td></tr>').join("")+'</table></div><div class="notice">این شاخص صرفاً غربالگری تنش الاستیک با رابطه |N|/A + |M|/W و بیشینه نیروهای دو انتهاست؛ W کوچک‌ترِ Wx و Wy موجود انتخاب شده است. جهت‌گیری مقطع، کمانش، کمانش پیچشی-جانبی، لاغری موضعی، برش، اندرکنش کامل، ضرایب مقاومت و ترکیبات بار آیین‌نامه‌ای کنترل نشده‌اند. نسبت کمتر از ۱ به معنی ایمنی یا تأیید طراحی نیست.</div>';
-  $("frameOutput").innerHTML='<h4>جابجایی‌ها</h4><div class="tablewrap"><table><tr><th>گره</th><th>درجه آزادی</th><th>مقدار</th></tr>'+out.displacements.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toExponential(4)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">واکنش تکیه‌گاهی</h4><div class="tablewrap"><table><tr><th>گره</th><th>مؤلفه</th><th>مقدار</th></tr>'+out.reactions.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toFixed(3)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">نیروهای انتهایی محلی اعضا (پس از کسر بار معادل گسترده)</h4><div class="tablewrap"><table><tr><th>عضو</th><th>طول (mm)</th><th>نیروهای محلی [N,N,Nmm] در دو انتها</th></tr>'+out.members.map(x=>'<tr><td>'+esc(x.id)+'</td><td>'+x.length_mm.toFixed(1)+'</td><td>'+x.local_end_forces_N_Nmm.map(v=>v.toFixed(2)).join(" | ")+'</td></tr>').join("")+'</table></div>';
+  $("frameOutput").innerHTML=eqHtml+'<h4>جابجایی‌ها</h4><div class="tablewrap"><table><tr><th>گره</th><th>درجه آزادی</th><th>مقدار</th></tr>'+out.displacements.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toExponential(4)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">واکنش تکیه‌گاهی</h4><div class="tablewrap"><table><tr><th>گره</th><th>مؤلفه</th><th>مقدار</th></tr>'+out.reactions.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toFixed(3)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">نیروهای انتهایی محلی اعضا (پس از کسر بار معادل گسترده)</h4><div class="tablewrap"><table><tr><th>عضو</th><th>طول (mm)</th><th>نیروهای محلی [N,N,Nmm] در دو انتها</th></tr>'+out.members.map(x=>'<tr><td>'+esc(x.id)+'</td><td>'+x.length_mm.toFixed(1)+'</td><td>'+x.local_end_forces_N_Nmm.map(v=>v.toFixed(2)).join(" | ")+'</td></tr>').join("")+'</table></div>';
  $("frameOutput").innerHTML+=screenHtml;
-  status("frameStatus","تحلیل عددی اجرا شد. شاخص تنش فقط برای اعضای دارای A، W و Fy متصل نمایش داده می‌شود؛ خروجی آزمایشی و غیرآیین‌نامه‌ای است.");
+  status("frameStatus",eq.passed?"تحلیل عددی اجرا شد و کنترل تعادل کلی نیز قبول شد؛ خروجی همچنان مقدماتی و غیرآیین‌نامه‌ای است.":"تحلیل عددی انجام شد، اما کنترل تعادل کلی ناموفق است؛ مدل و بارگذاری را بازبینی کنید.",!eq.passed);
  }catch(e){$("frameOutput").innerHTML="";status("frameStatus","خطا: "+e.message,true)}
 }
 
@@ -452,21 +458,24 @@ function runFrameSelfTests(){
    {label:"خیز نوک (mm)",actual:o=>o.displacements.find(x=>x.node===1&&x.dof==="uy_mm")?.value,expected:-P*L**3/(3*E*I)},
    {label:"دوران نوک (rad)",actual:o=>o.displacements.find(x=>x.node===1&&x.dof==="rz_rad")?.value,expected:-P*L**2/(2*E*I)},
    {label:"واکنش قائم (N)",actual:o=>o.reactions.find(x=>x.node===0&&x.dof==="Fy_N")?.value,expected:P},
-   {label:"لنگر تکیه‌گاهی (N·mm)",actual:o=>o.reactions.find(x=>x.node===0&&x.dof==="Mz_Nmm")?.value,expected:P*L}
+   {label:"لنگر تکیه‌گاهی (N·mm)",actual:o=>o.reactions.find(x=>x.node===0&&x.dof==="Mz_Nmm")?.value,expected:P*L},
+   {label:"خطای نسبی تعادل کلی",actual:o=>o.equilibrium.maxRelativeError,expected:0,tolerance:1e-10}
   ]},
   {name:"تیر طره با بار گسترده یکنواخت",model:{...base,elementLoads:[{element:0,qx:0,qy:-q}]},checks:[
    {label:"خیز نوک (mm)",actual:o=>o.displacements.find(x=>x.node===1&&x.dof==="uy_mm")?.value,expected:-q*L**4/(8*E*I)},
    {label:"دوران نوک (rad)",actual:o=>o.displacements.find(x=>x.node===1&&x.dof==="rz_rad")?.value,expected:-q*L**3/(6*E*I)},
    {label:"واکنش قائم (N)",actual:o=>o.reactions.find(x=>x.node===0&&x.dof==="Fy_N")?.value,expected:q*L},
-   {label:"لنگر تکیه‌گاهی (N·mm)",actual:o=>o.reactions.find(x=>x.node===0&&x.dof==="Mz_Nmm")?.value,expected:q*L**2/2}
-  ]}
+   {label:"لنگر تکیه‌گاهی (N·mm)",actual:o=>o.reactions.find(x=>x.node===0&&x.dof==="Mz_Nmm")?.value,expected:q*L**2/2},
+   {label:"خطای نسبی تعادل کلی",actual:o=>o.equilibrium.maxRelativeError,expected:0,tolerance:1e-10}
+  ]},
+  {name:"عضو مایل با بار گسترده محلی",model:{...base,nodes:[{x:0,y:0},{x:3000,y:4000}],elementLoads:[{element:0,qx:3,qy:-4}]},checks:[{label:"خطای نسبی تعادل کلی",actual:o=>o.equilibrium.maxRelativeError,expected:0,tolerance:1e-10}]}
  ];
  const rows=[];let allPass=true;
  for(const test of cases){
-  try{const out=analyzeFrame2D(test.model);for(const c of test.checks){const actual=c.actual(out),error=Number.isFinite(actual)?Math.abs(actual-c.expected)/Math.max(1,Math.abs(c.expected)):Infinity,pass=error<1e-7;allPass=allPass&&pass;rows.push({test:test.name,label:c.label,actual,expected:c.expected,error,pass})}}
+  try{const out=analyzeFrame2D(test.model);for(const c of test.checks){const actual=c.actual(out),error=Number.isFinite(actual)?Math.abs(actual-c.expected)/Math.max(1,Math.abs(c.expected)):Infinity,pass=error<(c.tolerance??1e-7);allPass=allPass&&pass;rows.push({test:test.name,label:c.label,actual,expected:c.expected,error,pass})}}
   catch(e){allPass=false;rows.push({test:test.name,label:"اجرای آزمون",actual:e.message,expected:"حل موفق",error:Infinity,pass:false})}
  }
- $("frameSelfTestOutput").innerHTML='<div class="result"><h4>مقایسه با جواب تحلیلی تیر طره</h4><p class="muted">دو حالت مستقل با واحدهای N، mm و MPa و تحمل خطای نسبی ۱۰⁻⁷ بررسی شدند. این آزمون، صحت عددی چند حالت پایه را می‌سنجد و اعتبارسنجی کامل مدل گلخانه یا کنترل آیین‌نامه‌ای نیست.</p><div class="tablewrap"><table><tr><th>حالت</th><th>کمیت</th><th>جواب تحلیلی</th><th>حل‌گر</th><th>خطای نسبی</th><th>نتیجه</th></tr>'+rows.map(r=>'<tr><td>'+esc(r.test)+'</td><td>'+esc(r.label)+'</td><td>'+(Number.isFinite(r.expected)?r.expected.toExponential(5):esc(r.expected))+'</td><td>'+(Number.isFinite(r.actual)?r.actual.toExponential(5):esc(r.actual))+'</td><td>'+(Number.isFinite(r.error)?r.error.toExponential(2):"—")+'</td><td>'+(r.pass?"قبول":"مردود")+'</td></tr>').join("")+'</table></div></div>';
+ $("frameSelfTestOutput").innerHTML='<div class="result"><h4>مقایسه با جواب تحلیلی تیر طره</h4><p class="muted">دو پاسخ تحلیلی تیر طره و تعادل یک عضو مایل با بار محلی بررسی می‌شوند. تحمل خطای کمیت‌های بسته ۱۰⁻⁷ و تعادل ۱۰⁻¹⁰ است. این آزمون اعتبارسنجی کامل مدل گلخانه یا کنترل آیین‌نامه‌ای نیست.</p><div class="tablewrap"><table><tr><th>حالت</th><th>کمیت</th><th>جواب تحلیلی</th><th>حل‌گر</th><th>خطای نسبی</th><th>نتیجه</th></tr>'+rows.map(r=>'<tr><td>'+esc(r.test)+'</td><td>'+esc(r.label)+'</td><td>'+(Number.isFinite(r.expected)?r.expected.toExponential(5):esc(r.expected))+'</td><td>'+(Number.isFinite(r.actual)?r.actual.toExponential(5):esc(r.actual))+'</td><td>'+(Number.isFinite(r.error)?r.error.toExponential(2):"—")+'</td><td>'+(r.pass?"قبول":"مردود")+'</td></tr>').join("")+'</table></div></div>';
  status("frameSelfTestStatus",allPass?"آزمون‌های مرجع حل‌گر با موفقیت گذشتند.":"حداقل یک آزمون مرجع ناموفق بود؛ خروجی حل‌گر را تا رفع خطا معتبر تلقی نکنید.",!allPass);
  return {passed:rows.filter(r=>r.pass).length,total:rows.length,allPass,rows};
 }
@@ -620,7 +629,7 @@ const DB=(()=>{let promise;const dbName="SAHROUD_Greenhouse_Pro_v35",storeName="
  return {open,put:p=>request("readwrite",s=>s.put(p)),get:id=>request("readonly",s=>s.get(id)),all:()=>request("readonly",s=>s.getAll()),del:id=>request("readwrite",s=>s.delete(id))};
 })();
 let activeProject=null;
-function newModel(){return {schemaVersion:"3.18.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:"",country:"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
+function newModel(){return {schemaVersion:"3.19.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:"",country:"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
 function collectModel(){
  const p=activeProject||newModel();p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
  p.notes=$("metaNotes").value;p.geometry={...geomResult};p.hydroponics={input:hydroInput(),last:hydroResult};p.results={...(p.results||{}),structural:structuralLast,beam:beamLast,frameModel:$("frameModel").value,frameAnalysis:frameAnalysisLast};return p;
@@ -644,7 +653,7 @@ async function saveProject(){
 async function renderProjects(){const el=$("projectList");if(!el)return;const all=(await DB.all()||[]).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));if(!all.length){el.textContent="هنوز پروژه‌ای ذخیره نشده است.";return}el.innerHTML=all.map(p=>`<div class="projectitem"><div><b>${esc(p.meta?.name||"بدون نام")}</b><small>${esc(p.meta?.city||"شهر نامشخص")} · ${esc(p.meta?.type||"")}</small></div><div class="toolbar"><button class="btn-soft" onclick="loadProject('${esc(p.id)}')">بازکردن</button><button class="btn-red" onclick="deleteProject('${esc(p.id)}')">حذف</button></div></div>`).join("")}
 async function loadProject(id){const p=await DB.get(id);if(p){applyModel(p);status("projectStatus","پروژه بارگذاری شد.")}}
 async function deleteProject(id){if(!confirm("پروژه حذف شود؟"))return;await DB.del(id);if(activeProject?.id===id)activeProject=null;renderProjects()}
-async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.18.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
+async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.19.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
 async function importBackup(ev){const f=ev.target.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text()),arr=Array.isArray(d)?d:d.projects;if(!Array.isArray(arr))throw Error("ساختار فایل نامعتبر است");for(const p of arr)if(p?.id&&p.meta)await DB.put(p);await renderProjects();status("projectStatus","بازیابی فایل انجام شد.")}catch(e){status("projectStatus",e.message,true)}ev.target.value=""}
 
 /* Climate search and historic archive */
@@ -720,7 +729,7 @@ function exportXLSX(){
  add("هندسه",[["شرح","مقدار","واحد"],["عرض کل",d.geometry.width,"m"],["طول",d.geometry.length,"m"],["زاویه واقعی سقف",d.geometry.actualSlope,"degree"],["مساحت کف",d.geometry.floor,"m2"],["تعداد قاب",d.geometry.frames,"عدد"],["مساحت سقف",d.geometry.roofArea,"m2"],["مساحت پوشش",d.geometry.cover,"m2"],["طول فولاد",d.geometry.totalSteelLength,"m"],["وزن فولاد خالص",d.geometry.weight??"نیازمند دیتاشیت","kg"],["وزن فولاد با پرت",d.geometry.steelOrderWeight??"نامشخص","kg"],["مساحت پوشش با پرت",d.geometry.coverOrderArea,"m2"],["طول ناودان مفهومی",d.geometry.gutterLength,"m"],["تعداد پیچ/بست",d.geometry.fastenersCount??"نرخ وارد نشده","عدد"]]);
  if(d.geometry.members)add("متره اعضا",[["عضو","مقطع","تعداد","طول واحد (m)","طول کل (m)","جرم واحد (kg/m)","وزن (kg)","مبنای هندسی"],...d.geometry.members.map(m=>[m.name,m.profile,m.count,m.unitLength,m.totalLength,m.massPerM??"",m.weight??"",m.basis])]);
  if(d.hydro)add("هیدروپونیک",[["شرح","مقدار"],["کانال",d.hydro.channels],["طول کانال",d.hydro.channelLength],["پایه",d.hydro.supports],["طول لوله",d.hydro.pipeLength],["حجم مخزن",d.hydro.tankVolume]]);
- if(d.frameAnalysis?.output){const fa=d.frameAnalysis,o=fa.output,rows=[["بخش","شناسه","درجه آزادی/شرح","مقدار","واحد"],["مدل","گره‌ها","",fa.model?.nodes?.length??"","عدد"],["مدل","اعضا","",fa.model?.elements?.length??"","عدد"],["مدل","واحدها","",fa.model?.units||"",""],...o.displacements.map(x=>["جابجایی",x.node,x.dof,x.value,x.dof==="rz_rad"?"rad":"mm"]),...o.reactions.map(x=>["واکنش",x.node,x.dof,x.value,x.dof==="Mz_Nmm"?"N·mm":"N"]),...o.members.flatMap(m=>m.local_end_forces_N_Nmm.map((v,i)=>["نیروی انتهایی",m.id,"مؤلفه "+(i+1),v,i%3===2?"N·mm":"N"]))];add("تحلیل قاب 2D",rows)}
+ if(d.frameAnalysis?.output){const fa=d.frameAnalysis,o=fa.output,rows=[["بخش","شناسه","درجه آزادی/شرح","مقدار","واحد"],["مدل","گره‌ها","",fa.model?.nodes?.length??"","عدد"],["مدل","اعضا","",fa.model?.elements?.length??"","عدد"],["مدل","واحدها","",fa.model?.units||"",""],...o.displacements.map(x=>["جابجایی",x.node,x.dof,x.value,x.dof==="rz_rad"?"rad":"mm"]),...o.reactions.map(x=>["واکنش",x.node,x.dof,x.value,x.dof==="Mz_Nmm"?"N·mm":"N"]),...o.members.flatMap(m=>m.local_end_forces_N_Nmm.map((v,i)=>["نیروی انتهایی",m.id,"مؤلفه "+(i+1),v,i%3===2?"N·mm":"N"]))];if(o.equilibrium){rows.push(["تعادل کلی","ΣFx","Applied",o.equilibrium.applied.fx,"N"],["تعادل کلی","ΣFx","Reaction",o.equilibrium.support.fx,"N"],["تعادل کلی","ΣFy","Applied",o.equilibrium.applied.fy,"N"],["تعادل کلی","ΣFy","Reaction",o.equilibrium.support.fy,"N"],["تعادل کلی","ΣM","Applied",o.equilibrium.applied.mz,"N·mm"],["تعادل کلی","ΣM","Reaction",o.equilibrium.support.mz,"N·mm"],["تعادل کلی","بیشینه خطای نسبی","",o.equilibrium.maxRelativeError,"ratio"],["تعادل کلی","وضعیت","",o.equilibrium.passed?"PASS":"CHECK",""])}add("تحلیل قاب 2D",rows)}
  if(d.climate)add("اقلیم",[["پارامتر","مقدار"],["شهر",d.climate.city.name],["دوره",d.climate.period.start+" تا "+d.climate.period.end],["بیشینه دما",d.climate.climate.maxTemp],["کمینه دما",d.climate.climate.minTemp],["رطوبت میانگین",d.climate.climate.humidity],["بیشینه تندباد",d.climate.climate.maxGust]]);
  XLSX.writeFile(wb,"SAHROUD_Project_Report.xlsx");status("exportStatus","فایل XLSX ساخته شد.")
 }
@@ -731,7 +740,7 @@ function renderReport(){
  <h4>اقلیم</h4>${c?`<p>${esc(c.city.name)}، ${esc(c.city.country)} | دوره ${esc(c.period.start)} تا ${esc(c.period.end)} | Tmax ${fmt(c.climate.maxTemp)} °C | Tmin ${fmt(c.climate.minTemp)} °C | RH ${fmt(c.climate.humidity)} % | gust ${fmt(c.climate.maxGust)} m/s</p><p class="muted">${esc(c.source)}</p>`:"<p>اطلاعات اقلیمی ثبت نشده است.</p>"}
  <h4>هیدروپونیک</h4>${h?`<p>کانال: ${fmt(h.channels,0)} عدد | طول کانال: ${fmt(h.channelLength)} m | پایه: ${fmt(h.supports,0)} عدد | لوله: ${fmt(h.pipeLength)} m | مخزن: ${fmt(h.tankVolume)} L</p>`:"<p>متره هیدروپونیک اجرا نشده است.</p>"}
  <h4>سازه</h4>${s?`<p>بارهای خطی قاب: ${Object.entries(s.line).map(([k,v])=>k+"="+fmt(v)+" kN/m").join("، ")}</p>`:"<p>بارگذاری مقدماتی اجرا نشده است.</p>"}${b?`<p>تیر ساده: Mmax=${fmt(b.M)} kN.m، Vmax=${fmt(b.V)} kN، خیز=${fmt(b.delta)} mm</p>`:""}
- <h4>تحلیل قاب دوبعدی</h4>${f?`<p>زمان تحلیل: ${esc(f.runAt||"ثبت نشده")} | تعداد گره: ${fmt(f.model?.nodes?.length||0,0)} | تعداد عضو: ${fmt(f.output?.members?.length||0,0)} | بیشینه مؤلفه جابه‌جایی انتقالی: ${fmt(maxFrameDisp)} mm</p>`:"<p>مدل/نتیجه تحلیل قاب ذخیره نشده است.</p>"}
+ <h4>تحلیل قاب دوبعدی</h4>${f?`<p>زمان تحلیل: ${esc(f.runAt||"ثبت نشده")} | تعداد گره: ${fmt(f.model?.nodes?.length||0,0)} | تعداد عضو: ${fmt(f.output?.members?.length||0,0)} | بیشینه مؤلفه جابه‌جایی انتقالی: ${fmt(maxFrameDisp)} mm | کنترل تعادل: ${f.output?.equilibrium?.passed?"قبول":"نیازمند بازبینی"} | خطای نسبی: ${fmt((f.output?.equilibrium?.maxRelativeError||0)*100,8)} %</p>`:"<p>مدل/نتیجه تحلیل قاب ذخیره نشده است.</p>"}
  <div class="notice">این گزارش مقدماتی است. محاسبات هندسی، متره، هیدرولیک و سازه‌ای این نسخه جایگزین طراحی اجرایی، تحلیل کامل، بررسی آیین‌نامه‌ای یا تأیید مهندس ذی‌صلاح نیست.</div>`;
 }
 function printReport(){renderReport();showPage("reports");setTimeout(()=>window.print(),150)}
