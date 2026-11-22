@@ -405,24 +405,34 @@ function longTrussSections(){
 }
 function generateLongitudinalTruss(){
  try{
-  const p=geometryParams(),profile=findSectionProfile($("longTrussProfile")?.value),A=profile?Number(profile.area):num("longTrussA"),E=profile?Number(profile.E):num("longTrussE"),Fy=profile&&Number(profile.Fy)>0?Number(profile.Fy):(num("longTrussFy")>0?num("longTrussFy"):null),totalForce=num("longTrussForce");
+  const p=geometryParams(),sections=longTrussSections(),totalForce=num("longTrussForce");
   if(!(p.bays>=1&&p.bays<=6&&p.length>0&&p.bayWidth>0&&p.height>0&&p.ridge>0))throw new Error("برای تولید این مدل، ۱ تا ۶ دهانه، طول و عرض مثبت، ارتفاع ستون و افزایش ارتفاع تاج مثبت لازم است.");
-  if(!(A>0&&E>0&&Number.isFinite(A)&&Number.isFinite(E)))throw new Error("سطح مقطع A و مدول E را از دیتاشیت معتبر یا ورودی مهندس تکمیل کنید.");
   if(totalForce===null)throw new Error("نیروی طولی کل باید عددی باشد؛ مثبت در جهت +Y و منفی در جهت -Y.");
   const stationCount=5,ys=Array.from({length:stationCount},(_,i)=>p.length*1000*i/(stationCount-1)),nodes=[],elements=[],restraints=[],loads=[],base=[],eave=[],ridge=[];
   const addNode=(x,y,z)=>{const id=nodes.length;nodes.push({x,y,z});return id};
   for(let si=0;si<stationCount;si++){base[si]=[];eave[si]=[];ridge[si]=[];for(let j=0;j<=p.bays;j++){const x=j*p.bayWidth*1000;base[si][j]=addNode(x,ys[si],0);eave[si][j]=addNode(x,ys[si],p.height*1000)}for(let j=0;j<p.bays;j++)ridge[si][j]=addNode((j+.5)*p.bayWidth*1000,ys[si],(p.height+p.ridge)*1000)}
-  const addMember=(i,j,id,kind)=>elements.push({id,i,j,A,E,Fy,profile:profile?.name||null,kind});
-  for(let si=0;si<stationCount;si++){for(let j=0;j<=p.bays;j++){addMember(base[si][j],eave[si][j],"ستون محیطی "+(j+1)+" - مقطع "+(si+1),"ستون/تکیه‌گاه محیطی");if(j<p.bays)addMember(base[si][j],base[si][j+1],"کلاف پای عرضی "+(j+1)+" - مقطع "+(si+1),"کلاف عرضی مفهومی")}for(let j=0;j<p.bays;j++){addMember(eave[si][j],ridge[si][j],"رفتر چپ دهانه "+(j+1)+" - مقطع "+(si+1),"رفتر عرضی محوری");addMember(ridge[si][j],eave[si][j+1],"رفتر راست دهانه "+(j+1)+" - مقطع "+(si+1),"رفتر عرضی محوری");addMember(base[si][j],ridge[si][j],"قطری عرضی معادل چپ دهانه "+(j+1)+" - مقطع "+(si+1),"قطری عرضی معادل");addMember(base[si][j+1],ridge[si][j],"قطری عرضی معادل راست دهانه "+(j+1)+" - مقطع "+(si+1),"قطری عرضی معادل")}}
-  for(let si=0;si<stationCount-1;si++){for(let j=0;j<=p.bays;j++){addMember(base[si][j],base[si+1][j],"ریل پای طولی "+(j+1)+" - پنل "+(si+1),"ریل طولی");addMember(eave[si][j],eave[si+1][j],"تیر لبه طولی "+(j+1)+" - پنل "+(si+1),"تیر لبه طولی")}for(let j=0;j<p.bays;j++)addMember(ridge[si][j],ridge[si+1][j],"تیر تاج طولی "+(j+1)+" - پنل "+(si+1),"تیر تاج طولی")}
-  for(const si of [0,stationCount-2]){for(const j of [0,p.bays]){addMember(base[si][j],eave[si+1][j],"مهاربند X دیوار جانبی A "+j+" پنل "+(si+1),"مهاربند دیوار جانبی");addMember(eave[si][j],base[si+1][j],"مهاربند X دیوار جانبی B "+j+" پنل "+(si+1),"مهاربند دیوار جانبی")}for(let j=0;j<p.bays;j++){addMember(eave[si][j],ridge[si+1][j],"مهاربند سقف چپ A دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی");addMember(ridge[si][j],eave[si+1][j],"مهاربند سقف چپ B دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی");addMember(ridge[si][j],eave[si+1][j+1],"مهاربند سقف راست A دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی");addMember(eave[si][j+1],ridge[si+1][j],"مهاربند سقف راست B دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی")}}
+  const addMember=(i,j,id,kind,role)=>{const sec=sections[role];elements.push({id,i,j,A:sec.A,E:sec.E,Fy:sec.Fy,profile:sec.profile,sectionRole:role,kind})};
+  for(let si=0;si<stationCount;si++){
+   for(let j=0;j<=p.bays;j++){addMember(base[si][j],eave[si][j],"ستون محیطی "+(j+1)+" - مقطع "+(si+1),"ستون/تکیه‌گاه محیطی","columns");if(j<p.bays)addMember(base[si][j],base[si][j+1],"کلاف پای عرضی "+(j+1)+" - مقطع "+(si+1),"کلاف عرضی مفهومی","ties")}
+   for(let j=0;j<p.bays;j++){addMember(eave[si][j],ridge[si][j],"رفتر چپ دهانه "+(j+1)+" - مقطع "+(si+1),"رفتر عرضی محوری","rafters");addMember(ridge[si][j],eave[si][j+1],"رفتر راست دهانه "+(j+1)+" - مقطع "+(si+1),"رفتر عرضی محوری","rafters");addMember(base[si][j],ridge[si][j],"قطری عرضی معادل چپ دهانه "+(j+1)+" - مقطع "+(si+1),"قطری عرضی معادل","ties");addMember(base[si][j+1],ridge[si][j],"قطری عرضی معادل راست دهانه "+(j+1)+" - مقطع "+(si+1),"قطری عرضی معادل","ties")}
+  }
+  for(let si=0;si<stationCount-1;si++){
+   for(let j=0;j<=p.bays;j++){addMember(base[si][j],base[si+1][j],"ریل پای طولی "+(j+1)+" - پنل "+(si+1),"ریل طولی","longitudinal");addMember(eave[si][j],eave[si+1][j],"تیر لبه طولی "+(j+1)+" - پنل "+(si+1),"تیر لبه طولی","longitudinal")}
+   for(let j=0;j<p.bays;j++)addMember(ridge[si][j],ridge[si+1][j],"تیر تاج طولی "+(j+1)+" - پنل "+(si+1),"تیر تاج طولی","longitudinal");
+  }
+  for(const si of [0,stationCount-2]){
+   for(const j of [0,p.bays]){addMember(base[si][j],eave[si+1][j],"مهاربند X دیوار جانبی A "+j+" پنل "+(si+1),"مهاربند دیوار جانبی","braces");addMember(eave[si][j],base[si+1][j],"مهاربند X دیوار جانبی B "+j+" پنل "+(si+1),"مهاربند دیوار جانبی","braces")}
+   for(let j=0;j<p.bays;j++){addMember(eave[si][j],ridge[si+1][j],"مهاربند سقف چپ A دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی","braces");addMember(ridge[si][j],eave[si+1][j],"مهاربند سقف چپ B دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی","braces");addMember(ridge[si][j],eave[si+1][j+1],"مهاربند سقف راست A دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی","braces");addMember(eave[si][j+1],ridge[si+1][j],"مهاربند سقف راست B دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی","braces")}
+  }
   for(let si=0;si<stationCount;si++)for(let j=0;j<=p.bays;j++)restraints.push({node:base[si][j],dofs:[true,si===0||si===stationCount-1,true]});
   const topNodes=[...eave[0],...ridge[0]],loadPerNode=totalForce*1000/topNodes.length;for(const node of topNodes)loads.push({node,fx:0,fy:loadPerNode,fz:0});
-  const model={units:"N, mm, MPa, mm2",modelType:"idealized-3D-axial-longitudinal-bracing",generationInputs:{bays:p.bays,bayWidth:p.bayWidth,length:p.length,height:p.height,ridge:p.ridge,A,Fy,E,force:totalForce,profile:profile?.name||""},assumptions:"five representative longitudinal stations; transverse cross-sections triangulated with equivalent base-to-ridge axial web bars; base nodes restrained in X/Z and at both ends in Y; longitudinal sidewall and roof X-braces only in first and last panels; all bars axial-only and use one reference section; end-wall total Y force distributed equally to upper front nodes",stationY_mm:ys,section:{profile:profile?.name||"manual",A,Fy,E},nodes,elements,restraints,loads};
+  const generationInputs={bays:p.bays,bayWidth:p.bayWidth,length:p.length,height:p.height,ridge:p.ridge,force:totalForce,sections};
+  const model={units:"N, mm, MPa, mm2",modelType:"idealized-3D-axial-longitudinal-bracing",generationInputs,assumptions:"five representative longitudinal stations; group-specific sections for columns, rafters, longitudinal rails, braces and ties; transverse cross-sections triangulated with equivalent base-to-ridge axial web bars; base nodes restrained in X/Z and at both ends in Y; longitudinal sidewall and roof X-braces only in first and last panels; all bars axial-only; end-wall total Y force distributed equally to upper front nodes",stationY_mm:ys,sections,nodes,elements,restraints,loads};
   $("longTrussModel").value=JSON.stringify(model,null,2);longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";
-  status("longTrussStatus","مدل طولی 3D ساخته شد: "+nodes.length+" گره، "+elements.length+" عضو، ۵ مقطع طولی نماینده؛ نیروی کل "+fmt(totalForce)+" kN به "+topNodes.length+" گره جلویی توزیع شد.");
+  status("longTrussStatus","مدل طولی 3D ساخته شد: "+nodes.length+" گره، "+elements.length+" عضو و پنج گروه مقطع مستقل؛ نیروی کل "+fmt(totalForce)+" kN به "+topNodes.length+" گره جلویی توزیع شد.");
  }catch(e){status("longTrussStatus","خطا در تولید مدل: "+e.message,true)}
 }
+
 function renderLongTrussOutput(model,out,runAt){
  const maxDisp=Math.max(0,...out.displacements.map(x=>x.resultant_mm)),maxStress=Math.max(0,...out.members.map(x=>Math.abs(x.stress_MPa))),maxRatio=Math.max(0,...out.members.map(x=>x.stressRatio??0)),maxAxial=Math.max(0,...out.members.map(x=>Math.abs(x.axialForce_N))),eq=out.equilibrium;
  const memberRows=out.members.map(m=>'<tr><td>'+esc(m.id)+'</td><td>'+esc(m.kind)+'</td><td>'+fmt(m.length_mm/1000,3)+'</td><td>'+fmt(m.axialForce_N/1000,3)+'</td><td>'+fmt(m.stress_MPa,2)+'</td><td>'+(m.stressRatio===null?"Fy وارد نشده":fmt(m.stressRatio,3))+'</td><td>'+(m.axialForce_N>=0?"کششی":"فشاری")+'</td></tr>').join("");
