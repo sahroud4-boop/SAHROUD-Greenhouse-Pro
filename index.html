@@ -105,6 +105,35 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
    <div class="card"><h3>جدول متره مقدماتی</h3><div class="tablewrap"><table><thead><tr><th>شرح</th><th>تعداد</th><th>واحد</th><th>مقدار</th><th>مبنای محاسبه</th></tr></thead><tbody id="quantityRows"></tbody></table></div></div>
    <div class="card"><h3>متره تفکیکی اعضای سازه‌ای</h3><p class="muted">برای هر گروه عضو می‌توان نام مقطع و جرم واحد طول مستقل ثبت کرد. وزن‌ها بر مبنای داده واردشده محاسبه می‌شوند و نیازمند تطبیق با دیتاشیت معتبر هستند.</p><div class="tablewrap"><table><thead><tr><th>عضو</th><th>مقطع ثبت‌شده</th><th>تعداد</th><th>طول واحد (m)</th><th>طول کل (m)</th><th>جرم (kg/m)</th><th>وزن (kg)</th></tr></thead><tbody id="memberRows"></tbody></table></div></div>
    <div class="card"><h3>برآورد هزینه و مقادیر تأمین</h3><div class="stats"><div class="stat"><small>طول کل فولاد خالص</small><strong id="steelLength">—</strong></div><div class="stat"><small>وزن خالص فولاد</small><strong id="weight">—</strong></div><div class="stat"><small>هزینه فولاد با پرت</small><strong id="steelCost">—</strong></div><div class="stat"><small>هزینه پوشش با پرت</small><strong id="coverCost">—</strong></div></div><div class="tablewrap"><table><thead><tr><th>قلم تأمین</th><th>مقدار خالص</th><th>پرت</th><th>مقدار سفارش</th><th>واحد</th><th>هزینه</th></tr></thead><tbody id="procurementRows"></tbody></table></div><h3 id="totalCost">جمع هزینه اقلام قابل محاسبه: —</h3></div>
+   <div class="card"><h3>متره تکمیلی بادبند، صفحات اتصال و فونداسیون</h3>
+    <p class="muted">این بخش بر پایه مقادیر اجرایی واردشده توسط مهندس یا نقشه سازه محاسبه می‌کند؛ هیچ تعداد یا ابعاد اجرایی برای بادبند و اتصال به‌صورت خودکار فرض نمی‌شود.</p>
+    <h4>بادبندها و ورق گاست</h4><div class="g3">
+     <div><label>تعداد اعضای بادبند</label><input id="accBraceCount" type="number" min="0" step="1" placeholder="از نقشه"></div>
+     <div><label>طول متوسط هر بادبند (m)</label><input id="accBraceLength" type="number" min="0.01" step="0.01" placeholder="از نقشه"></div>
+     <div><label>جرم واحد طول بادبند (kg/m)</label><input id="accBraceMass" type="number" min="0.001" step="0.001" placeholder="از دیتاشیت"></div>
+     <div><label>تعداد صفحات گاست</label><input id="accGussetCount" type="number" min="0" step="1" placeholder="از نقشه اتصال"></div>
+     <div><label>عرض صفحه گاست (mm)</label><input id="accGussetWidth" type="number" min="0.1" step="1" placeholder="mm"></div>
+     <div><label>ارتفاع صفحه گاست (mm)</label><input id="accGussetHeight" type="number" min="0.1" step="1" placeholder="mm"></div>
+     <div><label>ضخامت صفحه گاست (mm)</label><input id="accGussetThickness" type="number" min="0.1" step="0.5" placeholder="mm"></div>
+    </div>
+    <h4>صفحات پایه و انکربولت</h4><p class="muted">تعداد صفحات پایه برآوردی از تعداد قاب × خطوط ستون به‌دست می‌آید؛ فرض یک صفحه زیر هر ستون است. ابعاد و تعداد انکربولت‌ها باید از نقشه تأییدشده وارد شوند.</p>
+    <div class="g3">
+     <div><label>تعداد صفحات پایه (خودکار)</label><input id="accBasePlateCount" type="text" readonly value="پس از محاسبه هندسه"></div>
+     <div><label>عرض صفحه پایه (mm)</label><input id="accBasePlateWidth" type="number" min="0.1" step="1" placeholder="mm"></div>
+     <div><label>طول صفحه پایه (mm)</label><input id="accBasePlateLength" type="number" min="0.1" step="1" placeholder="mm"></div>
+     <div><label>ضخامت صفحه پایه (mm)</label><input id="accBasePlateThickness" type="number" min="0.1" step="0.5" placeholder="mm"></div>
+     <div><label>تعداد انکربولت در هر صفحه پایه</label><input id="accAnchorPerBase" type="number" min="0" step="1" placeholder="از نقشه"></div>
+     <div><label>قطر انکربولت (mm)</label><input id="accAnchorDiameter" type="number" min="0.1" step="1" placeholder="mm"></div>
+     <div><label>طول محاسباتی ساق انکربولت (mm)</label><input id="accAnchorLength" type="number" min="0.1" step="1" placeholder="mm"></div>
+    </div>
+    <h4>پیچ‌های اتصال</h4><div class="g3">
+     <div><label>تعداد پیچ اتصال (عدد)</label><input id="accConnectionBoltCount" type="number" min="0" step="1" placeholder="از نقشه"></div>
+     <div><label>جرم هر پیچ اتصال (kg/عدد)</label><input id="accConnectionBoltMass" type="number" min="0.001" step="0.001" placeholder="از کاتالوگ"></div>
+    </div>
+    <div class="toolbar"><button onclick="calculateSupplementaryTakeoff()">محاسبه متره تکمیلی</button></div>
+    <div class="status" id="accessoryTakeoffStatus"></div><div id="accessoryTakeoffOutput"></div>
+    <p class="notice">جرم ورق‌ها با چگالی اسمی فولاد ۷۸۵۰ kg/m³ و جرم ساق انکربولت با تقریب استوانه توپر محاسبه می‌شود. رزوه، مهره، واشر، خم، سوراخ‌کاری، جوش، ورق‌های تقویتی، طول مهاری، اندرکنش بتن و فولاد و طراحی اتصال در این برآورد لحاظ نشده‌اند. این محاسبه طراحی اتصال یا فونداسیون نیست.</p>
+   </div>
    <div class="notice" id="geometryWarning">این نرم‌افزار ابزار مقدماتی هندسه و متره است و تأییدیه ایمنی سازه صادر نمی‌کند.</div>
    <div class="toolbar" style="margin-top:10px"><button class="btn-soft" onclick="runGeometryIntegrationAudit()">کنترل یکپارچگی مدل‌ها و متره</button></div>
    <div class="status" id="geometryAuditStatus"></div><div id="geometryAuditOutput"></div>
@@ -917,6 +946,73 @@ function runGeometryIntegrationAudit(){
  $("geometryAuditOutput").innerHTML='<div class="result"><h4>گزارش کنترل یکپارچگی</h4><p>'+esc(state)+' | قبول: '+fmt(passed,0)+' | مغایرت: '+fmt(failed,0)+' | کنترل انجام‌نشده: '+fmt(rows.length-checked.length,0)+'</p><div class="tablewrap"><table><thead><tr><th>بخش</th><th>کنترل</th><th>مقدار فعلی</th><th>مقدار مرجع</th><th>نتیجه</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r.group)+'</td><td>'+esc(r.label)+'</td><td>'+esc(typeof r.actual==="number"?fmt(r.actual,4):String(r.actual))+'</td><td>'+esc(typeof r.expected==="number"?fmt(r.expected,4):String(r.expected))+'</td><td>'+(r.ok===null?"اطلاعات کافی نیست":r.ok?"قبول":"مغایرت")+'</td></tr>').join("")+'</tbody></table></div><p class="muted">این ممیزی، سازگاری هندسه و توپولوژی مدل تولیدشده را بررسی می‌کند؛ جایگزین کنترل بارگذاری، طراحی آیین‌نامه‌ای یا بازبینی نقشه اجرایی نیست.</p></div>';
  status("geometryAuditStatus",state,failed>0);
  return {passed,failed,unchecked:rows.length-checked.length,rows};
+}
+const accessoryTakeoffFieldIds=["accBraceCount","accBraceLength","accBraceMass","accGussetCount","accGussetWidth","accGussetHeight","accGussetThickness","accBasePlateWidth","accBasePlateLength","accBasePlateThickness","accAnchorPerBase","accAnchorDiameter","accAnchorLength","accConnectionBoltCount","accConnectionBoltMass"];
+let accessoryTakeoffLast=null;
+function accessoryTakeoffInputs(){
+ const out={};
+ for(const id of accessoryTakeoffFieldIds){const raw=$(id)?.value?.trim()??"";out[id]=raw===""?null:Number(raw)}
+ return out;
+}
+function calculateSupplementaryTakeoff(){
+ const p=geomResult.width?geomResult:calculateGeometry();
+ if(!p?.width){status("accessoryTakeoffStatus","ابتدا هندسه معتبر گلخانه را محاسبه کنید.",true);return null}
+ const v=accessoryTakeoffInputs(),warnings=[],rows=[],density=7.85e-6;
+ const count=(key,label)=>{
+  const x=v[key];if(x===null)return null;
+  if(!Number.isInteger(x)||x<0){warnings.push(label+": تعداد باید عدد صحیح و نامنفی باشد.");return null}
+  return x;
+ };
+ const positive=(key,label)=>{
+  const x=v[key];if(x===null)return null;
+  if(!(Number.isFinite(x)&&x>0)){warnings.push(label+": مقدار باید مثبت باشد.");return null}
+  return x;
+ };
+ const plateRow=(name,n,w,h,t,note)=>{
+  if(n===null){rows.push({name,count:"وارد نشده",basis:"نیازمند تعداد از نقشه",weight:null,note:"تعداد ثبت نشده"});return}
+  if(n===0){rows.push({name,count:0,basis:"عدد",weight:0,note:"صفر طبق ورودی کاربر"});return}
+  const dims=[w,h,t],provided=dims.filter(x=>x!==null).length;
+  if(provided===0){rows.push({name,count:n,basis:"ابعاد وارد نشده",weight:null,note:note});return}
+  if(provided!==3||dims.some(x=>!(Number.isFinite(x)&&x>0))){warnings.push(name+": برای محاسبه وزن، عرض، ارتفاع و ضخامت مثبت لازم است.");rows.push({name,count:n,basis:"ابعاد ناقص",weight:null,note:"تکمیل ابعاد لازم است"});return}
+  rows.push({name,count:n,basis:fmt(w,1)+" × "+fmt(h,1)+" × "+fmt(t,1)+" mm",weight:n*w*h*t*density,note:"جرم حجمی اسمی فولاد"});
+ };
+ const braceN=count("accBraceCount","بادبندها"),braceL=positive("accBraceLength","طول متوسط بادبند"),braceM=positive("accBraceMass","جرم واحد طول بادبند");
+ if(braceN===null)rows.push({name:"اعضای بادبند",count:"وارد نشده",basis:"نیازمند نقشه",weight:null,note:"تعداد و طول باید از نقشه برداشت شود"});
+ else if(braceN===0)rows.push({name:"اعضای بادبند",count:0,basis:"m",weight:0,note:"صفر طبق ورودی کاربر"});
+ else if(braceL===null||braceM===null){rows.push({name:"اعضای بادبند",count:braceN,basis:"طول/جرم ناقص",weight:null,note:"طول متوسط و جرم واحد طول لازم است"});warnings.push("بادبندها: تعداد، طول متوسط و جرم واحد طول را کامل کنید.")}
+ else rows.push({name:"اعضای بادبند",count:braceN,basis:fmt(braceN*braceL,2)+" m طول کل",weight:braceN*braceL*braceM,note:fmt(braceL,2)+" m برای هر عضو · "+fmt(braceM,3)+" kg/m"});
+ const gussetN=count("accGussetCount","صفحات گاست");
+ plateRow("صفحات گاست",gussetN,positive("accGussetWidth","عرض گاست"),positive("accGussetHeight","ارتفاع گاست"),positive("accGussetThickness","ضخامت گاست"),"ابعاد از نقشه اتصال وارد نشده");
+ const baseCount=p.frames*(p.bays+1);
+ if($("accBasePlateCount"))$("accBasePlateCount").value=fmt(baseCount,0);
+ plateRow("صفحات پایه ستون",baseCount,positive("accBasePlateWidth","عرض صفحه پایه"),positive("accBasePlateLength","طول صفحه پایه"),positive("accBasePlateThickness","ضخامت صفحه پایه"),"ابعاد صفحه پایه وارد نشده");
+ const anchorPer=count("accAnchorPerBase","انکربولت در هر صفحه"),anchorCount=anchorPer===null?null:anchorPer*baseCount;
+ if(anchorCount===null)rows.push({name:"انکربولت",count:"وارد نشده",basis:"تعداد در هر صفحه پایه نامشخص",weight:null,note:"تعداد باید از نقشه تعیین شود"});
+ else if(anchorCount===0)rows.push({name:"انکربولت",count:0,basis:"عدد",weight:0,note:"صفر طبق ورودی کاربر"});
+ else{
+  const d=positive("accAnchorDiameter","قطر انکربولت"),len=positive("accAnchorLength","طول انکربولت");
+  if(d===null||len===null){rows.push({name:"انکربولت",count:anchorCount,basis:"قطر/طول ناقص",weight:null,note:"قطر و طول ساق لازم است"});warnings.push("انکربولت‌ها: قطر و طول ساق را تکمیل کنید.")}
+  else rows.push({name:"انکربولت",count:anchorCount,basis:"قطر "+fmt(d,1)+" × طول ساق "+fmt(len,1)+" mm",weight:anchorCount*Math.PI*d*d/4*len*density,note:"تقریب ساق استوانه توپر؛ بدون مهره و واشر"});
+ }
+ const boltN=count("accConnectionBoltCount","پیچ‌های اتصال");
+ if(boltN===null)rows.push({name:"پیچ‌های اتصال",count:"وارد نشده",basis:"نیازمند نقشه",weight:null,note:"تعداد/جرم ثبت نشده"});
+ else if(boltN===0)rows.push({name:"پیچ‌های اتصال",count:0,basis:"عدد",weight:0,note:"صفر طبق ورودی کاربر"});
+ else{
+  const unit=positive("accConnectionBoltMass","جرم هر پیچ اتصال");
+  if(unit===null){rows.push({name:"پیچ‌های اتصال",count:boltN,basis:"جرم واحد ناقص",weight:null,note:"جرم هر پیچ از کاتالوگ لازم است"});warnings.push("پیچ‌های اتصال: جرم واحد هر پیچ را وارد کنید.")}
+  else rows.push({name:"پیچ‌های اتصال",count:boltN,basis:fmt(unit,4)+" kg/عدد",weight:boltN*unit,note:"طبق جرم واحد واردشده"});
+ }
+ const configured=accessoryTakeoffFieldIds.some(id=>v[id]!==null);
+ const known=rows.filter(r=>Number.isFinite(r.weight)),knownWeight=known.reduce((s,r)=>s+r.weight,0),hasKnown=known.length>0;
+ const orderWeight=hasKnown?knownWeight*(1+(p.steelWaste||0)/100):null;
+ const cost=orderWeight!==null&&p.steelPrice>0?orderWeight*p.steelPrice:null;
+ const mainPlusAccessory=p.weight!==null&&hasKnown&&!warnings.length?p.weight+knownWeight:null;
+ accessoryTakeoffLast={input:v,baseCount,anchorCount,rows,knownWeight:hasKnown?knownWeight:null,orderWeight,cost,mainPlusAccessory,warnings,complete:configured&&warnings.length===0,calculatedAt:new Date().toISOString()};
+ if(!configured){$("accessoryTakeoffOutput").innerHTML='<p class="muted">برای متره این اقلام، مقادیر واقعی را از نقشه سازه یا دیتاشیت وارد کنید. تعداد صفحات پایه پس از محاسبه هندسه مشخص می‌شود.</p>';status("accessoryTakeoffStatus","ورودی اقلام تکمیلی هنوز ثبت نشده است.");return accessoryTakeoffLast}
+ const warningHtml=warnings.length?'<div class="notice">'+warnings.map(esc).join(" | ")+'</div>':"";
+ $("accessoryTakeoffOutput").innerHTML='<div class="result"><h4>نتیجه متره تکمیلی</h4><p>تعداد محل‌های پایه ستون با فرض یک صفحه برای هر ستون: '+fmt(baseCount,0)+' عدد</p><div class="tablewrap"><table><thead><tr><th>قلم</th><th>تعداد</th><th>مبنای مقدار/ابعاد</th><th>وزن محاسبه‌شده (kg)</th><th>توضیح</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(String(r.count))+'</td><td>'+esc(r.basis)+'</td><td>'+(r.weight===null?"نیازمند اطلاعات":fmt(r.weight,2))+'</td><td>'+esc(r.note)+'</td></tr>').join("")+'</tbody></table></div><div class="stats"><div class="stat"><small>وزن اقلام تکمیلیِ محاسبه‌شده</small><strong>'+(hasKnown?fmt(knownWeight,2)+" kg":"—")+'</strong></div><div class="stat"><small>وزن سفارش با پرت فولاد</small><strong>'+(orderWeight===null?"—":fmt(orderWeight,2)+" kg")+'</strong></div><div class="stat"><small>هزینه تقریبی اقلام تکمیلی</small><strong>'+(cost===null?"نیازمند وزن و قیمت فولاد":fmt(cost,0)+" تومان")+'</strong></div><div class="stat"><small>وزن کل اصلی + تکمیلی</small><strong>'+(mainPlusAccessory===null?"اطلاعات ناقص":fmt(mainPlusAccessory,2)+" kg")+'</strong></div></div>'+warningHtml+'<p class="muted">مجموع وزن فقط اقلامی را شامل می‌شود که داده کامل دارند؛ تا رفع هشدارها آن را وزن نهایی سفارش تلقی نکنید.</p></div>';
+ status("accessoryTakeoffStatus",warnings.length?"متره جزئی محاسبه شد؛ برای کامل‌شدن، اطلاعات ناقص را اصلاح کنید.":"متره اقلام تکمیلی با ورودی‌های ثبت‌شده محاسبه شد.",warnings.length>0);
+ return accessoryTakeoffLast;
 }
 /* Interactive 3D orthographic greenhouse viewer */
 const modelCamera={yaw:0.72,pitch:0.48,zoom:1};
