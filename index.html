@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.24.2</title>
+<title>SAHROUD Greenhouse Pro v3.24.3</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -51,7 +51,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.24.2</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.24.3</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -130,8 +130,8 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
      <div><label>تعداد پیچ اتصال (عدد)</label><input id="accConnectionBoltCount" type="number" min="0" step="1" placeholder="از نقشه"></div>
      <div><label>جرم هر پیچ اتصال (kg/عدد)</label><input id="accConnectionBoltMass" type="number" min="0.001" step="0.001" placeholder="از کاتالوگ"></div>
     </div>
-    <div class="toolbar"><button onclick="calculateSupplementaryTakeoff()">محاسبه متره تکمیلی</button><button class="btn-soft" onclick="exportSupplementaryTakeoffCSV()">دریافت CSV متره تکمیلی</button></div>
-    <div class="status" id="accessoryTakeoffStatus"></div><div id="accessoryTakeoffOutput"></div>
+    <div class="toolbar"><button onclick="calculateSupplementaryTakeoff()">محاسبه متره تکمیلی</button><button class="btn-soft" onclick="exportSupplementaryTakeoffCSV()">دریافت CSV متره تکمیلی</button><button class="btn-soft" onclick="runAccessoryTakeoffSelfTest()">آزمون فرمول‌های متره</button></div>
+    <div class="status" id="accessoryTakeoffStatus"></div><div id="accessoryTakeoffOutput"></div><div id="accessoryTakeoffTestOutput"></div>
     <p class="notice">جرم ورق‌ها با چگالی اسمی فولاد ۷۸۵۰ kg/m³ و جرم ساق انکربولت با تقریب استوانه توپر محاسبه می‌شود. رزوه، مهره، واشر، خم، سوراخ‌کاری، جوش، ورق‌های تقویتی، طول مهاری، اندرکنش بتن و فولاد و طراحی اتصال در این برآورد لحاظ نشده‌اند. این محاسبه طراحی اتصال یا فونداسیون نیست.</p>
    </div>
    <div class="notice" id="geometryWarning">این نرم‌افزار ابزار مقدماتی هندسه و متره است و تأییدیه ایمنی سازه صادر نمی‌کند.</div>
@@ -305,7 +305,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.24.2 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.24.3 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -1016,6 +1016,45 @@ function calculateSupplementaryTakeoff(){
  $("accessoryTakeoffOutput").innerHTML='<div class="result"><h4>نتیجه متره تکمیلی</h4><p>تعداد محل‌های پایه ستون با فرض یک صفحه برای هر ستون: '+fmt(baseCount,0)+' عدد</p><div class="tablewrap"><table><thead><tr><th>قلم</th><th>تعداد</th><th>مبنای مقدار/ابعاد</th><th>وزن محاسبه‌شده (kg)</th><th>توضیح</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(String(r.count))+'</td><td>'+esc(r.basis)+'</td><td>'+(r.weight===null?"نیازمند اطلاعات":fmt(r.weight,2))+'</td><td>'+esc(r.note)+'</td></tr>').join("")+'</tbody></table></div><div class="stats"><div class="stat"><small>وزن اقلام تکمیلیِ محاسبه‌شده</small><strong>'+(hasKnown?fmt(knownWeight,2)+" kg":"—")+'</strong></div><div class="stat"><small>وزن سفارش با پرت فولاد</small><strong>'+(orderWeight===null?"—":fmt(orderWeight,2)+" kg")+'</strong></div><div class="stat"><small>هزینه تقریبی اقلام تکمیلی</small><strong>'+(cost===null?"نیازمند وزن و قیمت فولاد":fmt(cost,0)+" تومان")+'</strong></div><div class="stat"><small>وزن کل اصلی + تکمیلی</small><strong>'+(mainPlusAccessory===null?"اطلاعات ناقص":fmt(mainPlusAccessory,2)+" kg")+'</strong></div></div>'+warningHtml+'<p class="muted">مجموع وزن فقط اقلامی را شامل می‌شود که داده کامل دارند؛ تا رفع هشدارها آن را وزن نهایی سفارش تلقی نکنید.</p></div>';
  status("accessoryTakeoffStatus",complete?"متره تکمیلی کامل است؛ صحت مقادیر ورودی همچنان باید با نقشه کنترل شود.":"متره جزئی است؛ تعداد یا ابعاد بعضی اقلام هنوز ثبت نشده است.",!complete);
  return accessoryTakeoffLast;
+}
+function runAccessoryTakeoffSelfTest(){
+ const p=geomResult.width?geomResult:calculateGeometry();
+ if(!p?.width){status("accessoryTakeoffStatus","ابتدا هندسه معتبر را محاسبه کنید.",true);return null}
+ const saved=Object.fromEntries(accessoryTakeoffFieldIds.map(id=>[id,$(id)?.value??""]));
+ const sample={accBraceCount:20,accBraceLength:4,accBraceMass:6.5,accGussetCount:40,accGussetWidth:250,accGussetHeight:250,accGussetThickness:10,accBasePlateWidth:300,accBasePlateLength:300,accBasePlateThickness:20,accAnchorPerBase:4,accAnchorDiameter:20,accAnchorLength:600,accConnectionBoltCount:200,accConnectionBoltMass:.42};
+ const checks=[];
+ try{
+  for(const [id,value] of Object.entries(sample))$(id).value=String(value);
+  const result=calculateSupplementaryTakeoff();
+  if(!result)throw new Error("اجرای محاسبه نمونه ناموفق بود.");
+  const getWeight=name=>result.rows.find(r=>r.name===name)?.weight;
+  const expectedBaseCount=p.frames*(p.bays+1),expectedAnchorCount=expectedBaseCount*4;
+  const expected={
+   "تعداد صفحات پایه":{actual:result.baseCount,expected:expectedBaseCount},
+   "تعداد انکربولت":{actual:result.anchorCount,expected:expectedAnchorCount},
+   "وزن بادبندها (kg)":{actual:getWeight("اعضای بادبند"),expected:20*4*6.5},
+   "وزن صفحات گاست (kg)":{actual:getWeight("صفحات گاست"),expected:40*250*250*10*7.85e-6},
+   "وزن صفحات پایه (kg)":{actual:getWeight("صفحات پایه ستون"),expected:expectedBaseCount*300*300*20*7.85e-6},
+   "وزن ساق انکربولت (kg)":{actual:getWeight("انکربولت"),expected:expectedAnchorCount*Math.PI*20*20/4*600*7.85e-6},
+   "وزن پیچ‌ها (kg)":{actual:getWeight("پیچ‌های اتصال"),expected:200*.42}
+  };
+  for(const [label,q] of Object.entries(expected)){
+   const ok=Number.isFinite(q.actual)&&Math.abs(q.actual-q.expected)<=1e-8*Math.max(1,Math.abs(q.expected));
+   checks.push({label,...q,ok});
+  }
+  checks.push({label:"وضعیت کامل‌بودن مجموعه نمونه",actual:result.complete?"کامل":"ناقص",expected:"کامل",ok:result.complete});
+  const passed=checks.filter(x=>x.ok).length;
+  $("accessoryTakeoffTestOutput").innerHTML='<div class="result"><h4>آزمون عددی متره تکمیلی</h4><p>'+passed+' از '+checks.length+' کنترل موفق شدند.</p><div class="tablewrap"><table><thead><tr><th>کنترل</th><th>مقدار محاسبه‌شده</th><th>مقدار مرجع</th><th>نتیجه</th></tr></thead><tbody>'+checks.map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+esc(typeof x.actual==="number"?fmt(x.actual,6):String(x.actual))+'</td><td>'+esc(typeof x.expected==="number"?fmt(x.expected,6):String(x.expected))+'</td><td>'+(x.ok?"قبول":"مردود")+'</td></tr>').join("")+'</tbody></table></div><p class="muted">آزمون از مقادیر نمونه ثابت استفاده می‌کند و اطلاعات قبلی فرم پس از آزمون بازگردانده می‌شوند. این آزمون فقط فرمول‌های متره را کنترل می‌کند، نه صحت نقشه یا طراحی مهندسی.</p></div>';
+  status("accessoryTakeoffStatus",passed===checks.length?"آزمون فرمول‌های متره تکمیلی موفق بود؛ ورودی‌های قبلی بازگردانده شدند.":"آزمون متره تکمیلی ناموفق بود؛ فرمول‌ها باید بازبینی شوند.",passed!==checks.length);
+  return {passed,total:checks.length,allPass:passed===checks.length,checks};
+ }catch(e){
+  $("accessoryTakeoffTestOutput").textContent="خطا در آزمون متره: "+e.message;
+  status("accessoryTakeoffStatus","آزمون متره تکمیلی با خطا مواجه شد: "+e.message,true);
+  return null;
+ }finally{
+  for(const id of accessoryTakeoffFieldIds)if($(id))$(id).value=saved[id];
+  calculateSupplementaryTakeoff();
+ }
 }
 function exportSupplementaryTakeoffCSV(){
  let data=accessoryTakeoffLast;
