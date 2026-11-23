@@ -285,7 +285,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 function status(id,msg,error=false){const e=$(id);if(e){e.textContent=msg;e.classList.toggle("error",error)}}
 function download(name,data,type="application/octet-stream"){const blob=new Blob([data],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1200)}
 function uid(){return "sah-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7)}
-function showPage(id){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===id));document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===id));if(id==="reports")renderReport();if(id==="profiles")renderSectionProfileBank()}
+function showPage(id){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===id));document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===id));if(id==="reports")renderReport();if(id==="profiles")renderSectionProfileBank();if(id==="structure")drawLongTrussView()}
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.page)));
 
 /* User-supplied section database; no fabricated catalogue values */
