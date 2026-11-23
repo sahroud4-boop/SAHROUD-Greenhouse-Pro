@@ -106,6 +106,8 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
    <div class="card"><h3>متره تفکیکی اعضای سازه‌ای</h3><p class="muted">برای هر گروه عضو می‌توان نام مقطع و جرم واحد طول مستقل ثبت کرد. وزن‌ها بر مبنای داده واردشده محاسبه می‌شوند و نیازمند تطبیق با دیتاشیت معتبر هستند.</p><div class="tablewrap"><table><thead><tr><th>عضو</th><th>مقطع ثبت‌شده</th><th>تعداد</th><th>طول واحد (m)</th><th>طول کل (m)</th><th>جرم (kg/m)</th><th>وزن (kg)</th></tr></thead><tbody id="memberRows"></tbody></table></div></div>
    <div class="card"><h3>برآورد هزینه و مقادیر تأمین</h3><div class="stats"><div class="stat"><small>طول کل فولاد خالص</small><strong id="steelLength">—</strong></div><div class="stat"><small>وزن خالص فولاد</small><strong id="weight">—</strong></div><div class="stat"><small>هزینه فولاد با پرت</small><strong id="steelCost">—</strong></div><div class="stat"><small>هزینه پوشش با پرت</small><strong id="coverCost">—</strong></div></div><div class="tablewrap"><table><thead><tr><th>قلم تأمین</th><th>مقدار خالص</th><th>پرت</th><th>مقدار سفارش</th><th>واحد</th><th>هزینه</th></tr></thead><tbody id="procurementRows"></tbody></table></div><h3 id="totalCost">جمع هزینه اقلام قابل محاسبه: —</h3></div>
    <div class="notice" id="geometryWarning">این نرم‌افزار ابزار مقدماتی هندسه و متره است و تأییدیه ایمنی سازه صادر نمی‌کند.</div>
+   <div class="toolbar" style="margin-top:10px"><button class="btn-soft" onclick="runGeometryIntegrationAudit()">کنترل یکپارچگی مدل‌ها و متره</button></div>
+   <div class="status" id="geometryAuditStatus"></div><div id="geometryAuditOutput"></div>
   </section>
  </div>
 </section>
@@ -861,6 +863,60 @@ function calculateGeometry(){
  audit.push("اقلام خارج از مدل فعلی: بادبندها، اتصالات، ورق‌های اتصال، بیس‌پلیت، انکربولت، برش/وصله و پرت برش بهینه.");
  $("geometryWarning").textContent="کنترل کیفیت متره: "+(audit.length?audit.join(" | "):"ورودی‌های پایه کامل‌اند.")+" این متره همچنان هندسی و مقدماتی است و باید با نقشه اجرایی تطبیق داده شود.";
  drawModel(p);$("activeProjectText").textContent="پروژه فعال: "+(p.project||"بدون نام");return geomResult;
+}
+function runGeometryIntegrationAudit(){
+ const p=calculateGeometry();
+ if(!p){status("geometryAuditStatus","ابتدا ورودی‌های هندسی را معتبر کنید.",true);$("geometryAuditOutput").innerHTML="";return null}
+ const rows=[];
+ const add=(group,label,actual,expected,tolerance=1e-6)=>{
+  const ok=Number.isFinite(actual)&&Number.isFinite(expected)&&Math.abs(actual-expected)<=tolerance*Math.max(1,Math.abs(expected));
+  rows.push({group,label,actual,expected,ok});
+ };
+ const width=p.bays*p.bayWidth;
+ add("هندسه","عرض کل (m)",p.width,width);
+ add("هندسه","مساحت کف (m²)",p.floor,width*p.length);
+ add("هندسه","مساحت سقف (m²)",p.roofArea,2*p.bays*p.slopeLength*p.length);
+ add("هندسه","سطح پوشش خالص (m²)",p.cover,p.roofArea+p.sideWalls+p.endWalls);
+ add("هندسه","تعداد قاب‌ها",p.frames,Math.ceil(p.length/p.spacing)+1,0);
+ add("متره","جمع طول اعضای فهرست‌شده (m)",p.totalSteelLength,p.members.reduce((s,m)=>s+m.count*m.unitLength,0));
+ const frameRaw=$("frameModel")?.value?.trim()||"";
+ if(frameRaw){
+  try{
+   const m=JSON.parse(frameRaw);
+   if(m.modelType==="greenhouse-generated-2D-frame"){
+    const b=p.bays,cols=m.elements.filter(e=>String(e.id||"").startsWith("ستون-")),rafters=m.elements.filter(e=>String(e.id||"").startsWith("رفتر "));
+    add("قاب 2D","تعداد گره‌ها",m.nodes.length,3*b+2,0);
+    add("قاب 2D","تعداد اعضا",m.elements.length,3*b+1,0);
+    add("قاب 2D","تعداد ستون‌ها",cols.length,b+1,0);
+    add("قاب 2D","تعداد رفترها",rafters.length,2*b,0);
+    add("قاب 2D","طول ستون‌ها (mm)",Math.max(0,...cols.map(e=>{const a=m.nodes[e.i],z=m.nodes[e.j];return Math.hypot(z.x-a.x,z.y-a.y)})),p.height*1000);
+    add("قاب 2D","طول رفترها (mm)",Math.max(0,...rafters.map(e=>{const a=m.nodes[e.i],z=m.nodes[e.j];return Math.hypot(z.x-a.x,z.y-a.y)})),p.slopeLength*1000);
+    const fresh=JSON.stringify(m.generationInputs)===JSON.stringify(greenhouseFrameGenerationInputs());
+    rows.push({group:"قاب 2D",label:"تطابق ورودی‌های زمان تولید",actual:fresh?"تطبیق دارد":"مدل قدیمی",expected:"تطبیق دارد",ok:fresh});
+   }else rows.push({group:"قاب 2D",label:"مدل خودکار گلخانه",actual:"مدل نمونه/دستی",expected:"مدل خودکار",ok:null});
+  }catch(e){rows.push({group:"قاب 2D",label:"خواندن JSON مدل",actual:e.message,expected:"JSON معتبر",ok:false})}
+ }else rows.push({group:"قاب 2D",label:"وضعیت مدل",actual:"تولید نشده",expected:"اختیاری",ok:null});
+ const trussRaw=$("longTrussModel")?.value?.trim()||"";
+ if(trussRaw){
+  try{
+   const m=JSON.parse(trussRaw),g=m.generationInputs;
+   if(g&&m.modelType==="idealized-3D-axial-longitudinal-bracing"){
+    const b=p.bays,expectedNodes=5*(3*b+2),expectedElements=50*b+21;
+    add("خرپای 3D","تعداد گره‌ها",m.nodes.length,expectedNodes,0);
+    add("خرپای 3D","تعداد اعضا",m.elements.length,expectedElements,0);
+    add("خرپای 3D","بیشینه مختصات عرضی X (mm)",Math.max(...m.nodes.map(n=>Number(n.x))),p.width*1000);
+    add("خرپای 3D","بیشینه مختصات طولی Y (mm)",Math.max(...m.nodes.map(n=>Number(n.y))),p.length*1000);
+    add("خرپای 3D","بیشینه ارتفاع Z (mm)",Math.max(...m.nodes.map(n=>Number(n.z))),(p.height+p.ridge)*1000);
+    const fresh=["bays","bayWidth","length","height","ridge"].every(k=>Number(g[k])===Number(p[k]));
+    rows.push({group:"خرپای 3D",label:"تطابق هندسه زمان تولید",actual:fresh?"تطبیق دارد":"مدل قدیمی",expected:"تطبیق دارد",ok:fresh});
+   }else rows.push({group:"خرپای 3D",label:"مدل خودکار طولی",actual:"مدل دستی/بدون مشخصات تولید",expected:"مدل خودکار",ok:null});
+  }catch(e){rows.push({group:"خرپای 3D",label:"خواندن JSON مدل",actual:e.message,expected:"JSON معتبر",ok:false})}
+ }else rows.push({group:"خرپای 3D",label:"وضعیت مدل",actual:"تولید نشده",expected:"اختیاری",ok:null});
+ const checked=rows.filter(r=>r.ok!==null),passed=checked.filter(r=>r.ok).length,failed=checked.length-passed;
+ const state=failed===0?"کنترل‌های قابل انجام بدون مغایرت گذشتند.":"مغایرت شناسایی شد؛ پیش از تحلیل، مدل و ورودی‌ها را بازتولید/بازبینی کنید.";
+ $("geometryAuditOutput").innerHTML='<div class="result"><h4>گزارش کنترل یکپارچگی</h4><p>'+esc(state)+' | قبول: '+fmt(passed,0)+' | مغایرت: '+fmt(failed,0)+' | کنترل انجام‌نشده: '+fmt(rows.length-checked.length,0)+'</p><div class="tablewrap"><table><thead><tr><th>بخش</th><th>کنترل</th><th>مقدار فعلی</th><th>مقدار مرجع</th><th>نتیجه</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r.group)+'</td><td>'+esc(r.label)+'</td><td>'+esc(typeof r.actual==="number"?fmt(r.actual,4):String(r.actual))+'</td><td>'+esc(typeof r.expected==="number"?fmt(r.expected,4):String(r.expected))+'</td><td>'+(r.ok===null?"اطلاعات کافی نیست":r.ok?"قبول":"مغایرت")+'</td></tr>').join("")+'</tbody></table></div><p class="muted">این ممیزی، سازگاری هندسه و توپولوژی مدل تولیدشده را بررسی می‌کند؛ جایگزین کنترل بارگذاری، طراحی آیین‌نامه‌ای یا بازبینی نقشه اجرایی نیست.</p></div>';
+ status("geometryAuditStatus",state,failed>0);
+ return {passed,failed,unchecked:rows.length-checked.length,rows};
 }
 /* Interactive 3D orthographic greenhouse viewer */
 const modelCamera={yaw:0.72,pitch:0.48,zoom:1};
