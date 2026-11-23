@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.24.0</title>
+<title>SAHROUD Greenhouse Pro v3.24.1</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -51,7 +51,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.24.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.24.1</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -106,7 +106,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
    <div class="card"><h3>متره تفکیکی اعضای سازه‌ای</h3><p class="muted">برای هر گروه عضو می‌توان نام مقطع و جرم واحد طول مستقل ثبت کرد. وزن‌ها بر مبنای داده واردشده محاسبه می‌شوند و نیازمند تطبیق با دیتاشیت معتبر هستند.</p><div class="tablewrap"><table><thead><tr><th>عضو</th><th>مقطع ثبت‌شده</th><th>تعداد</th><th>طول واحد (m)</th><th>طول کل (m)</th><th>جرم (kg/m)</th><th>وزن (kg)</th></tr></thead><tbody id="memberRows"></tbody></table></div></div>
    <div class="card"><h3>برآورد هزینه و مقادیر تأمین</h3><div class="stats"><div class="stat"><small>طول کل فولاد خالص</small><strong id="steelLength">—</strong></div><div class="stat"><small>وزن خالص فولاد</small><strong id="weight">—</strong></div><div class="stat"><small>هزینه فولاد با پرت</small><strong id="steelCost">—</strong></div><div class="stat"><small>هزینه پوشش با پرت</small><strong id="coverCost">—</strong></div></div><div class="tablewrap"><table><thead><tr><th>قلم تأمین</th><th>مقدار خالص</th><th>پرت</th><th>مقدار سفارش</th><th>واحد</th><th>هزینه</th></tr></thead><tbody id="procurementRows"></tbody></table></div><h3 id="totalCost">جمع هزینه اقلام قابل محاسبه: —</h3></div>
    <div class="card"><h3>متره تکمیلی بادبند، صفحات اتصال و فونداسیون</h3>
-    <p class="muted">این بخش بر پایه مقادیر اجرایی واردشده توسط مهندس یا نقشه سازه محاسبه می‌کند؛ هیچ تعداد یا ابعاد اجرایی برای بادبند و اتصال به‌صورت خودکار فرض نمی‌شود.</p>
+    <p class="muted">این بخش بر پایه مقادیر اجرایی واردشده توسط مهندس یا نقشه سازه محاسبه می‌کند؛ هیچ تعداد یا ابعاد اجرایی برای بادبند و اتصال به‌صورت خودکار فرض نمی‌شود. ابعاد ورق گاست و صفحه پایه برای تمام صفحات هم‌شکلِ همان گروه در نظر گرفته می‌شود.</p>
     <h4>بادبندها و ورق گاست</h4><div class="g3">
      <div><label>تعداد اعضای بادبند</label><input id="accBraceCount" type="number" min="0" step="1" placeholder="از نقشه"></div>
      <div><label>طول متوسط هر بادبند (m)</label><input id="accBraceLength" type="number" min="0.01" step="0.01" placeholder="از نقشه"></div>
@@ -305,7 +305,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.24.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.24.1 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -956,7 +956,7 @@ function accessoryTakeoffInputs(){
 }
 function calculateSupplementaryTakeoff(){
  const p=geomResult.width?geomResult:calculateGeometry();
- if(!p?.width){status("accessoryTakeoffStatus","ابتدا هندسه معتبر گلخانه را محاسبه کنید.",true);return null}
+ if(!p?.width){accessoryTakeoffLast=null;if($("accessoryTakeoffOutput"))$("accessoryTakeoffOutput").innerHTML="";if($("accBasePlateCount"))$("accBasePlateCount").value="";status("accessoryTakeoffStatus","ابتدا هندسه معتبر گلخانه را محاسبه کنید؛ نتایج متره تکمیلی پاک شد.",true);return null}
  const v=accessoryTakeoffInputs(),warnings=[],rows=[],density=7.85e-6;
  const count=(key,label)=>{
   const x=v[key];if(x===null)return null;
@@ -1002,11 +1002,12 @@ function calculateSupplementaryTakeoff(){
   if(unit===null){rows.push({name:"پیچ‌های اتصال",count:boltN,basis:"جرم واحد ناقص",weight:null,note:"جرم هر پیچ از کاتالوگ لازم است"});warnings.push("پیچ‌های اتصال: جرم واحد هر پیچ را وارد کنید.")}
   else rows.push({name:"پیچ‌های اتصال",count:boltN,basis:fmt(unit,4)+" kg/عدد",weight:boltN*unit,note:"طبق جرم واحد واردشده"});
  }
+ rows.forEach(r=>{if(r.weight!==null&&!Number.isFinite(r.weight)){r.weight=null;warnings.push(r.name+": وزن محاسبه‌شده خارج از محدوده عددی است؛ ورودی‌ها را بررسی کنید.")}});
  const configured=accessoryTakeoffFieldIds.some(id=>v[id]!==null);
  const known=rows.filter(r=>Number.isFinite(r.weight)),knownWeight=known.reduce((s,r)=>s+r.weight,0),hasKnown=known.length>0;
  const orderWeight=hasKnown?knownWeight*(1+(p.steelWaste||0)/100):null;
  const cost=orderWeight!==null&&p.steelPrice>0?orderWeight*p.steelPrice:null;
- const complete=configured&&warnings.length===0&&rows.every(r=>r.weight!==null);
+ const complete=configured&&warnings.length===0&&rows.every(r=>Number.isFinite(r.weight));
  const mainPlusAccessory=p.weight!==null&&hasKnown&&complete?p.weight+knownWeight:null;
  accessoryTakeoffLast={input:v,baseCount,anchorCount,rows,knownWeight:hasKnown?knownWeight:null,orderWeight,cost,mainPlusAccessory,warnings,complete,calculatedAt:new Date().toISOString()};
  if(!configured){$("accessoryTakeoffOutput").innerHTML='<p class="muted">برای متره این اقلام، مقادیر واقعی را از نقشه سازه یا دیتاشیت وارد کنید. تعداد صفحات پایه پس از محاسبه هندسه مشخص می‌شود.</p>';status("accessoryTakeoffStatus","ورودی اقلام تکمیلی هنوز ثبت نشده است.");return accessoryTakeoffLast}
@@ -1255,10 +1256,10 @@ document.querySelectorAll("#geometry input,#geometry select").forEach(e=>e.addEv
   longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();
   status("longTrussStatus","هندسه گلخانه تغییر کرده است؛ مدل طولی 3D را دوباره تولید و تحلیل کنید.");
  }
- if(accessoryTakeoffLast||accessoryTakeoffFieldIds.some(id=>$(id)?.value?.trim()!==""))calculateSupplementaryTakeoff();
+ calculateSupplementaryTakeoff();
 }));
 window.addEventListener("resize",()=>{if(geomResult.width)drawModel(geomResult);drawLongTrussView()});
-(async function init(){try{loadSectionProfileBank();renderFrameProfileOptions();await DB.open();const all=await DB.all();if(all?.length)applyModel(all.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0]);else calculateGeometry();await renderProjects()}catch(e){console.error(e);status("projectStatus","خطا در راه‌اندازی ذخیره‌سازی مرورگر: "+e.message,true)}})();
+(async function init(){try{loadSectionProfileBank();renderFrameProfileOptions();await DB.open();const all=await DB.all();if(all?.length)applyModel(all.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0]);else {calculateGeometry();calculateSupplementaryTakeoff()}await renderProjects()}catch(e){console.error(e);status("projectStatus","خطا در راه‌اندازی ذخیره‌سازی مرورگر: "+e.message,true)}})();
 </script>
 </body>
 </html>
