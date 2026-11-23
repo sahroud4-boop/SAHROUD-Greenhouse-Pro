@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.25.0</title>
+<title>SAHROUD Greenhouse Pro v3.26.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -170,6 +170,10 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
      <div><label>نرخ بتن مگر (تومان/m³)</label><input id="fndBlindingRate" type="number" min="0" step="1000" placeholder="قیمت تأمین و اجرا"></div>
      <div><label>نرخ بتن سازه‌ای (تومان/m³)</label><input id="fndConcreteRate" type="number" min="0" step="1000" placeholder="قیمت تأمین و اجرا"></div>
      <div><label>نرخ میلگرد (تومان/kg)</label><input id="fndRebarRate" type="number" min="0" step="100" placeholder="قیمت خرید/اجرا"></div>
+     <div><label>ضریب افزایش حجم خاک برای حمل (درصد)</label><input id="fndSoilSwell" type="number" min="0" max="300" step="1" placeholder="درصد طبق نوع خاک"></div>
+     <div><label>نرخ حمل/دفع خاک (تومان/m³ حجمی)</label><input id="fndSoilDisposalRate" type="number" min="0" step="1000" placeholder="اختیاری"></div>
+     <div><label>پرت آرماتور (درصد)</label><input id="fndRebarWaste" type="number" min="0" max="100" step="0.5" placeholder="طبق سیاست متره"></div>
+     <div><label>نرخ قالب‌بندی (تومان/m²)</label><input id="fndFormworkRate" type="number" min="0" step="1000" placeholder="اختیاری"></div>
     </div>
     <div class="toolbar"><button onclick="calculateFoundationTakeoff()">محاسبه متره فونداسیون</button><button class="btn-soft" onclick="exportFoundationTakeoffCSV()">دریافت CSV فونداسیون</button><button class="btn-soft" onclick="runFoundationTakeoffSelfTest()">آزمون عددی فونداسیون</button></div>
     <div class="status" id="foundationTakeoffStatus"></div><div id="foundationTakeoffOutput"></div><div id="foundationTakeoffTestOutput"></div>
@@ -1122,7 +1126,7 @@ function exportSupplementaryTakeoffCSV(){
  status("accessoryTakeoffStatus","فایل CSV متره تکمیلی با ردیف‌ها و خلاصه وزن/هزینه ساخته شد.");
 }
 
-const foundationTakeoffFieldIds=["fndFootingCount","fndFootingLength","fndFootingWidth","fndFootingDepth","fndPedestalCount","fndPedestalLength","fndPedestalWidth","fndPedestalHeight","fndBlindingLength","fndBlindingWidth","fndBlindingThickness","fndExcavationClearance","fndExcavationDepth","fndMainBarsPerFooting","fndMainBarLength","fndMainBarMass","fndStirrupsPerFooting","fndStirrupLength","fndStirrupMass","fndExcavationRate","fndBlindingRate","fndConcreteRate","fndRebarRate"];
+const foundationTakeoffFieldIds=["fndFootingCount","fndFootingLength","fndFootingWidth","fndFootingDepth","fndPedestalCount","fndPedestalLength","fndPedestalWidth","fndPedestalHeight","fndBlindingLength","fndBlindingWidth","fndBlindingThickness","fndExcavationClearance","fndExcavationDepth","fndMainBarsPerFooting","fndMainBarLength","fndMainBarMass","fndStirrupsPerFooting","fndStirrupLength","fndStirrupMass","fndExcavationRate","fndBlindingRate","fndConcreteRate","fndRebarRate","fndSoilSwell","fndSoilDisposalRate","fndRebarWaste","fndFormworkRate"];
 let foundationTakeoffLast=null;
 function foundationTakeoffInputs(){const out={};for(const id of foundationTakeoffFieldIds){const raw=$(id)?.value?.trim()??"";out[id]=raw===""?null:Number(raw)}return out}
 function calculateFoundationTakeoff(){
@@ -1144,6 +1148,16 @@ function calculateFoundationTakeoff(){
  if(blindingTouched){const l=positive("fndBlindingLength","طول بتن مگر"),w=positive("fndBlindingWidth","عرض بتن مگر"),t=positive("fndBlindingThickness","ضخامت بتن مگر");if(footingCount===null||l===null||w===null||t===null)warnings.push("بتن مگر: تعداد پی و ابعاد کامل لازم است.");else{blindingVol=footingCount*l*w*t;addRow("بتن مگر زیر پی",blindingVol,"m³",footingCount+" × "+l+" × "+w+" × "+t,rate("fndBlindingRate","نرخ بتن مگر"),"ابعاد بتن مگر برای هر پی وارد می‌شود")}}
  const excavationTouched=raw("fndExcavationClearance")!==null||raw("fndExcavationDepth")!==null;let excavationVol=null;
  if(excavationTouched){const clear=nonnegative("fndExcavationClearance","اضافه ابعاد خاک‌برداری"),depth=positive("fndExcavationDepth","عمق خاک‌برداری");if(footingCount===null||fL===null||fW===null||clear===null||depth===null)warnings.push("خاک‌برداری: تعداد پی، ابعاد پی، اضافه ابعاد و عمق کامل لازم است.");else{excavationVol=footingCount*(fL+2*clear)*(fW+2*clear)*depth;addRow("خاک‌برداری چاله پی",excavationVol,"m³",footingCount+" × ("+fL+" + 2×"+clear+") × ("+fW+" + 2×"+clear+") × "+depth,rate("fndExcavationRate","نرخ خاک‌برداری"),"فرض جداره قائم؛ بدون شیب و سازه نگهبان")}}
+ const swell=nonnegative("fndSoilSwell","درصد افزایش حجم خاک"),disposalRate=rate("fndSoilDisposalRate","نرخ حمل و دفع خاک"),rebarWaste=nonnegative("fndRebarWaste","پرت آرماتور"),formworkRate=rate("fndFormworkRate","نرخ قالب‌بندی");
+ if(swell!==null&&swell>300)warnings.push("ضریب افزایش حجم خاک نباید بیش از ۳۰۰ درصد باشد.");
+ if(rebarWaste!==null&&rebarWaste>100)warnings.push("پرت آرماتور نباید بیش از ۱۰۰ درصد باشد.");
+ let looseSoilVolume=null;
+ if(excavationVol!==null&&swell!==null){looseSoilVolume=excavationVol*(1+swell/100);addRow("حجم خاک سست برای حمل/دفع",looseSoilVolume,"m³",excavationVol+" × (1 + "+swell+"/100)",disposalRate,"برآورد حجمی؛ ضریب افزایش حجم باید از مشخصات خاک/روش اجرا تعیین شود")}
+ let formworkArea=null;
+ if(footingCount!==null&&fL!==null&&fW!==null&&fD!==null){formworkArea+=footingCount*2*(fL+fW)*fD}
+ const pedCount=raw("fndPedestalCount"),pedL=raw("fndPedestalLength"),pedW=raw("fndPedestalWidth"),pedH=raw("fndPedestalHeight");
+ if([pedCount,pedL,pedW,pedH].every(x=>x!==null&&Number.isFinite(x)&&x>=0)&&pedCount>0&&pedL>0&&pedW>0&&pedH>0){formworkArea=(formworkArea||0)+pedCount*2*(pedL+pedW)*pedH}
+ if(Number.isFinite(formworkArea)&&formworkArea>0)addRow("سطح جانبی قالب‌بندی پی و پدستال",formworkArea,"m²","مجموع محیط جانبی × ارتفاع هر جزء",formworkRate,"سطح جانبی هندسی؛ کسر وجوه در تماس با خاک/بتن و قالب‌های خاص لازم است بررسی شود");
  const mainTouched=["fndMainBarsPerFooting","fndMainBarLength","fndMainBarMass"].some(id=>raw(id)!==null);let mainRebar=null;
  if(mainTouched){const per=count("fndMainBarsPerFooting","تعداد میلگرد اصلی در هر پی"),len=positive("fndMainBarLength","طول میلگرد اصلی"),mass=positive("fndMainBarMass","جرم واحد طول میلگرد اصلی");if(footingCount===null||per===null||len===null||mass===null)warnings.push("آرماتور اصلی: تعداد پی، تعداد میلگرد در هر پی، طول برش و جرم واحد طول کامل لازم است.");else{mainRebar=footingCount*per*len*mass;addRow("میلگردهای اصلی پی",mainRebar,"kg",footingCount+" × "+per+" × "+len+" m × "+mass+" kg/m",rate("fndRebarRate","نرخ میلگرد"),"طول برش و جرم واحد طول ورودی کاربر")}}
  const stirrupTouched=["fndStirrupsPerFooting","fndStirrupLength","fndStirrupMass"].some(id=>raw(id)!==null);let stirrupRebar=null;
@@ -1152,11 +1166,13 @@ function calculateFoundationTakeoff(){
  if(!configured){foundationTakeoffLast=null;$("foundationTakeoffOutput").innerHTML='<p class="muted">ابعاد و مقادیر را از نقشه فونداسیون یا لیستوفر وارد کنید؛ سپس محاسبه را اجرا کنید.</p>';status("foundationTakeoffStatus","هنوز ورودی متره فونداسیون ثبت نشده است.");return null}
  const concreteVolume=footingVol!==null||pedestalVol!==null?(footingVol||0)+(pedestalVol||0):null;
  const totalRebar=mainRebar!==null||stirrupRebar!==null?(mainRebar||0)+(stirrupRebar||0):null;
+ const rebarOrderWeight=totalRebar!==null&&rebarWaste!==null?totalRebar*(1+rebarWaste/100):null;
+ if(rebarOrderWeight!==null)addRow("آرماتور با پرت سفارش",rebarOrderWeight,"kg",totalRebar+" × (1 + "+rebarWaste+"/100)",rate("fndRebarRate","نرخ میلگرد"),"وزن سفارش؛ ردیف وزن خالص نیز جداگانه گزارش شده است");
  const knownCost=rows.filter(r=>Number.isFinite(r.cost)).reduce((s,r)=>s+r.cost,0),hasCost=rows.some(r=>Number.isFinite(r.cost)),civilCost=hasCost?knownCost:null;
  const geometryCosts=[p.steelCost,p.coverCost,p.gutterCost,p.fastenerCost].filter(Number.isFinite),accessoryCost=Number.isFinite(accessoryTakeoffLast?.cost)?accessoryTakeoffLast.cost:null;
  const projectCostItems=[...geometryCosts,accessoryCost,civilCost].filter(Number.isFinite),projectCost=projectCostItems.length?projectCostItems.reduce((s,x)=>s+x,0):null;
  const complete=warnings.length===0&&rows.length>0;
- foundationTakeoffLast={input:v,rows,warnings,footingCount,footingConcreteVolume:footingVol,pedestalConcreteVolume:pedestalVol,structuralConcreteVolume:concreteVolume,blindingVolume:blindingVol,excavationVolume:excavationVol,mainRebarWeight:mainRebar,stirrupRebarWeight:stirrupRebar,totalRebarWeight:totalRebar,civilCost,projectCost,complete,calculatedAt:new Date().toISOString()};
+ foundationTakeoffLast={input:v,rows,warnings,footingCount,footingConcreteVolume:footingVol,pedestalConcreteVolume:pedestalVol,structuralConcreteVolume:concreteVolume,blindingVolume:blindingVol,excavationVolume:excavationVol,mainRebarWeight:mainRebar,stirrupRebarWeight:stirrupRebar,totalRebarWeight:totalRebar,rebarOrderWeight,formworkArea,looseSoilVolume,civilCost,projectCost,complete,calculatedAt:new Date().toISOString()};
  const f=x=>Number.isFinite(x)?fmt(x,3):"—";
  $("foundationTakeoffOutput").innerHTML='<div class="result"><h4>خلاصه متره عملیات عمرانی</h4><div class="stats"><div class="stat"><small>بتن سازه‌ای پی و پدستال</small><strong>'+f(concreteVolume)+' m³</strong></div><div class="stat"><small>بتن مگر</small><strong>'+f(blindingVol)+' m³</strong></div><div class="stat"><small>خاک‌برداری</small><strong>'+f(excavationVol)+' m³</strong></div><div class="stat"><small>وزن آرماتور ثبت‌شده</small><strong>'+f(totalRebar)+' kg</strong></div></div><div class="tablewrap"><table><thead><tr><th>شرح عملیات</th><th>مقدار</th><th>واحد</th><th>نرخ واحد (تومان)</th><th>هزینه (تومان)</th><th>مبنای محاسبه</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+(r.quantity===null?"—":f(r.quantity))+'</td><td>'+r.unit+'</td><td>'+(r.rate===null?"وارد نشده":fmt(r.rate,0))+'</td><td>'+(r.cost===null?"—":fmt(r.cost,0))+'</td><td>'+esc(r.basis)+'<br>'+esc(r.note)+'</td></tr>').join("")+'</tbody></table></div><p><b>جمع هزینه عمرانی قابل محاسبه:</b> '+(civilCost===null?"—":fmt(civilCost,0)+" تومان")+'</p><p><b>جمع هزینه قابل محاسبه پروژه با اقلام هندسه، فولاد/پوشش، متره تکمیلی و عملیات عمرانی:</b> '+(projectCost===null?"—":fmt(projectCost,0)+" تومان")+'</p><p class="muted">این جمع فقط اقلامی را شامل می‌شود که مقدار و نرخ آن‌ها موجود باشد؛ هزینه‌های نامشخص به‌عنوان صفر فرض نشده‌اند.</p>'+(warnings.length?'<p class="notice"><b>موارد نیازمند تکمیل:</b><br>'+warnings.map(esc).join("<br>")+"</p>":"")+"</div>";
  status("foundationTakeoffStatus",complete?"متره ثبت‌شده فونداسیون محاسبه شد. مقادیر را با نقشه و لیستوفر تطبیق دهید.":"بخشی از ورودی‌های متره ناقص است؛ ردیف‌های ناقص در هشدارها مشخص شده‌اند.",!complete);
@@ -1169,7 +1185,7 @@ function exportFoundationTakeoffCSV(){
  push("شرح عملیات","مقدار","واحد","نرخ واحد (تومان)","هزینه (تومان)","مبنا","توضیح");
  for(const r of d.rows)push(r.name,r.quantity??"ناقص",r.unit,r.rate??"وارد نشده",r.cost??"نامشخص",r.basis,r.note);
  push("","","","","","","");push("خلاصه","مقدار","واحد");
- push("بتن سازه‌ای پی و پدستال",d.structuralConcreteVolume??"ناقص","m³");push("بتن مگر",d.blindingVolume??"ناقص","m³");push("خاک‌برداری",d.excavationVolume??"ناقص","m³");push("آرماتور کل",d.totalRebarWeight??"ناقص","kg");push("هزینه عمرانی قابل محاسبه",d.civilCost??"نامشخص","تومان");push("هزینه قابل محاسبه پروژه",d.projectCost??"نامشخص","تومان");
+ push("بتن سازه‌ای پی و پدستال",d.structuralConcreteVolume??"ناقص","m³");push("بتن مگر",d.blindingVolume??"ناقص","m³");push("خاک‌برداری",d.excavationVolume??"ناقص","m³");push("آرماتور خالص",d.totalRebarWeight??"ناقص","kg");push("آرماتور سفارش با پرت",d.rebarOrderWeight??"ناقص","kg");push("خاک سست حمل/دفع",d.looseSoilVolume??"ناقص","m³");push("سطح جانبی قالب‌بندی",d.formworkArea??"ناقص","m²");push("هزینه عمرانی قابل محاسبه",d.civilCost??"نامشخص","تومان");push("هزینه قابل محاسبه پروژه",d.projectCost??"نامشخص","تومان");
  for(const w of d.warnings)push("هشدار",w);
  download("SAHROUD_Foundation_Takeoff.csv","\uFEFF"+rows.join("\r\n"),"text/csv;charset=utf-8");status("foundationTakeoffStatus","فایل CSV متره فونداسیون ساخته شد.");
 }
