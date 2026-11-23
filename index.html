@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.26.2</title>
+<title>SAHROUD Greenhouse Pro v3.28.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -51,7 +51,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.25.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.28.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -365,15 +365,16 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
   </div>
   <div class="toolbar" style="margin-top:12px">
    <button onclick="renderExecutionCost()">محاسبه هزینه‌های اجرایی</button>
+   <button class="btn-soft" onclick="renderProjectEstimate()">محاسبه برآورد تجمیعی کل پروژه</button>
    <button class="btn-soft" onclick="exportExecutionCostCSV()">خروجی CSV هزینه‌ها</button>
    <button class="btn-soft" onclick="runExecutionCostSelfTest()">آزمون محاسبات هزینه</button>
   </div>
-  <div class="status" id="executionCostStatus"></div><div id="executionCostOutput"></div><div id="executionCostTestOutput"></div>
+  <div class="status" id="executionCostStatus"></div><div id="executionCostOutput"></div><div id="projectEstimateOutput"></div><div id="executionCostTestOutput"></div>
  </div>
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.25.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.28.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -1347,7 +1348,7 @@ function applyModel(p){
  const foundationData=p.results?.foundationTakeoff?.input||{};
  for(const id of foundationTakeoffFieldIds)if($(id))$(id).value=id==="fndFootingCount"&&foundationData[id]===undefined?String(geomResult.frames*(geomResult.bays+1)):foundationData[id]??"";
  if($("fndFootingCount"))$("fndFootingCount").dataset.manual=foundationData.fndFootingCount!==undefined&&foundationData.fndFootingCount!==null?"1":"";
- foundationTakeoffLast=null;calculateFoundationTakeoff();
+ foundationTakeoffLast=null;calculateFoundationTakeoff();renderProjectEstimate();
  if(p.climate){climateLast=p.climate;renderClimate(p.climate)}
  if(p.hydroponics?.input){Object.entries(p.hydroponics.input).forEach(([k,v])=>{if($(k))$(k).value=v})}
  hydroResult=p.hydroponics?.last||null;if(hydroResult)renderHydro(hydroResult);
@@ -1426,7 +1427,7 @@ function runBeam(){
 }
 
 /* Exports */
-function exportCSV(){if(!geomResult.width)calculateGeometry();const r=geomResult;const rows=[["شرح","مقدار","واحد","مقطع","جرم واحد (kg/m)","وزن (kg)"],["نام پروژه",r.project,""],["عرض کل",r.width,"m"],["طول",r.length,"m"],["زاویه واقعی سقف",r.actualSlope,"degree"],["مساحت کف",r.floor,"m2"],["تعداد قاب",r.frames,"عدد"],["مساحت سقف",r.roofArea,"m2"],["مساحت پوشش",r.cover,"m2"],["طول فولاد",r.totalSteelLength,"m"],...(r.members||[]).map(m=>[m.name,m.totalLength,"m",m.profile,m.massPerM??"",m.weight??""]),["وزن فولاد خالص",r.weight??"نیازمند تکمیل جرم همه اعضا","kg"],["وزن فولاد با پرت",r.steelOrderWeight??"نامشخص","kg"],["مساحت پوشش با پرت",r.coverOrderArea,"m2"],["طول ناودان مفهومی",r.gutterLength,"m"],["تعداد پیچ/بست",r.fastenersCount??"نرخ وارد نشده","عدد"]];rows.push(["","","","","",""]);rows.push(["هزینه‌های اجرایی افزوده","مبلغ (تومان)"]);const ec=calculateExecutionCost();for(const x of ec.items)rows.push([x.label,x.amount??"ثبت نشده"]);rows.push(["جمع هزینه‌های اجرایی ثبت‌شده",ec.subtotal??"نامشخص"],["ذخیره",ec.contingencyAmount??"ثبت نشده"],["جمع این بخش",ec.total??"نامشخص"]);download("SAHROUD_Quantity.csv","\uFEFF"+rows.map(a=>a.join(",")).join("\n"),"text/csv;charset=utf-8");status("exportStatus","فایل CSV آماده شد.")}
+function exportCSV(){if(!geomResult.width)calculateGeometry();const r=geomResult;const rows=[["شرح","مقدار","واحد","مقطع","جرم واحد (kg/m)","وزن (kg)"],["نام پروژه",r.project,""],["عرض کل",r.width,"m"],["طول",r.length,"m"],["زاویه واقعی سقف",r.actualSlope,"degree"],["مساحت کف",r.floor,"m2"],["تعداد قاب",r.frames,"عدد"],["مساحت سقف",r.roofArea,"m2"],["مساحت پوشش",r.cover,"m2"],["طول فولاد",r.totalSteelLength,"m"],...(r.members||[]).map(m=>[m.name,m.totalLength,"m",m.profile,m.massPerM??"",m.weight??""]),["وزن فولاد خالص",r.weight??"نیازمند تکمیل جرم همه اعضا","kg"],["وزن فولاد با پرت",r.steelOrderWeight??"نامشخص","kg"],["مساحت پوشش با پرت",r.coverOrderArea,"m2"],["طول ناودان مفهومی",r.gutterLength,"m"],["تعداد پیچ/بست",r.fastenersCount??"نرخ وارد نشده","عدد"]];rows.push(["","","","","",""]);rows.push(["هزینه‌های اجرایی افزوده","مبلغ (تومان)"]);const ec=calculateExecutionCost();for(const x of ec.items)rows.push([x.label,x.amount??"ثبت نشده"]);rows.push(["جمع هزینه‌های اجرایی ثبت‌شده",ec.subtotal??"نامشخص"],["ذخیره",ec.contingencyAmount??"ثبت نشده"],["جمع این بخش",ec.total??"نامشخص"]);const pe=calculateProjectEstimate();rows.push(["","","","","",""],["برآورد تجمیعی پروژه","مبلغ (تومان)"],...pe.categories.map(x=>[x.label,x.amount??"ثبت نشده"]),["جمع پایه",pe.baseSubtotal??"نامشخص"],["ذخیره اجرایی",pe.reserve??"ثبت نشده"],["جمع برآورد فعلی",pe.total??"نامشخص"],["بخش‌های ناقص",pe.missingCategories]);download("SAHROUD_Quantity.csv","\uFEFF"+rows.map(a=>a.join(",")).join("\n"),"text/csv;charset=utf-8");status("exportStatus","فایل CSV آماده شد.")}
 function dxfLine(x1,y1,x2,y2,layer="PLAN"){return `0\nLINE\n8\n${layer}\n10\n${x1*1000}\n20\n${y1*1000}\n30\n0\n11\n${x2*1000}\n21\n${y2*1000}\n31\n0\n`}
 function exportDXF(){if(!geomResult.width)calculateGeometry();const p=geomResult;let e="";e+=dxfLine(0,0,p.width,0)+dxfLine(p.width,0,p.width,p.length)+dxfLine(p.width,p.length,0,p.length)+dxfLine(0,p.length,0,0);for(let i=1;i<p.bays;i++)e+=dxfLine(i*p.bayWidth,0,i*p.bayWidth,p.length);for(let y=0;y<=p.length+1e-6;y+=p.spacing)e+=dxfLine(0,y,p.width,y,"FRAMES");const d=`0\nSECTION\n2\nHEADER\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n${e}0\nENDSEC\n0\nEOF\n`;download("SAHROUD_Greenhouse_Plan.dxf",d,"application/dxf");status("exportStatus","DXF شماتیک پلان دانلود شد.")}
 function exportHydroDXF(){if(!hydroResult)calculateHydro();if(!hydroResult)return;const v=hydroInput();let e="";for(let r=0;r<v.hRows;r++){const y=r*3;e+=dxfLine(0,y,v.hLength*v.hChannels,y,"CHANNELS")}e+=dxfLine(-3,-3,-3,v.hRows*3,"MAIN_PIPE");const d=`0\nSECTION\n2\nHEADER\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n${e}0\nENDSEC\n0\nEOF\n`;download("SAHROUD_Hydroponics_Schematic.dxf",d,"application/dxf")}
@@ -1454,10 +1455,42 @@ function runExecutionCostSelfTest(){
  const sample={execSteelFab:100000,execSteelInstall:200000,execCoverInstall:150000,execConcretePump:50000,execExcavationMachine:80000,execCrane:60000,execTransport:40000,execSiteFacilities:30000,execTesting:20000,execOther:10000,execContingencyRate:10};
  const d=calculateExecutionCost(sample),ok=d.subtotal===740000&&d.contingencyAmount===74000&&d.total===814000&&d.missingCount===0;
  $("executionCostTestOutput").innerHTML='<div class="result"><b>آزمون محاسبه هزینه:</b> '+(ok?"موفق":"ناموفق")+' — جمع پایه ۷۴۰٬۰۰۰، ذخیره ۷۴٬۰۰۰، جمع ۸۱۴٬۰۰۰ تومان.</div>';
- status("executionCostStatus",ok?"آزمون عددی هزینه با موفقیت انجام شد.":"آزمون عددی هزینه ناموفق بود.",!ok);return ok;
+ status("executionCostStatus",ok?"آزمون عددی هزینه با موفقیت انجام شد.":"آزمون عددی هزینه ناموفق بود.",!ok);runProjectEstimateSelfTest();return ok;
 }
 
-function reportData(){return {project:activeProject?.meta||{name:$("project").value},geometry:geomResult,accessories:calculateSupplementaryTakeoff()||accessoryTakeoffLast,foundation:calculateFoundationTakeoff()||foundationTakeoffLast,climate:activeProject?.climate||climateLast,hydro:hydroResult,structural:structuralLast,beam:beamLast,frameAnalysis:frameAnalysisLast,longTrussAnalysis:longTrussAnalysisLast,executionCost:calculateExecutionCost()}}
+
+function calculateProjectEstimate(data={}){
+ const g=data.geometry||geomResult||{},a=data.accessories||accessoryTakeoffLast||{},f=data.foundation||foundationTakeoffLast||{},e=data.executionCost||calculateExecutionCost();
+ const geometryItems=[["فولاد اصلی",g.steelCost],["پوشش گلخانه",g.coverCost],["ناودان مفهومی",g.gutterCost],["پیچ و بست",g.fastenerCost]].map(([label,amount])=>({label,amount:Number.isFinite(amount)?amount:null}));
+ const geometryKnown=geometryItems.filter(x=>Number.isFinite(x.amount));
+ const geometrySubtotal=geometryKnown.length?geometryKnown.reduce((sum,x)=>sum+x.amount,0):null;
+ const categories=[
+  {key:"geometry",label:"تأمین اصلی گلخانه",amount:geometrySubtotal,details:geometryItems,missing:geometryItems.filter(x=>x.amount===null).length},
+  {key:"accessories",label:"بادبندها و اتصالات تکمیلی",amount:Number.isFinite(a.cost)?a.cost:null,details:[],missing:Number.isFinite(a.cost)?0:1},
+  {key:"civil",label:"فونداسیون و عملیات عمرانی",amount:Number.isFinite(f.civilCost)?f.civilCost:null,details:(f.rows||[]).map(x=>({label:x.name,amount:Number.isFinite(x.cost)?x.cost:null})),missing:(f.rows||[]).filter(x=>!Number.isFinite(x.cost)).length},
+  {key:"execution",label:"دستمزد، ماشین‌آلات، حمل و سایر اجرا",amount:Number.isFinite(e.subtotal)?e.subtotal:null,details:(e.items||[]).map(x=>({label:x.label,amount:Number.isFinite(x.amount)?x.amount:null})),missing:e.missingCount||0}
+ ];
+ const known=categories.filter(x=>Number.isFinite(x.amount)),baseSubtotal=known.length?known.reduce((sum,x)=>sum+x.amount,0):null;
+ const reserve=Number.isFinite(e.contingencyAmount)?e.contingencyAmount:null;
+ const total=baseSubtotal===null?null:baseSubtotal+(reserve??0);
+ const missingCategories=categories.filter(x=>!Number.isFinite(x.amount)).length;
+ const missingDetailCount=categories.reduce((sum,x)=>sum+(x.missing||0),0);
+ return {categories,geometryItems,baseSubtotal,reserve,reserveRate:e.contingencyRate??null,total,knownCategoryCount:known.length,missingCategories,missingDetailCount,executionMissing:e.missingCount??0,complete:missingCategories===0&&missingDetailCount===0&&e.missingCount===0};
+}
+function renderProjectEstimate(){
+ const d=calculateProjectEstimate(),out=$("projectEstimateOutput");if(!out)return d;
+ const money=x=>Number.isFinite(x)?fmt(x,0)+" تومان":"ثبت نشده / نامشخص";
+ out.innerHTML='<div class="result"><h4>برآورد تجمیعی هزینه پروژه</h4><div class="tablewrap"><table><tr><th>بخش هزینه</th><th>مبلغ قابل محاسبه (تومان)</th><th>وضعیت</th></tr>'+d.categories.map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+money(x.amount)+'</td><td>'+(Number.isFinite(x.amount)?"مبلغ ثبت شده":"ناقص یا ثبت نشده")+'</td></tr>').join("")+'<tr><th>جمع هزینه‌های پایه قابل محاسبه</th><th>'+money(d.baseSubtotal)+'</th><th></th></tr><tr><td>ذخیره هزینه‌های اجرایی ('+(d.reserveRate===null?"ثبت نشده":fmt(d.reserveRate,1)+" %")+')</td><td>'+money(d.reserve)+'</td><td>فقط روی ردیف‌های اجرایی ثبت‌شده</td></tr><tr><th>جمع برآورد فعلی</th><th>'+money(d.total)+'</th><th></th></tr></table></div><p class="muted">بخش‌های فاقد جمع قابل محاسبه: '+d.missingCategories+'؛ ردیف‌های جزئی فاقد نرخ/مقدار: '+d.missingDetailCount+'؛ ردیف‌های اجرایی ثبت‌نشده: '+d.executionMissing+'. این عدد جمع مبالغ موجود است و تا تکمیل نرخ‌ها و مقادیر، برآورد نهایی یا سقف هزینه پروژه محسوب نمی‌شود.</p><details><summary>ریز هزینه‌های تأمین اصلی</summary><ul>'+d.geometryItems.map(x=>'<li>'+esc(x.label)+': '+money(x.amount)+'</li>').join("")+'</ul></details></div>';
+ return d;
+}
+function runProjectEstimateSelfTest(){
+ const d=calculateProjectEstimate({geometry:{steelCost:100,coverCost:200,gutterCost:30,fastenerCost:20},accessories:{cost:50},foundation:{civilCost:400,rows:[]},executionCost:{subtotal:740,contingencyAmount:74,contingencyRate:10,missingCount:0,items:[]}});
+ const ok=d.baseSubtotal===1540&&d.total===1614&&d.knownCategoryCount===4;
+ $("executionCostTestOutput").innerHTML+='<div class="result"><b>آزمون تجمیع هزینه پروژه:</b> '+(ok?"موفق":"ناموفق")+' — جمع پایه ۱٬۵۴۰ و با ذخیره ۱٬۶۱۴ واحد پولی.</div>';
+ status("executionCostStatus",ok?"آزمون تجمیع هزینه پروژه موفق بود.":"آزمون تجمیع هزینه پروژه ناموفق بود.",!ok);return ok;
+}
+
+function reportData(){return {project:activeProject?.meta||{name:$("project").value},geometry:geomResult,accessories:calculateSupplementaryTakeoff()||accessoryTakeoffLast,foundation:calculateFoundationTakeoff()||foundationTakeoffLast,climate:activeProject?.climate||climateLast,hydro:hydroResult,structural:structuralLast,beam:beamLast,frameAnalysis:frameAnalysisLast,longTrussAnalysis:longTrussAnalysisLast,executionCost:calculateExecutionCost(),projectEstimate:calculateProjectEstimate({geometry:geomResult,accessories:accessoryTakeoffLast,foundation:foundationTakeoffLast,executionCost:calculateExecutionCost()})}}
 function exportXLSX(){
  if(!window.XLSX){status("exportStatus","کتابخانه Excel بارگذاری نشده است؛ اتصال اینترنت را بررسی کنید.",true);return}
  if(!geomResult.width)calculateGeometry();const d=reportData(),wb=XLSX.utils.book_new();
@@ -1473,6 +1506,7 @@ function exportXLSX(){
  if(d.longTrussAnalysis?.output){const fa=d.longTrussAnalysis,o=fa.output,rows=[["بخش","شناسه","کمیت","مقدار","واحد"],["مدل","گره‌ها","",fa.model.nodes.length,"عدد"],["مدل","اعضا","",fa.model.elements.length,"عدد"],["مدل","زمان تحلیل","",fa.runAt||"",""],...o.displacements.flatMap(x=>[["جابجایی",x.node,"UX",x.ux_mm,"mm"],["جابجایی",x.node,"UY",x.uy_mm,"mm"],["جابجایی",x.node,"UZ",x.uz_mm,"mm"]]),...o.members.flatMap(m=>[["عضو",m.id,"گروه مقطع",m.sectionRole||"",""],["عضو",m.id,"مقطع",m.profile||"نامشخص",""],["عضو",m.id,"نیروی محوری",m.axialForce_N,"N"],["عضو",m.id,"تنش محوری",m.stress_MPa,"MPa"],["عضو",m.id,"نسبت تنش به Fy",m.stressRatio??"Fy نامشخص",""]]),...o.reactions.map(x=>["واکنش",x.node,x.dof,x.value,"N"])];for(const key of ["fx","fy","fz","mx","my","mz"])rows.push(["تعادل کلی",key,"بار اعمالی",o.equilibrium.applied[key],key[0]==="m"?"N·mm":"N"],["تعادل کلی",key,"واکنش",o.equilibrium.support[key],key[0]==="m"?"N·mm":"N"]);rows.push(["تعادل کلی","وضعیت","",o.equilibrium.passed?"PASS":"CHECK",""]);add("خرپای فضایی 3D",rows)}
  if(d.climate)add("اقلیم",[["پارامتر","مقدار"],["شهر",d.climate.city.name],["دوره",d.climate.period.start+" تا "+d.climate.period.end],["بیشینه دما",d.climate.climate.maxTemp],["کمینه دما",d.climate.climate.minTemp],["رطوبت میانگین",d.climate.climate.humidity],["بیشینه تندباد",d.climate.climate.maxGust]]);
  add("هزینه‌های اجرایی",[[ "شرح","مبلغ (تومان)" ],...d.executionCost.items.map(x=>[x.label,x.amount??"ثبت نشده"]),["جمع مبالغ ثبت‌شده",d.executionCost.subtotal??"نامشخص"],["درصد ذخیره",d.executionCost.contingencyRate??"ثبت نشده"],["مبلغ ذخیره",d.executionCost.contingencyAmount??"نامشخص"],["جمع این بخش",d.executionCost.total??"نامشخص"],["ردیف‌های ثبت‌نشده",d.executionCost.missingCount]]);
+ add("برآورد تجمیعی پروژه",[["بخش هزینه","مبلغ قابل محاسبه (تومان)","وضعیت"],...d.projectEstimate.categories.map(x=>[x.label,x.amount??"ثبت نشده",Number.isFinite(x.amount)?"ثبت شده":"ناقص/ثبت نشده"]),["جمع پایه",d.projectEstimate.baseSubtotal??"نامشخص","جمع مبالغ موجود"],["ذخیره اجرایی",d.projectEstimate.reserve??"ثبت نشده","فقط بر مبنای هزینه‌های اجرایی"],["جمع برآورد فعلی",d.projectEstimate.total??"نامشخص","تا تکمیل نرخ‌ها و مقادیر، نهایی نیست"],["تعداد بخش‌های ناقص",d.projectEstimate.missingCategories,""]]);
  XLSX.writeFile(wb,"SAHROUD_Project_Report.xlsx");status("exportStatus","فایل XLSX ساخته شد.")
 }
 function renderReport(){
@@ -1482,7 +1516,7 @@ function renderReport(){
  <h4>متره تکمیلی بادبند و اتصالات</h4>${a? "<p>وزن اقلام تکمیلی محاسبه‌شده: "+fmt(a.knownWeight)+" kg | وزن با پرت: "+fmt(a.orderWeight)+" kg | هزینه برآوردی: "+fmt(a.cost)+" تومان | وضعیت ورودی‌ها: "+(a.complete?"کامل":"ناقص")+"</p><table><tr><th>قلم</th><th>تعداد</th><th>مبنای مقدار</th><th>وزن (kg)</th></tr>"+a.rows.map(r=>"<tr><td>"+esc(r.name)+"</td><td>"+esc(String(r.count))+"</td><td>"+esc(r.basis)+"</td><td>"+(r.weight===null?"نامشخص":fmt(r.weight,2))+"</td></tr>").join("")+"</table><p class=\"muted\">"+a.warnings.map(esc).join(" | ")+"</p>" : "<p>متره تکمیلی هنوز تکمیل نشده است.</p>"}
 
  <h4>متره عملیات خاکی، بتن و آرماتور فونداسیون</h4>${d.foundation? "<p>بتن سازه‌ای: "+(d.foundation.structuralConcreteVolume===null?"نامشخص":fmt(d.foundation.structuralConcreteVolume,3)+" m³")+" | بتن مگر: "+(d.foundation.blindingVolume===null?"نامشخص":fmt(d.foundation.blindingVolume,3)+" m³")+" | خاک‌برداری: "+(d.foundation.excavationVolume===null?"نامشخص":fmt(d.foundation.excavationVolume,3)+" m³")+" | آرماتور: "+(d.foundation.totalRebarWeight===null?"نامشخص":fmt(d.foundation.totalRebarWeight,2)+" kg")+" | هزینه عمرانی: "+(d.foundation.civilCost===null?"نامشخص":fmt(d.foundation.civilCost,0)+" تومان")+"</p><table><tr><th>قلم</th><th>مقدار</th><th>واحد</th><th>هزینه (تومان)</th></tr>"+d.foundation.rows.map(r=>"<tr><td>"+esc(r.name)+"</td><td>"+(r.quantity===null?"نامشخص":fmt(r.quantity,3))+"</td><td>"+r.unit+"</td><td>"+(r.cost===null?"نامشخص":fmt(r.cost,0))+"</td></tr>").join("")+"</table><p class=\"muted\">"+d.foundation.warnings.map(esc).join(" | ")+"</p>" : "<p>متره عملیات عمرانی هنوز وارد نشده است.</p>"}
- <h4>هزینه‌های اجرایی و سربار</h4>${d.executionCost?`<p>جمع مبالغ ثبت‌شده: ${d.executionCost.subtotal===null?"نامشخص":fmt(d.executionCost.subtotal,0)+" تومان"} | ذخیره: ${d.executionCost.contingencyAmount===null?"ثبت نشده":fmt(d.executionCost.contingencyAmount,0)+" تومان"} | جمع این بخش: ${d.executionCost.total===null?"نامشخص":fmt(d.executionCost.total,0)+" تومان"} | ردیف‌های ثبت‌نشده: ${d.executionCost.missingCount}</p><table><tr><th>شرح</th><th>مبلغ (تومان)</th></tr>${d.executionCost.items.map(x=>"<tr><td>"+esc(x.label)+"</td><td>"+(x.amount===null?"ثبت نشده":fmt(x.amount,0))+"</td></tr>").join("")}</table>`:"<p>هزینه اجرایی ثبت نشده است.</p>"}\n <h4>اقلیم</h4>${c?`<p>${esc(c.city.name)}، ${esc(c.city.country)} | دوره ${esc(c.period.start)} تا ${esc(c.period.end)} | Tmax ${fmt(c.climate.maxTemp)} °C | Tmin ${fmt(c.climate.minTemp)} °C | RH ${fmt(c.climate.humidity)} % | gust ${fmt(c.climate.maxGust)} m/s</p><p class="muted">${esc(c.source)}</p>`:"<p>اطلاعات اقلیمی ثبت نشده است.</p>"}
+ <h4>برآورد تجمیعی کل پروژه</h4>${d.projectEstimate?`<p>جمع هزینه‌های پایه قابل محاسبه: ${d.projectEstimate.baseSubtotal===null?"نامشخص":fmt(d.projectEstimate.baseSubtotal,0)+" تومان"} | ذخیره اجرایی: ${d.projectEstimate.reserve===null?"ثبت نشده":fmt(d.projectEstimate.reserve,0)+" تومان"} | جمع برآورد فعلی: ${d.projectEstimate.total===null?"نامشخص":fmt(d.projectEstimate.total,0)+" تومان"} | بخش‌های ناقص: ${d.projectEstimate.missingCategories}</p><table><tr><th>بخش</th><th>مبلغ (تومان)</th><th>وضعیت</th></tr>${d.projectEstimate.categories.map(x=>"<tr><td>"+esc(x.label)+"</td><td>"+(Number.isFinite(x.amount)?fmt(x.amount,0):"ثبت نشده / نامشخص")+"</td><td>"+(Number.isFinite(x.amount)?"ثبت شده":"ناقص یا ثبت نشده")+"</td></tr>").join("")}</table><p class="muted">این جمع صرفاً مجموع مبالغ موجود است و با وجود نرخ یا مقدار ناقص، برآورد نهایی پروژه محسوب نمی‌شود.</p>`:"<p>برآورد تجمیعی هنوز محاسبه نشده است.</p>"}\n <h4>هزینه‌های اجرایی و سربار</h4>${d.executionCost?`<p>جمع مبالغ ثبت‌شده: ${d.executionCost.subtotal===null?"نامشخص":fmt(d.executionCost.subtotal,0)+" تومان"} | ذخیره: ${d.executionCost.contingencyAmount===null?"ثبت نشده":fmt(d.executionCost.contingencyAmount,0)+" تومان"} | جمع این بخش: ${d.executionCost.total===null?"نامشخص":fmt(d.executionCost.total,0)+" تومان"} | ردیف‌های ثبت‌نشده: ${d.executionCost.missingCount}</p><table><tr><th>شرح</th><th>مبلغ (تومان)</th></tr>${d.executionCost.items.map(x=>"<tr><td>"+esc(x.label)+"</td><td>"+(x.amount===null?"ثبت نشده":fmt(x.amount,0))+"</td></tr>").join("")}</table>`:"<p>هزینه اجرایی ثبت نشده است.</p>"}\n <h4>اقلیم</h4>${c?`<p>${esc(c.city.name)}، ${esc(c.city.country)} | دوره ${esc(c.period.start)} تا ${esc(c.period.end)} | Tmax ${fmt(c.climate.maxTemp)} °C | Tmin ${fmt(c.climate.minTemp)} °C | RH ${fmt(c.climate.humidity)} % | gust ${fmt(c.climate.maxGust)} m/s</p><p class="muted">${esc(c.source)}</p>`:"<p>اطلاعات اقلیمی ثبت نشده است.</p>"}
  <h4>هیدروپونیک</h4>${h?`<p>کانال: ${fmt(h.channels,0)} عدد | طول کانال: ${fmt(h.channelLength)} m | پایه: ${fmt(h.supports,0)} عدد | لوله: ${fmt(h.pipeLength)} m | مخزن: ${fmt(h.tankVolume)} L</p>`:"<p>متره هیدروپونیک اجرا نشده است.</p>"}
  <h4>سازه</h4>${s?`<p>بارهای خطی قاب: ${Object.entries(s.line).map(([k,v])=>k+"="+fmt(v)+" kN/m").join("، ")}</p>`:"<p>بارگذاری مقدماتی اجرا نشده است.</p>"}${b?`<p>تیر ساده: Mmax=${fmt(b.M)} kN.m، Vmax=${fmt(b.V)} kN، خیز=${fmt(b.delta)} mm</p>`:""}
  <h4>تحلیل قاب دوبعدی</h4>${f?`<p>زمان تحلیل: ${esc(f.runAt||"ثبت نشده")} | تعداد گره: ${fmt(f.model?.nodes?.length||0,0)} | تعداد عضو: ${fmt(f.output?.members?.length||0,0)} | بیشینه مؤلفه جابه‌جایی انتقالی: ${fmt(maxFrameDisp)} mm | کنترل تعادل: ${f.output?.equilibrium?.passed?"قبول":"نیازمند بازبینی"} | خطای نسبی: ${fmt((f.output?.equilibrium?.maxRelativeError||0)*100,8)} %</p>`:"<p>مدل/نتیجه تحلیل قاب ذخیره نشده است.</p>"}
