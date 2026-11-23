@@ -1304,7 +1304,7 @@ function applyModel(p){
  for(const id of accessoryTakeoffFieldIds)if($(id))$(id).value=accessoryData[id]??"";
  accessoryTakeoffLast=null;calculateSupplementaryTakeoff();
  const foundationData=p.results?.foundationTakeoff?.input||{};
- for(const id of foundationTakeoffFieldIds)if($(id))$(id).value=foundationData[id]??"";
+ for(const id of foundationTakeoffFieldIds)if($(id))$(id).value=id==="fndFootingCount"&&foundationData[id]===undefined?String(geomResult.frames*(geomResult.bays+1)):foundationData[id]??"";
  if($("fndFootingCount"))$("fndFootingCount").dataset.manual=foundationData.fndFootingCount!==undefined&&foundationData.fndFootingCount!==null?"1":"";
  foundationTakeoffLast=null;calculateFoundationTakeoff();
  if(p.climate){climateLast=p.climate;renderClimate(p.climate)}
