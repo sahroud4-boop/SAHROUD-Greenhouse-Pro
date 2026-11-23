@@ -623,8 +623,17 @@ function runTruss3DSelfTests(){
  status("longTrussTestStatus",allPass?"آزمون‌های هسته سه‌بعدی موفق بودند.":"یک یا چند آزمون هسته سه‌بعدی ناموفق بود؛ از نتیجه برای طراحی استفاده نکنید.",!allPass);return {passed:rows.filter(x=>x.pass).length,total:rows.length,allPass,rows};
 }
 
+function greenhouseFrameGenerationInputs(){
+ const p=geometryParams();
+ return {
+  geometry:{bays:p.bays,bayWidth:p.bayWidth,length:p.length,spacing:p.spacing,height:p.height,slope:p.slope,ridge:p.ridge},
+  loads:{roofLeft:num("autoRoofLeft"),roofRight:num("autoRoofRight"),sideWind:num("autoSideWind")},
+  sections:{columnProfile:$("frameColumnProfile")?.value||"",rafterProfile:$("frameRafterProfile")?.value||"",manualA:num("autoFrameA"),manualE:num("autoFrameE"),manualI:num("autoFrameI")}
+ };
+}
 function generateGreenhouseFrame(){
  try{
+  if(!calculateGeometry())throw new Error("ابتدا تمام ورودی‌های هندسی را اصلاح و محاسبه کنید.");
   const p=geometryParams(),manualA=num("autoFrameA"),manualE=num("autoFrameE"),manualI=num("autoFrameI");
    const colProfile=findSectionProfile($("frameColumnProfile")?.value),rafProfile=findSectionProfile($("frameRafterProfile")?.value);
    const sectionFor=profile=>profile?{A:Number(profile.area),E:Number(profile.E),I:Number(profile.Ix),W:[Number(profile.Wx),Number(profile.Wy)].filter(v=>Number.isFinite(v)&&v>0).sort((a,b)=>a-b)[0]||null,Fy:Number(profile.Fy),profile:profile.name}:null;
@@ -666,7 +675,7 @@ function generateGreenhouseFrame(){
     if(pressure!==0)elementLoads.push({element:elIndex,...load});
    }
   }
-  const model={units:"N, mm, MPa, mm2, mm4",assumptions:"قاب عرضی دوبعدی داخلی، اتصالات صلب، پای ستون گیردار، مقاطع ثابت؛ بارهای سطحی واردشده صرفاً بارهای سناریویی و نه بارهای طراحی آیین‌نامه‌ای",nodes,elements,restraints,loads:[],elementLoads};
+  const model={units:"N, mm, MPa, mm2, mm4",modelType:"greenhouse-generated-2D-frame",generationInputs:greenhouseFrameGenerationInputs(),assumptions:"قاب عرضی دوبعدی داخلی، اتصالات صلب، پای ستون گیردار، مقاطع ثابت؛ بارهای سطحی واردشده صرفاً بارهای سناریویی و نه بارهای طراحی آیین‌نامه‌ای",nodes,elements,restraints,loads:[],elementLoads};
   $("frameModel").value=JSON.stringify(model,null,2);frameAnalysisLast=null;$("frameOutput").innerHTML="";
   status("autoFrameStatus","مدل قاب "+p.bays+" دهانه‌ای ساخته شد؛ "+nodes.length+" گره، "+elements.length+" عضو. بارهای سقف چپ/راست و فشار افقی دیوار با فاصله قاب "+fmt(tributary)+" متر به بار خطی محلی تبدیل شدند.");
   status("frameStatus","مدل از هندسه فعلی ساخته شد. اکنون «اجرای تحلیل قاب 2D» را انتخاب کنید.");
@@ -723,7 +732,10 @@ function applyRecommendedProfile(role,index){
  applyFrameProfile(role);generateGreenhouseFrame();runFrameAnalysis();
 }
 function runFrameAnalysis(){
- try{const model=JSON.parse($("frameModel").value),out=analyzeFrame2D(model);frameAnalysisLast={model,output:out,runAt:new Date().toISOString()};
+ try{
+  const model=JSON.parse($("frameModel").value);
+  if(model.generationInputs&&JSON.stringify(model.generationInputs)!==JSON.stringify(greenhouseFrameGenerationInputs()))throw new Error("ورودی‌های هندسه، بارگذاری یا مقاطع قاب پس از تولید مدل تغییر کرده‌اند؛ ابتدا مدل قاب را دوباره بسازید.");
+  const out=analyzeFrame2D(model);frameAnalysisLast={model,output:out,runAt:new Date().toISOString()};
  const screened=out.members.map(m=>{
    const q=m.local_end_forces_N_Nmm,s=m.section;
    if(!s||!(Number(s.A)>0&&Number(s.W)>0&&Number(s.Fy)>0))return {id:m.id,missing:true};
@@ -1058,7 +1070,17 @@ function printReport(){renderReport();showPage("reports");setTimeout(()=>window.
 /* autosync geometry only; don't autosave project on every keystroke */
 $("frameModel").addEventListener("input",()=>{frameAnalysisLast=null;});$("longTrussModel").addEventListener("input",()=>{longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();});
 ["longTrussProfile","longTrussColumnProfile","longTrussRafterProfile","longTrussLongProfile","longTrussBraceProfile","longTrussTieProfile","longTrussA","longTrussE","longTrussFy","longTrussForce"].forEach(id=>$(id).addEventListener("input",()=>{if(["longTrussA","longTrussE","longTrussFy"].includes(id))$("longTrussProfile").value="";longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();status("longTrussStatus","پارامترهای خرپای طولی تغییر کرده‌اند؛ برای اعمال آن‌ها، مدل را دوباره تولید و تحلیل کنید.")}));
-document.querySelectorAll("#geometry input,#geometry select").forEach(e=>e.addEventListener("input",()=>{calculateGeometry();if($("longTrussModel").value.trim()){longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();status("longTrussStatus","هندسه گلخانه تغییر کرده است؛ مدل طولی 3D را دوباره تولید و تحلیل کنید.")}}));
+document.querySelectorAll("#geometry input,#geometry select").forEach(e=>e.addEventListener("input",()=>{
+ calculateGeometry();
+ if($("frameModel").value.trim()&&(()=>{try{return !!JSON.parse($("frameModel").value).generationInputs}catch(e){return false}})()){
+  frameAnalysisLast=null;$("frameOutput").innerHTML="";
+  status("frameStatus","ورودی‌های هندسی تغییر کرده‌اند؛ مدل قاب 2D قدیمی است. ابتدا «ساخت مدل قاب از هندسه فعلی» را اجرا کنید.");
+ }
+ if($("longTrussModel").value.trim()){
+  longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();
+  status("longTrussStatus","هندسه گلخانه تغییر کرده است؛ مدل طولی 3D را دوباره تولید و تحلیل کنید.");
+ }
+}));
 window.addEventListener("resize",()=>{if(geomResult.width)drawModel(geomResult);drawLongTrussView()});
 (async function init(){try{loadSectionProfileBank();renderFrameProfileOptions();await DB.open();const all=await DB.all();if(all?.length)applyModel(all.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0]);else calculateGeometry();await renderProjects()}catch(e){console.error(e);status("projectStatus","خطا در راه‌اندازی ذخیره‌سازی مرورگر: "+e.message,true)}})();
 </script>
