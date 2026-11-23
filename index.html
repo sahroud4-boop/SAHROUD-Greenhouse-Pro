@@ -157,7 +157,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
      <div><label>تعداد پی (عدد؛ مقدار آغازین از هندسه)</label><input id="fndFootingCount" type="number" min="0" step="1" placeholder="از نقشه" onchange="this.dataset.manual='1'"></div>
      <div><label>طول هر پی (m)</label><input id="fndFootingLength" type="number" min="0.01" step="0.01" placeholder="از نقشه"></div>
      <div><label>عرض هر پی (m)</label><input id="fndFootingWidth" type="number" min="0.01" step="0.01" placeholder="از نقشه"></div>
-     <div><label>عمق فونداسیون از روی پی تا کف (m)</label><input id="fndFootingDepth" type="number" min="0.16" step="0.01" placeholder="از نقشه" oninput="calculateGeometry()"></div>
+     <div><label>عمق فونداسیون از روی پی تا کف (m)</label><input id="fndFootingDepth" type="number" min="0.16" step="0.01" placeholder="از نقشه"></div>
     </div>
     <p class="notice">اتصال ستون در این مدل: بدون صفحه‌ستون و بدون ؛ ستون داخل بتن پی ادامه می‌یابد و انتهای فولاد ۱۵ سانتی‌متر بالاتر از کف پی متوقف می‌شود. طول فولاد ستون = ارتفاع روی پی + عمق پی − ۰٫۱۵ متر. این فرض هندسی به‌تنهایی کنترل مهار، خوردگی، انتقال نیرو یا طول گیرایی ستون مدفون نیست.</p>
     <h4>بتن مگر و خاک‌برداری</h4><div class="g3">
@@ -557,6 +557,7 @@ function longTrussSections(){
  }
  return sections;
 }
+function representativeBracedPanels(p,stationCount=5){const totalBays=Math.max(1,Math.ceil(p.length/p.spacing));return [...new Set(getSelectedBracingBays().map(bay=>Math.min(stationCount-2,Math.max(0,Math.round((bay-1)*(stationCount-2)/Math.max(1,totalBays-1))))))].sort((a,b)=>a-b)}
 function generateLongitudinalTruss(){
  try{
   const p=geometryParams(),sections=longTrussSections(),totalForce=num("longTrussForce");
@@ -574,15 +575,15 @@ function generateLongitudinalTruss(){
    for(let j=0;j<=p.bays;j++){addMember(base[si][j],base[si+1][j],"ریل پای طولی "+(j+1)+" - پنل "+(si+1),"ریل طولی","longitudinal");addMember(eave[si][j],eave[si+1][j],"تیر لبه طولی "+(j+1)+" - پنل "+(si+1),"تیر لبه طولی","longitudinal")}
    for(let j=0;j<p.bays;j++)addMember(ridge[si][j],ridge[si+1][j],"تیر تاج طولی "+(j+1)+" - پنل "+(si+1),"تیر تاج طولی","longitudinal");
   }
-  const selectedBays=getSelectedBracingBays(),bracedPanels=[...new Set(selectedBays.map(bay=>Math.min(stationCount-2,Math.max(0,Math.floor(((bay-.5)/Math.max(1,Math.ceil(p.length/p.spacing)))*(stationCount-1))))))];
+  const selectedBays=getSelectedBracingBays(),bracedPanels=representativeBracedPanels(p,stationCount);
   for(const si of bracedPanels){
    for(const j of [0,p.bays]){addMember(base[si][j],eave[si+1][j],"مهاربند X دیوار جانبی A "+j+" پنل "+(si+1),"مهاربند دیوار جانبی","braces");addMember(eave[si][j],base[si+1][j],"مهاربند X دیوار جانبی B "+j+" پنل "+(si+1),"مهاربند دیوار جانبی","braces")}
    for(let j=0;j<p.bays;j++){addMember(eave[si][j],ridge[si+1][j],"مهاربند سقف چپ A دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی","braces");addMember(ridge[si][j],eave[si+1][j],"مهاربند سقف چپ B دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی","braces");addMember(ridge[si][j],eave[si+1][j+1],"مهاربند سقف راست A دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی","braces");addMember(eave[si][j+1],ridge[si+1][j],"مهاربند سقف راست B دهانه "+(j+1)+" پنل "+(si+1),"مهاربند سقفی","braces")}
   }
   for(let si=0;si<stationCount;si++)for(let j=0;j<=p.bays;j++)restraints.push({node:base[si][j],dofs:[true,si===0||si===stationCount-1,true]});
   const topNodes=[...eave[0],...ridge[0]],loadPerNode=totalForce*1000/topNodes.length;for(const node of topNodes)loads.push({node,fx:0,fy:loadPerNode,fz:0});
-  const generationInputs={bays:p.bays,bayWidth:p.bayWidth,length:p.length,height:p.height,ridge:p.ridge,footingDepth:p.footingDepth,columnEmbedment:p.columnEmbedment,bracingBays:selectedBays,force:totalForce,sections};
-  const model={units:"N, mm, MPa, mm2",modelType:"idealized-3D-axial-longitudinal-bracing",generationInputs,assumptions:"five representative longitudinal stations; selected actual bays are mapped to nearest representative panels for this axial-only model; exact selected bay locations and quantities are recorded in the geometric model and takeoff; group-specific sections; transverse cross-sections triangulated with equivalent base-to-ridge axial web bars; base nodes restrained in X/Z and at both ends in Y; all bars axial-only; end-wall total Y force distributed equally to upper front nodes",stationY_mm:ys,sections,nodes,elements,restraints,loads};
+  const generationInputs={bays:p.bays,bayWidth:p.bayWidth,length:p.length,height:p.height,ridge:p.ridge,footingDepth:p.footingDepth,columnEmbedment:p.columnEmbedment,bracingBays:selectedBays,bracedPanels,force:totalForce,sections};
+  const model={units:"N, mm, MPa, mm2",modelType:"idealized-3D-axial-longitudinal-bracing",generationInputs,bracedPanels,assumptions:"five representative longitudinal stations; selected actual bays are mapped to nearest representative panels for this axial-only model; exact selected bay locations and quantities are recorded in the geometric model and takeoff; group-specific sections; transverse cross-sections triangulated with equivalent base-to-ridge axial web bars; base nodes restrained in X/Z and at both ends in Y; all bars axial-only; end-wall total Y force distributed equally to upper front nodes",stationY_mm:ys,sections,nodes,elements,restraints,loads};
   $("longTrussModel").value=JSON.stringify(model,null,2);longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";
   status("longTrussStatus","مدل طولی 3D ساخته شد: "+nodes.length+" گره، "+elements.length+" عضو و پنج گروه مقطع مستقل؛ نیروی کل "+fmt(totalForce)+" kN به "+topNodes.length+" گره جلویی توزیع شد.");renderLongTrussModel(model);
  }catch(e){status("longTrussStatus","خطا در تولید مدل: "+e.message,true)}
@@ -722,7 +723,7 @@ function renderLongTrussOutput(model,out,runAt){
  renderLongTrussMemberRows();
 }
 function runLongitudinalTruss(){
- try{const model=JSON.parse($("longTrussModel").value),g=model.generationInputs;if(g){const p=geometryParams(),current={bays:p.bays,bayWidth:p.bayWidth,length:p.length,height:p.height,ridge:p.ridge,footingDepth:p.footingDepth,columnEmbedment:p.columnEmbedment,bracingBays:getSelectedBracingBays(),force:num("longTrussForce"),sections:longTrussSections()};if(["bays","bayWidth","length","height","ridge","footingDepth","columnEmbedment","force"].some(k=>g[k]!==current[k])||JSON.stringify(g.bracingBays)!==JSON.stringify(current.bracingBays)||JSON.stringify(g.sections)!==JSON.stringify(current.sections))throw new Error("ورودی‌های هندسه، مقاطع گروهی یا بار با مدل تولیدشده یکسان نیستند؛ ابتدا مدل طولی را دوباره تولید کنید.")}const out=analyzeTruss3D(model),runAt=new Date().toISOString();longTrussAnalysisLast={model,output:out,runAt};renderLongTrussModel(model,out);renderLongTrussOutput(model,out,runAt);status("longTrussStatus",out.equilibrium.passed?"تحلیل 3D انجام شد؛ کنترل تعادل کلی قبول است. نتایج محوری و جابه‌جایی را با محدودیت‌های مدل بررسی کنید.":"تحلیل انجام شد اما کنترل تعادل کلی ناموفق است؛ قیود و بارگذاری را بازبینی کنید.",!out.equilibrium.passed)}
+ try{const model=JSON.parse($("longTrussModel").value),g=model.generationInputs;if(g){const p=geometryParams(),current={bays:p.bays,bayWidth:p.bayWidth,length:p.length,height:p.height,ridge:p.ridge,footingDepth:p.footingDepth,columnEmbedment:p.columnEmbedment,bracingBays:getSelectedBracingBays(),bracedPanels:representativeBracedPanels(p,5),force:num("longTrussForce"),sections:longTrussSections()};if(["bays","bayWidth","length","height","ridge","footingDepth","columnEmbedment","force"].some(k=>g[k]!==current[k])||JSON.stringify(g.bracingBays)!==JSON.stringify(current.bracingBays)||JSON.stringify(g.sections)!==JSON.stringify(current.sections))throw new Error("ورودی‌های هندسه، مقاطع گروهی یا بار با مدل تولیدشده یکسان نیستند؛ ابتدا مدل طولی را دوباره تولید کنید.")}const out=analyzeTruss3D(model),runAt=new Date().toISOString();longTrussAnalysisLast={model,output:out,runAt};renderLongTrussModel(model,out);renderLongTrussOutput(model,out,runAt);status("longTrussStatus",out.equilibrium.passed?"تحلیل 3D انجام شد؛ کنترل تعادل کلی قبول است. نتایج محوری و جابه‌جایی را با محدودیت‌های مدل بررسی کنید.":"تحلیل انجام شد اما کنترل تعادل کلی ناموفق است؛ قیود و بارگذاری را بازبینی کنید.",!out.equilibrium.passed)}
  catch(e){longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";status("longTrussStatus","خطا در تحلیل 3D: "+e.message,true)}
 }
 function runTruss3DSelfTests(){
@@ -1025,12 +1026,13 @@ function runGeometryIntegrationAudit(){
   try{
    const m=JSON.parse(trussRaw),g=m.generationInputs;
    if(g&&m.modelType==="idealized-3D-axial-longitudinal-bracing"){
-    const b=p.bays,expectedNodes=5*(3*b+2),expectedElements=50*b+21;
+    const b=p.bays,expectedNodes=5*(3*b+2),expectedElements=50*b+21+Math.max(0,(m.bracedPanels||[]).length-2)*(4+4*b);
     add("خرپای 3D","تعداد گره‌ها",m.nodes.length,expectedNodes,0);
     add("خرپای 3D","تعداد اعضا",m.elements.length,expectedElements,0);
     add("خرپای 3D","بیشینه مختصات عرضی X (mm)",Math.max(...m.nodes.map(n=>Number(n.x))),p.width*1000);
     add("خرپای 3D","بیشینه مختصات طولی Y (mm)",Math.max(...m.nodes.map(n=>Number(n.y))),p.length*1000);
     add("خرپای 3D","بیشینه ارتفاع Z (mm)",Math.max(...m.nodes.map(n=>Number(n.z))),(p.height+p.ridge)*1000);
+    add("خرپای 3D","کمینه تراز پایه ستون (mm)",Math.min(...m.nodes.map(n=>Number(n.z))),-p.columnEmbedment*1000);
     const fresh=["bays","bayWidth","length","height","ridge","footingDepth","columnEmbedment"].every(k=>Number(g[k]??0)===Number(p[k]??0))&&JSON.stringify(g.bracingBays||[])===JSON.stringify(getSelectedBracingBays());
     rows.push({group:"خرپای 3D",label:"تطابق هندسه زمان تولید",actual:fresh?"تطبیق دارد":"مدل قدیمی",expected:"تطبیق دارد",ok:fresh});
    }else rows.push({group:"خرپای 3D",label:"مدل خودکار طولی",actual:"مدل دستی/بدون مشخصات تولید",expected:"مدل خودکار",ok:null});
@@ -1252,7 +1254,7 @@ function drawModel(p){
   const xr=X*cy-Y*sy,yr=X*sy+Y*cy;
   return {x:xr,y:yr*cp+z*sp,depth:yr*sp-z*cp};
  };
- const xs=[0,p.bays*p.bayWidth],ys=[0,p.length],zs=[-Math.max(0,p.columnEmbedment||0),0,p.height,p.height+p.ridge];
+ const xs=[0,p.bays*p.bayWidth],ys=[0,p.length],zs=[-Math.max(0,p.columnEmbedment||0,p.footingDepth||0),0,p.height,p.height+p.ridge];
  const bounds=[];
  for(const x of xs)for(const y of ys)for(const z of zs)bounds.push(projectRaw(x,y,z));
  for(let j=0;j<p.bays;j++)for(const y of ys)bounds.push(projectRaw((j+.5)*p.bayWidth,y,p.height+p.ridge));
