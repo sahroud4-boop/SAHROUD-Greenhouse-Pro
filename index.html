@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.23.0</title>
+<title>SAHROUD Greenhouse Pro v3.24.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -51,7 +51,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.23.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.24.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -305,7 +305,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.23.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.24.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -1006,12 +1006,14 @@ function calculateSupplementaryTakeoff(){
  const known=rows.filter(r=>Number.isFinite(r.weight)),knownWeight=known.reduce((s,r)=>s+r.weight,0),hasKnown=known.length>0;
  const orderWeight=hasKnown?knownWeight*(1+(p.steelWaste||0)/100):null;
  const cost=orderWeight!==null&&p.steelPrice>0?orderWeight*p.steelPrice:null;
- const mainPlusAccessory=p.weight!==null&&hasKnown&&!warnings.length?p.weight+knownWeight:null;
- accessoryTakeoffLast={input:v,baseCount,anchorCount,rows,knownWeight:hasKnown?knownWeight:null,orderWeight,cost,mainPlusAccessory,warnings,complete:configured&&warnings.length===0,calculatedAt:new Date().toISOString()};
+ const complete=configured&&warnings.length===0&&rows.every(r=>r.weight!==null);
+ const mainPlusAccessory=p.weight!==null&&hasKnown&&complete?p.weight+knownWeight:null;
+ accessoryTakeoffLast={input:v,baseCount,anchorCount,rows,knownWeight:hasKnown?knownWeight:null,orderWeight,cost,mainPlusAccessory,warnings,complete,calculatedAt:new Date().toISOString()};
  if(!configured){$("accessoryTakeoffOutput").innerHTML='<p class="muted">برای متره این اقلام، مقادیر واقعی را از نقشه سازه یا دیتاشیت وارد کنید. تعداد صفحات پایه پس از محاسبه هندسه مشخص می‌شود.</p>';status("accessoryTakeoffStatus","ورودی اقلام تکمیلی هنوز ثبت نشده است.");return accessoryTakeoffLast}
- const warningHtml=warnings.length?'<div class="notice">'+warnings.map(esc).join(" | ")+'</div>':"";
+ const pending=rows.filter(r=>r.weight===null).map(r=>r.name+": اطلاعات لازم تکمیل نشده است");
+ const notices=[...warnings,...pending],warningHtml=notices.length?'<div class="notice">'+notices.map(esc).join(" | ")+'</div>':"";
  $("accessoryTakeoffOutput").innerHTML='<div class="result"><h4>نتیجه متره تکمیلی</h4><p>تعداد محل‌های پایه ستون با فرض یک صفحه برای هر ستون: '+fmt(baseCount,0)+' عدد</p><div class="tablewrap"><table><thead><tr><th>قلم</th><th>تعداد</th><th>مبنای مقدار/ابعاد</th><th>وزن محاسبه‌شده (kg)</th><th>توضیح</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(String(r.count))+'</td><td>'+esc(r.basis)+'</td><td>'+(r.weight===null?"نیازمند اطلاعات":fmt(r.weight,2))+'</td><td>'+esc(r.note)+'</td></tr>').join("")+'</tbody></table></div><div class="stats"><div class="stat"><small>وزن اقلام تکمیلیِ محاسبه‌شده</small><strong>'+(hasKnown?fmt(knownWeight,2)+" kg":"—")+'</strong></div><div class="stat"><small>وزن سفارش با پرت فولاد</small><strong>'+(orderWeight===null?"—":fmt(orderWeight,2)+" kg")+'</strong></div><div class="stat"><small>هزینه تقریبی اقلام تکمیلی</small><strong>'+(cost===null?"نیازمند وزن و قیمت فولاد":fmt(cost,0)+" تومان")+'</strong></div><div class="stat"><small>وزن کل اصلی + تکمیلی</small><strong>'+(mainPlusAccessory===null?"اطلاعات ناقص":fmt(mainPlusAccessory,2)+" kg")+'</strong></div></div>'+warningHtml+'<p class="muted">مجموع وزن فقط اقلامی را شامل می‌شود که داده کامل دارند؛ تا رفع هشدارها آن را وزن نهایی سفارش تلقی نکنید.</p></div>';
- status("accessoryTakeoffStatus",warnings.length?"متره جزئی محاسبه شد؛ برای کامل‌شدن، اطلاعات ناقص را اصلاح کنید.":"متره اقلام تکمیلی با ورودی‌های ثبت‌شده محاسبه شد.",warnings.length>0);
+ status("accessoryTakeoffStatus",complete?"متره تکمیلی کامل است؛ صحت مقادیر ورودی همچنان باید با نقشه کنترل شود.":"متره جزئی است؛ تعداد یا ابعاد بعضی اقلام هنوز ثبت نشده است.",!complete);
  return accessoryTakeoffLast;
 }
 /* Interactive 3D orthographic greenhouse viewer */
