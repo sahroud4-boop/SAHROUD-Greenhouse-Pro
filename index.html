@@ -1022,7 +1022,7 @@ function runAccessoryTakeoffSelfTest(){
  if(!p?.width){status("accessoryTakeoffStatus","ابتدا هندسه معتبر را محاسبه کنید.",true);return null}
  const saved=Object.fromEntries(accessoryTakeoffFieldIds.map(id=>[id,$(id)?.value??""]));
  const sample={accBraceCount:20,accBraceLength:4,accBraceMass:6.5,accGussetCount:40,accGussetWidth:250,accGussetHeight:250,accGussetThickness:10,accBasePlateWidth:300,accBasePlateLength:300,accBasePlateThickness:20,accAnchorPerBase:4,accAnchorDiameter:20,accAnchorLength:600,accConnectionBoltCount:200,accConnectionBoltMass:.42};
- const checks=[];
+ const checks=[];let finalStatus="",finalError=false;
  try{
   for(const [id,value] of Object.entries(sample))$(id).value=String(value);
   const result=calculateSupplementaryTakeoff();
@@ -1045,15 +1045,16 @@ function runAccessoryTakeoffSelfTest(){
   checks.push({label:"وضعیت کامل‌بودن مجموعه نمونه",actual:result.complete?"کامل":"ناقص",expected:"کامل",ok:result.complete});
   const passed=checks.filter(x=>x.ok).length;
   $("accessoryTakeoffTestOutput").innerHTML='<div class="result"><h4>آزمون عددی متره تکمیلی</h4><p>'+passed+' از '+checks.length+' کنترل موفق شدند.</p><div class="tablewrap"><table><thead><tr><th>کنترل</th><th>مقدار محاسبه‌شده</th><th>مقدار مرجع</th><th>نتیجه</th></tr></thead><tbody>'+checks.map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+esc(typeof x.actual==="number"?fmt(x.actual,6):String(x.actual))+'</td><td>'+esc(typeof x.expected==="number"?fmt(x.expected,6):String(x.expected))+'</td><td>'+(x.ok?"قبول":"مردود")+'</td></tr>').join("")+'</tbody></table></div><p class="muted">آزمون از مقادیر نمونه ثابت استفاده می‌کند و اطلاعات قبلی فرم پس از آزمون بازگردانده می‌شوند. این آزمون فقط فرمول‌های متره را کنترل می‌کند، نه صحت نقشه یا طراحی مهندسی.</p></div>';
-  status("accessoryTakeoffStatus",passed===checks.length?"آزمون فرمول‌های متره تکمیلی موفق بود؛ ورودی‌های قبلی بازگردانده شدند.":"آزمون متره تکمیلی ناموفق بود؛ فرمول‌ها باید بازبینی شوند.",passed!==checks.length);
+  finalStatus=passed===checks.length?"آزمون فرمول‌های متره تکمیلی موفق بود؛ ورودی‌های قبلی بازگردانده شدند.":"آزمون متره تکمیلی ناموفق بود؛ فرمول‌ها باید بازبینی شوند.";finalError=passed!==checks.length;
   return {passed,total:checks.length,allPass:passed===checks.length,checks};
  }catch(e){
   $("accessoryTakeoffTestOutput").textContent="خطا در آزمون متره: "+e.message;
-  status("accessoryTakeoffStatus","آزمون متره تکمیلی با خطا مواجه شد: "+e.message,true);
+  finalStatus="آزمون متره تکمیلی با خطا مواجه شد: "+e.message;finalError=true;
   return null;
  }finally{
   for(const id of accessoryTakeoffFieldIds)if($(id))$(id).value=saved[id];
   calculateSupplementaryTakeoff();
+  if(finalStatus)status("accessoryTakeoffStatus",finalStatus,finalError);
  }
 }
 function exportSupplementaryTakeoffCSV(){
