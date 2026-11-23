@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.26.1</title>
+<title>SAHROUD Greenhouse Pro v3.26.2</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -1198,7 +1198,8 @@ function runFoundationTakeoffSelfTest(){
   for(const [id,value] of Object.entries(sample))$(id).value=String(value);
   const d=calculateFoundationTakeoff();if(!d)throw new Error("محاسبه نمونه فونداسیون اجرا نشد.");
   const expected={"حجم بتن پی":{actual:d.footingConcreteVolume,expected:4.8},"حجم بتن پدستال":{actual:d.pedestalConcreteVolume,expected:.6},"حجم بتن مگر":{actual:d.blindingVolume,expected:.968},"حجم خاک‌برداری":{actual:d.excavationVolume,expected:13.52},"وزن میلگرد اصلی":{actual:d.mainRebarWeight,expected:49.728},"وزن خاموت":{actual:d.stirrupRebarWeight,expected:28.416},"وزن کل آرماتور":{actual:d.totalRebarWeight,expected:78.144}};
-  expected["خاک سست حمل"]={actual:d.looseSoilVolume,expected:13.52*1.25};expected["قالب‌بندی جانبی"]={actual:d.formworkArea,expected:2*2*(2+2)*.6+2*2*(.5+.5)*1.2};expected["وزن سفارش آرماتور"]={actual:d.rebarOrderWeight,expected:78.144*1.05};\n  for(const [label,q] of Object.entries(expected)){const ok=Number.isFinite(q.actual)&&Math.abs(q.actual-q.expected)<1e-9*Math.max(1,Math.abs(q.expected));checks.push({label,...q,ok})}
+  expected["خاک سست حمل"]={actual:d.looseSoilVolume,expected:13.52*1.25};expected["قالب‌بندی جانبی"]={actual:d.formworkArea,expected:2*2*(2+2)*.6+2*2*(.5+.5)*1.2};expected["وزن سفارش آرماتور"]={actual:d.rebarOrderWeight,expected:78.144*1.05};
+  for(const [label,q] of Object.entries(expected)){const ok=Number.isFinite(q.actual)&&Math.abs(q.actual-q.expected)<1e-9*Math.max(1,Math.abs(q.expected));checks.push({label,...q,ok})}
   checks.push({label:"وضعیت کامل نمونه",actual:d.complete?"کامل":"ناقص",expected:"کامل",ok:d.complete});
   const passed=checks.filter(x=>x.ok).length;
   $("foundationTakeoffTestOutput").innerHTML='<div class="result"><h4>نتیجه آزمون عددی فونداسیون</h4><p>'+passed+' از '+checks.length+' کنترل موفق شدند.</p><div class="tablewrap"><table><thead><tr><th>کنترل</th><th>مقدار واقعی</th><th>مرجع</th><th>نتیجه</th></tr></thead><tbody>'+checks.map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+esc(typeof x.actual==="number"?fmt(x.actual,6):String(x.actual))+'</td><td>'+esc(String(x.expected))+'</td><td>'+(x.ok?"قبول":"مردود")+'</td></tr>').join("")+'</tbody></table></div><p class="muted">پس از آزمون، مقادیر قبلی فرم بازگردانده می‌شوند. این آزمون فقط فرمول‌های متره را می‌سنجد.</p></div>';
