@@ -1013,7 +1013,7 @@ function runGeometryIntegrationAudit(){
     add("قاب 2D","تعداد اعضا",m.elements.length,3*b+1,0);
     add("قاب 2D","تعداد ستون‌ها",cols.length,b+1,0);
     add("قاب 2D","تعداد رفترها",rafters.length,2*b,0);
-    add("قاب 2D","طول ستون‌ها (mm)",Math.max(0,...cols.map(e=>{const a=m.nodes[e.i],z=m.nodes[e.j];return Math.hypot(z.x-a.x,z.y-a.y)})),p.height*1000);
+    add("قاب 2D","طول ستون‌ها با دفن (mm)",Math.max(0,...cols.map(e=>{const a=m.nodes[e.i],z=m.nodes[e.j];return Math.hypot(z.x-a.x,z.y-a.y)})),(p.height+p.columnEmbedment)*1000);
     add("قاب 2D","طول رفترها (mm)",Math.max(0,...rafters.map(e=>{const a=m.nodes[e.i],z=m.nodes[e.j];return Math.hypot(z.x-a.x,z.y-a.y)})),p.slopeLength*1000);
     const fresh=JSON.stringify(m.generationInputs)===JSON.stringify(greenhouseFrameGenerationInputs());
     rows.push({group:"قاب 2D",label:"تطابق ورودی‌های زمان تولید",actual:fresh?"تطبیق دارد":"مدل قدیمی",expected:"تطبیق دارد",ok:fresh});
@@ -1286,8 +1286,8 @@ function drawModel(p){
  for(let j=0;j<=bays;j++){
   const x=j*bw;add([x,0,H],[x,L,H],"#4d9b7b",1.5);
  }
- const selected=Array.isArray(p.bracingBays)?p.bracingBays:[],frameYs=p.frameYs||[];
- for(const bay of selected){const y0=frameYs[bay-1],y1=frameYs[bay];if(!Number.isFinite(y0)||!Number.isFinite(y1))continue;for(const x of [0,bays*bw]){add([x,y0,0],[x,y1,H],"#c45b28",2.8);add([x,y0,H],[x,y1,0],"#c45b28",2.8)}for(let j=0;j<bays;j++){const x0=j*bw,xm=x0+bw/2,x1=x0+bw,zr=H+R;for(const [xa,za,xb,zb] of [[x0,H,xm,zr],[xm,zr,x1,H]]){add([xa,y0,za],[xb,y1,zb],"#c45b28",2.2);add([xb,y0,zb],[xa,y1,za],"#c45b28",2.2)}}}
+ const selected=Array.isArray(p.bracingBays)?p.bracingBays:[],bracingYs=p.frameYs||frameYs;
+ for(const bay of selected){const y0=bracingYs[bay-1],y1=bracingYs[bay];if(!Number.isFinite(y0)||!Number.isFinite(y1))continue;for(const x of [0,bays*bw]){add([x,y0,0],[x,y1,H],"#c45b28",2.8);add([x,y0,H],[x,y1,0],"#c45b28",2.8)}for(let j=0;j<bays;j++){const x0=j*bw,xm=x0+bw/2,x1=x0+bw,zr=H+R;for(const [xa,za,xb,zb] of [[x0,H,xm,zr],[xm,zr,x1,H]]){add([xa,y0,za],[xb,y1,zb],"#c45b28",2.2);add([xb,y0,zb],[xa,y1,za],"#c45b28",2.2)}}}
  if(p.footingDepth>0&&p.footingLength>0&&p.footingWidth>0){const dx=p.footingLength/2,dy=p.footingWidth/2,z0=-p.footingDepth;for(const y of shownYs)for(let j=0;j<=bays;j++){const x=j*bw,corners=[[x-dx,y-dy,z0],[x+dx,y-dy,z0],[x+dx,y+dy,z0],[x-dx,y+dy,z0]],top=corners.map(q=>[q[0],q[1],0]);for(let k=0;k<4;k++){add(corners[k],corners[(k+1)%4],"#8b9d91",1.2);add(top[k],top[(k+1)%4],"#8b9d91",1.2);add(corners[k],top[k],"#8b9d91",1.2)}}}
  for(let j=0;j<bays;j++){
   const x=(j+.5)*bw;add([x,0,H+R],[x,L,H+R],"#d69b3d",1.7);
@@ -1341,7 +1341,7 @@ function applyModel(p){
  activeProject=p;
  $("metaName").value=p.meta?.name||"";$("metaClient").value=p.meta?.client||"";$("metaCity").value=p.meta?.city||"";$("metaCountry").value=p.meta?.country||"ایران";$("metaType").value=p.meta?.type||"چنددهانه";$("metaCrop").value=p.meta?.crop||"";$("metaNotes").value=p.notes||"";
  selectedBracingBays=Array.isArray(p.geometry?.bracingBays)?[...p.geometry.bracingBays]:null;
- if(p.geometry){const g=p.geometry;for(const [k,id] of Object.entries({project:"project",bays:"bays",bayWidth:"bayWidth",length:"length",spacing:"spacing",height:"height",slope:"slope",ridge:"ridge",mass:"mass",bracingMass:"bracingMass",steelPrice:"steelPrice",coverPrice:"coverPrice",coverType:"coverType",steelWaste:"steelWaste",coverWaste:"coverWaste",gutterPrice:"gutterPrice",fastenersRate:"fastenersRate",fastenerPrice:"fastenerPrice"})){if(g[k]!==undefined)$(id).value=g[k]}for(const k of ["columns","rafters","eaves","ridges","purlins"]){const spec=g.memberSpecs?.[k]||{};if($("profile_"+k))$("profile_"+k).value=spec.profile||"";if($("mass_"+k))$("mass_"+k).value=spec.massPerM??""}calculateGeometry()}
+ if(p.geometry){const g=p.geometry;for(const [k,id] of Object.entries({project:"project",bays:"bays",bayWidth:"bayWidth",length:"length",spacing:"spacing",height:"height",slope:"slope",ridge:"ridge",mass:"mass",bracingMass:"bracingMass",footingDepth:"fndFootingDepth",footingLength:"fndFootingLength",footingWidth:"fndFootingWidth",steelPrice:"steelPrice",coverPrice:"coverPrice",coverType:"coverType",steelWaste:"steelWaste",coverWaste:"coverWaste",gutterPrice:"gutterPrice",fastenersRate:"fastenersRate",fastenerPrice:"fastenerPrice"})){if(g[k]!==undefined)$(id).value=g[k]}for(const k of ["columns","rafters","eaves","ridges","purlins"]){const spec=g.memberSpecs?.[k]||{};if($("profile_"+k))$("profile_"+k).value=spec.profile||"";if($("mass_"+k))$("mass_"+k).value=spec.massPerM??""}calculateGeometry()}
  applyFabInputs(p.results?.fabTakeoff?.input||{});
  const executionData=p.results?.executionCosts?.input||{};for(const id of executionCostFieldIds)if($(id))$(id).value=executionData[id]??"";renderExecutionCost();
  const accessoryData=p.results?.accessoryTakeoff?.input||{};
@@ -1350,7 +1350,7 @@ function applyModel(p){
  const foundationData=p.results?.foundationTakeoff?.input||{};
  for(const id of foundationTakeoffFieldIds)if($(id))$(id).value=id==="fndFootingCount"&&foundationData[id]===undefined?String(geomResult.frames*(geomResult.bays+1)):foundationData[id]??"";
  if($("fndFootingCount"))$("fndFootingCount").dataset.manual=foundationData.fndFootingCount!==undefined&&foundationData.fndFootingCount!==null?"1":"";
- foundationTakeoffLast=null;calculateFoundationTakeoff();renderProjectEstimate();
+ foundationTakeoffLast=null;calculateGeometry();calculateFoundationTakeoff();renderProjectEstimate();
  if(p.climate){climateLast=p.climate;renderClimate(p.climate)}
  if(p.hydroponics?.input){Object.entries(p.hydroponics.input).forEach(([k,v])=>{if($(k))$(k).value=v})}
  hydroResult=p.hydroponics?.last||null;if(hydroResult)renderHydro(hydroResult);
