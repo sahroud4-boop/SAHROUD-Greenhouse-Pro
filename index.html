@@ -628,7 +628,12 @@ function greenhouseFrameGenerationInputs(){
  return {
   geometry:{bays:p.bays,bayWidth:p.bayWidth,length:p.length,spacing:p.spacing,height:p.height,slope:p.slope,ridge:p.ridge},
   loads:{roofLeft:num("autoRoofLeft"),roofRight:num("autoRoofRight"),sideWind:num("autoSideWind")},
-  sections:{columnProfile:$("frameColumnProfile")?.value||"",rafterProfile:$("frameRafterProfile")?.value||"",manualA:num("autoFrameA"),manualE:num("autoFrameE"),manualI:num("autoFrameI")}
+  sections:{
+   columnProfile:$("frameColumnProfile")?.value||"",rafterProfile:$("frameRafterProfile")?.value||"",
+   columnData:(()=>{const p=findSectionProfile($("frameColumnProfile")?.value);return p?{area:p.area,E:p.E,Ix:p.Ix,Wx:p.Wx,Wy:p.Wy,Fy:p.Fy}:null})(),
+   rafterData:(()=>{const p=findSectionProfile($("frameRafterProfile")?.value);return p?{area:p.area,E:p.E,Ix:p.Ix,Wx:p.Wx,Wy:p.Wy,Fy:p.Fy}:null})(),
+   manualA:num("autoFrameA"),manualE:num("autoFrameE"),manualI:num("autoFrameI")
+  }
  };
 }
 function generateGreenhouseFrame(){
@@ -794,18 +799,26 @@ function runFrameSelfTests(){
 
 /* Geometry calculation based on uploaded v2.12 source */
 let geomResult={};
+function invalidateGeometryResults(message){
+ geomResult={};
+ for(const id of ["widthStat","floorStat","frameStat","coverStat","vWidth","vLength","vHeight","vRidge","vSlope","vActualSlope","vRoof","vWalls","steelLength","weight","steelCost","coverCost","totalCost"])if($(id))$(id).textContent="—";
+ for(const id of ["quantityRows","memberRows","procurementRows"])if($(id))$(id).innerHTML="";
+ if($("geometryWarning"))$("geometryWarning").textContent=message||"ورودی هندسی نامعتبر است؛ نتایج قبلی پاک شده‌اند.";
+ const canvas=$("model");
+ if(canvas){const r=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio||1;if(r.width&&r.height){canvas.width=Math.round(r.width*ratio);canvas.height=Math.round(r.height*ratio);const ctx=canvas.getContext("2d");ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,r.width,r.height);ctx.fillStyle="#718078";ctx.font="13px Tahoma";ctx.textAlign="center";ctx.fillText("ورودی هندسی نامعتبر است؛ پس از اصلاح دوباره محاسبه کنید.",r.width/2,r.height/2)}}
+}
 function geometryParams(){return {memberSpecs:memberSpecs(),project:$("project").value,bays:Math.max(1,Math.floor(num("bays")||1)),bayWidth:num("bayWidth")||0,length:num("length")||0,spacing:Math.max(.1,num("spacing")||.1),height:num("height")||0,slope:num("slope")||0,ridge:num("ridge")||0,mass:num("mass")||0,steelPrice:num("steelPrice")||0,coverPrice:num("coverPrice")||0,coverType:$("coverType").value,steelWaste:num("steelWaste")||0,coverWaste:num("coverWaste")||0,gutterPrice:num("gutterPrice")||0,fastenersRate:num("fastenersRate")||0,fastenerPrice:num("fastenerPrice")||0}}
 function memberSpecs(){const keys=["columns","rafters","eaves","ridges","purlins"];const out={};for(const k of keys){const p=$("profile_"+k),m=$("mass_"+k);out[k]={profile:p?.value?.trim()||"",massPerM:m&&m.value.trim()!==""?Number(m.value):null}}return out}
 function calculateGeometry(){
  const requiredGeometry=["bays","bayWidth","length","spacing","height","slope","ridge"];
  const raw=Object.fromEntries(requiredGeometry.map(id=>[id,$(id)?.value?.trim()??""]));
  const missing=requiredGeometry.filter(id=>raw[id]==="");
- if(missing.length){status("projectStatus","ورودی هندسی خالی است: "+missing.join("، "),true);return null}
+ if(missing.length){invalidateGeometryResults("ورودی هندسی خالی است: "+missing.join("، ")+"؛ نتایج قبلی پاک شدند.");status("projectStatus","ورودی هندسی خالی است: "+missing.join("، "),true);return null}
  const v=Object.fromEntries(requiredGeometry.map(id=>[id,Number(raw[id])]));
- if(Object.values(v).some(x=>!Number.isFinite(x))){status("projectStatus","تمام ورودی‌های هندسی باید عددی و متناهی باشند.",true);return null}
- if(!Number.isInteger(v.bays)||v.bays<1||v.bays>30){status("projectStatus","تعداد دهانه باید عدد صحیح بین ۱ تا ۳۰ باشد.",true);return null}
- if(!(v.bayWidth>=1&&v.bayWidth<=50&&v.length>=1&&v.length<=1000&&v.spacing>=0.1&&v.spacing<=50&&v.height>=1&&v.height<=30&&v.ridge>0&&v.ridge<=20&&v.slope>0&&v.slope<89)){status("projectStatus","مقادیر هندسی خارج از محدوده قابل قبول‌اند؛ عرض دهانه ۱–۵۰، طول ۱–۱۰۰۰، فاصله قاب ۰٫۱–۵۰، ارتفاع ستون ۱–۳۰، افزایش تاج بیش از صفر تا ۲۰ متر و شیب هدف بین صفر و ۸۹ درجه باشد.",true);return null}
- if(Math.ceil(v.length/v.spacing)+1>501){status("projectStatus","تعداد قاب‌های حاصل بیش از ۵۰۱ است؛ فاصله قاب‌ها یا طول گلخانه را بازبینی کنید.",true);return null}
+ if(Object.values(v).some(x=>!Number.isFinite(x))){invalidateGeometryResults("ورودی غیرعددی یا نامتناهی است؛ نتایج قبلی پاک شدند.");status("projectStatus","تمام ورودی‌های هندسی باید عددی و متناهی باشند.",true);return null}
+ if(!Number.isInteger(v.bays)||v.bays<1||v.bays>30){invalidateGeometryResults("تعداد دهانه نامعتبر است؛ نتایج قبلی پاک شدند.");status("projectStatus","تعداد دهانه باید عدد صحیح بین ۱ تا ۳۰ باشد.",true);return null}
+ if(!(v.bayWidth>=1&&v.bayWidth<=50&&v.length>=1&&v.length<=1000&&v.spacing>=0.1&&v.spacing<=50&&v.height>=1&&v.height<=30&&v.ridge>0&&v.ridge<=20&&v.slope>0&&v.slope<89)){invalidateGeometryResults("مقادیر هندسی خارج از محدوده‌اند؛ نتایج قبلی پاک شدند.");status("projectStatus","مقادیر هندسی خارج از محدوده قابل قبول‌اند؛ عرض دهانه ۱–۵۰، طول ۱–۱۰۰۰، فاصله قاب ۰٫۱–۵۰، ارتفاع ستون ۱–۳۰، افزایش تاج بیش از صفر تا ۲۰ متر و شیب هدف بین صفر و ۸۹ درجه باشد.",true);return null}
+ if(Math.ceil(v.length/v.spacing)+1>501){invalidateGeometryResults("تعداد قاب‌های محاسباتی بیش از حد است؛ نتایج قبلی پاک شدند.");status("projectStatus","تعداد قاب‌های حاصل بیش از ۵۰۱ است؛ فاصله قاب‌ها یا طول گلخانه را بازبینی کنید.",true);return null}
  const p=geometryParams();
  const width=p.bays*p.bayWidth,frameCount=Math.ceil(p.length/p.spacing)+1;
  const frameYs=Array.from({length:frameCount},(_,i)=>Math.min(p.length,i*p.spacing));
@@ -1068,7 +1081,9 @@ function renderReport(){
 function printReport(){renderReport();showPage("reports");setTimeout(()=>window.print(),150)}
 
 /* autosync geometry only; don't autosave project on every keystroke */
-$("frameModel").addEventListener("input",()=>{frameAnalysisLast=null;});$("longTrussModel").addEventListener("input",()=>{longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();});
+$("frameModel").addEventListener("input",()=>{frameAnalysisLast=null;$("frameOutput").innerHTML="";});
+const frameInputIds=["frameColumnProfile","frameRafterProfile","autoFrameA","autoFrameE","autoFrameI","autoRoofLeft","autoRoofRight","autoSideWind"];
+frameInputIds.forEach(id=>{const el=$(id);if(!el)return;const markStale=()=>{let generated=false;try{generated=!!JSON.parse($("frameModel").value||"{}").generationInputs}catch(e){}if(generated){frameAnalysisLast=null;$("frameOutput").innerHTML="";status("frameStatus","بارگذاری یا مقاطع قاب تغییر کرده‌اند؛ مدل قاب قدیمی است. ابتدا مدل را دوباره بسازید.")}};el.addEventListener("input",markStale);el.addEventListener("change",markStale)});$("longTrussModel").addEventListener("input",()=>{longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();});
 ["longTrussProfile","longTrussColumnProfile","longTrussRafterProfile","longTrussLongProfile","longTrussBraceProfile","longTrussTieProfile","longTrussA","longTrussE","longTrussFy","longTrussForce"].forEach(id=>$(id).addEventListener("input",()=>{if(["longTrussA","longTrussE","longTrussFy"].includes(id))$("longTrussProfile").value="";longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();status("longTrussStatus","پارامترهای خرپای طولی تغییر کرده‌اند؛ برای اعمال آن‌ها، مدل را دوباره تولید و تحلیل کنید.")}));
 document.querySelectorAll("#geometry input,#geometry select").forEach(e=>e.addEventListener("input",()=>{
  calculateGeometry();
