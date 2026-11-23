@@ -159,7 +159,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
      <div><label>عرض هر پی (m)</label><input id="fndFootingWidth" type="number" min="0.01" step="0.01" placeholder="از نقشه"></div>
      <div><label>عمق فونداسیون از روی پی تا کف (m)</label><input id="fndFootingDepth" type="number" min="0.16" step="0.01" placeholder="از نقشه"></div>
     </div>
-    <p class="notice">اتصال ستون در این مدل: بدون صفحه‌ستون و بدون ؛ ستون داخل بتن پی ادامه می‌یابد و انتهای فولاد ۱۵ سانتی‌متر بالاتر از کف پی متوقف می‌شود. طول فولاد ستون = ارتفاع روی پی + عمق پی − ۰٫۱۵ متر. این فرض هندسی به‌تنهایی کنترل مهار، خوردگی، انتقال نیرو یا طول گیرایی ستون مدفون نیست.</p>
+    <p class="notice">اتصال ستون در این مدل: ستون فولادی مستقیماً داخل بتن پی ادامه می‌یابد؛ ارتفاع ستون در صفحه هندسه از روی پی اندازه‌گیری می‌شود و انتهای فولاد ۱۵ سانتی‌متر بالاتر از کف پی متوقف می‌شود. طول فولاد ستون = ارتفاع روی پی + عمق پی − ۰٫۱۵ متر. این فرض هندسی به‌تنهایی کنترل مهار، خوردگی، انتقال نیرو یا طول گیرایی ستون مدفون نیست.</p>
     <h4>بتن مگر و خاک‌برداری</h4><div class="g3">
      <div><label>طول مگر زیر هر پی (m)</label><input id="fndBlindingLength" type="number" min="0.01" step="0.01" placeholder="ابعاد اجرایی"></div>
      <div><label>عرض مگر زیر هر پی (m)</label><input id="fndBlindingWidth" type="number" min="0.01" step="0.01" placeholder="ابعاد اجرایی"></div>
@@ -1015,6 +1015,7 @@ function runGeometryIntegrationAudit(){
     add("قاب 2D","تعداد ستون‌ها",cols.length,b+1,0);
     add("قاب 2D","تعداد رفترها",rafters.length,2*b,0);
     add("قاب 2D","طول ستون‌ها با دفن (mm)",Math.max(0,...cols.map(e=>{const a=m.nodes[e.i],z=m.nodes[e.j];return Math.hypot(z.x-a.x,z.y-a.y)})),(p.height+p.columnEmbedment)*1000);
+    add("قاب 2D","تراز انتهای ستون داخل بتن (mm)",Math.min(...cols.map(e=>Math.min(m.nodes[e.i].y,m.nodes[e.j].y))),-p.columnEmbedment*1000);
     add("قاب 2D","طول رفترها (mm)",Math.max(0,...rafters.map(e=>{const a=m.nodes[e.i],z=m.nodes[e.j];return Math.hypot(z.x-a.x,z.y-a.y)})),p.slopeLength*1000);
     const fresh=JSON.stringify(m.generationInputs)===JSON.stringify(greenhouseFrameGenerationInputs());
     rows.push({group:"قاب 2D",label:"تطابق ورودی‌های زمان تولید",actual:fresh?"تطبیق دارد":"مدل قدیمی",expected:"تطبیق دارد",ok:fresh});
@@ -1593,7 +1594,6 @@ const frameInputIds=["frameColumnProfile","frameRafterProfile","autoFrameA","aut
 frameInputIds.forEach(id=>{const el=$(id);if(!el)return;const markStale=()=>{let generated=false;try{generated=!!JSON.parse($("frameModel").value||"{}").generationInputs}catch(e){}if(generated){frameAnalysisLast=null;$("frameOutput").innerHTML="";status("frameStatus","بارگذاری یا مقاطع قاب تغییر کرده‌اند؛ مدل قاب قدیمی است. ابتدا مدل را دوباره بسازید.")}};el.addEventListener("input",markStale);el.addEventListener("change",markStale)});$("longTrussModel").addEventListener("input",()=>{longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();});
 ["longTrussProfile","longTrussColumnProfile","longTrussRafterProfile","longTrussLongProfile","longTrussBraceProfile","longTrussTieProfile","longTrussA","longTrussE","longTrussFy","longTrussForce"].forEach(id=>$(id).addEventListener("input",()=>{if(["longTrussA","longTrussE","longTrussFy"].includes(id))$("longTrussProfile").value="";longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();status("longTrussStatus","پارامترهای خرپای طولی تغییر کرده‌اند؛ برای اعمال آن‌ها، مدل را دوباره تولید و تحلیل کنید.")}));
 $("bracingMass")?.addEventListener("input",()=>calculateGeometry());
- $("fndFootingDepth")?.addEventListener("input",()=>{calculateGeometry();if($("frameModel").value.trim())status("frameStatus","عمق پی/طول دفن ستون تغییر کرده است؛ مدل قاب 2D را دوباره تولید کنید.");if($("longTrussModel").value.trim())status("longTrussStatus","عمق پی/طول دفن ستون تغییر کرده است؛ مدل خرپای طولی را دوباره تولید کنید.");});
 document.querySelectorAll("#geometry input,#geometry select").forEach(e=>e.addEventListener("input",()=>{
  calculateGeometry();
  if($("frameModel").value.trim()&&(()=>{try{return !!JSON.parse($("frameModel").value).generationInputs}catch(e){return false}})()){
