@@ -130,7 +130,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
      <div><label>تعداد پیچ اتصال (عدد)</label><input id="accConnectionBoltCount" type="number" min="0" step="1" placeholder="از نقشه"></div>
      <div><label>جرم هر پیچ اتصال (kg/عدد)</label><input id="accConnectionBoltMass" type="number" min="0.001" step="0.001" placeholder="از کاتالوگ"></div>
     </div>
-    <div class="toolbar"><button onclick="calculateSupplementaryTakeoff()">محاسبه متره تکمیلی</button></div>
+    <div class="toolbar"><button onclick="calculateSupplementaryTakeoff()">محاسبه متره تکمیلی</button><button class="btn-soft" onclick="exportSupplementaryTakeoffCSV()">دریافت CSV متره تکمیلی</button></div>
     <div class="status" id="accessoryTakeoffStatus"></div><div id="accessoryTakeoffOutput"></div>
     <p class="notice">جرم ورق‌ها با چگالی اسمی فولاد ۷۸۵۰ kg/m³ و جرم ساق انکربولت با تقریب استوانه توپر محاسبه می‌شود. رزوه، مهره، واشر، خم، سوراخ‌کاری، جوش، ورق‌های تقویتی، طول مهاری، اندرکنش بتن و فولاد و طراحی اتصال در این برآورد لحاظ نشده‌اند. این محاسبه طراحی اتصال یا فونداسیون نیست.</p>
    </div>
@@ -1016,6 +1016,27 @@ function calculateSupplementaryTakeoff(){
  $("accessoryTakeoffOutput").innerHTML='<div class="result"><h4>نتیجه متره تکمیلی</h4><p>تعداد محل‌های پایه ستون با فرض یک صفحه برای هر ستون: '+fmt(baseCount,0)+' عدد</p><div class="tablewrap"><table><thead><tr><th>قلم</th><th>تعداد</th><th>مبنای مقدار/ابعاد</th><th>وزن محاسبه‌شده (kg)</th><th>توضیح</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(String(r.count))+'</td><td>'+esc(r.basis)+'</td><td>'+(r.weight===null?"نیازمند اطلاعات":fmt(r.weight,2))+'</td><td>'+esc(r.note)+'</td></tr>').join("")+'</tbody></table></div><div class="stats"><div class="stat"><small>وزن اقلام تکمیلیِ محاسبه‌شده</small><strong>'+(hasKnown?fmt(knownWeight,2)+" kg":"—")+'</strong></div><div class="stat"><small>وزن سفارش با پرت فولاد</small><strong>'+(orderWeight===null?"—":fmt(orderWeight,2)+" kg")+'</strong></div><div class="stat"><small>هزینه تقریبی اقلام تکمیلی</small><strong>'+(cost===null?"نیازمند وزن و قیمت فولاد":fmt(cost,0)+" تومان")+'</strong></div><div class="stat"><small>وزن کل اصلی + تکمیلی</small><strong>'+(mainPlusAccessory===null?"اطلاعات ناقص":fmt(mainPlusAccessory,2)+" kg")+'</strong></div></div>'+warningHtml+'<p class="muted">مجموع وزن فقط اقلامی را شامل می‌شود که داده کامل دارند؛ تا رفع هشدارها آن را وزن نهایی سفارش تلقی نکنید.</p></div>';
  status("accessoryTakeoffStatus",complete?"متره تکمیلی کامل است؛ صحت مقادیر ورودی همچنان باید با نقشه کنترل شود.":"متره جزئی است؛ تعداد یا ابعاد بعضی اقلام هنوز ثبت نشده است.",!complete);
  return accessoryTakeoffLast;
+}
+function exportSupplementaryTakeoffCSV(){
+ let data=accessoryTakeoffLast;
+ if(!data)data=calculateSupplementaryTakeoff();
+ if(!data){status("accessoryTakeoffStatus","ابتدا هندسه و ورودی‌های معتبر را ثبت کنید.",true);return}
+ if(!Object.values(data.input||{}).some(v=>v!==null)){status("accessoryTakeoffStatus","برای خروجی CSV ابتدا دست‌کم یک مقدار متره تکمیلی وارد کنید.",true);return}
+ const rows=[],push=(...values)=>rows.push(values.map(v=>{const s=String(v??"");return '"'+s.replace(/"/g,'""')+'"'}).join(","));
+ push("قلم","تعداد","مبنای مقدار/ابعاد","وزن محاسبه‌شده (kg)","توضیح");
+ for(const r of data.rows)push(r.name,r.count,r.basis,r.weight===null?"اطلاعات ناقص":r.weight,r.note);
+ push("","","","","");
+ push("خلاصه","مقدار","","واحد","");
+ push("تعداد صفحات پایه",data.baseCount,"","عدد","فرض یک صفحه برای هر محل ستون");
+ push("تعداد کل انکربولت",data.anchorCount??"نامشخص","","عدد","");
+ push("وزن اقلام تکمیلی",data.knownWeight??"نامشخص","","kg","");
+ push("وزن سفارش با پرت",data.orderWeight??"نامشخص","","kg","");
+ push("هزینه برآوردی",data.cost??"قیمت فولاد وارد نشده","","تومان","بر اساس قیمت فولاد عمومی");
+ push("وزن کل سازه اصلی و تکمیلی",data.mainPlusAccessory??"اطلاعات ناقص","","kg","");
+ push("وضعیت تکمیل",data.complete?"کامل":"ناقص","","","");
+ for(const warning of data.warnings||[])push("هشدار",warning,"","","");
+ download("SAHROUD_Supplementary_Takeoff.csv","\\uFEFF"+rows.join("\\r\\n"),"text/csv;charset=utf-8");
+ status("accessoryTakeoffStatus","فایل CSV متره تکمیلی با ردیف‌ها و خلاصه وزن/هزینه ساخته شد.");
 }
 /* Interactive 3D orthographic greenhouse viewer */
 const modelCamera={yaw:0.72,pitch:0.48,zoom:1};
