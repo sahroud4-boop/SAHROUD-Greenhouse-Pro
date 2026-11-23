@@ -830,12 +830,12 @@ function calculateGeometry(){
  drawModel(p);$("activeProjectText").textContent="پروژه فعال: "+(p.project||"بدون نام");return geomResult;
 }
 /* Interactive 3D orthographic greenhouse viewer */
-const modelCamera={yaw:-0.72,pitch:0.48,zoom:1};
+const modelCamera={yaw:0.72,pitch:0.48,zoom:1};
 let modelPointer=null;
 function setModelView(view){
  if(view==="top"){modelCamera.yaw=0;modelCamera.pitch=0.08;modelCamera.zoom=1}
- else if(view==="side"){modelCamera.yaw=0;modelCamera.pitch=1.48;modelCamera.zoom=1}
- else {modelCamera.yaw=-0.72;modelCamera.pitch=0.48;modelCamera.zoom=1}
+ else if(view==="side"){modelCamera.yaw=Math.PI/2;modelCamera.pitch=1.48;modelCamera.zoom=1}
+ else {modelCamera.yaw=0.72;modelCamera.pitch=0.48;modelCamera.zoom=1}
  if(geomResult.width)drawModel(geomResult);
 }
 function resetModelView(){setModelView("iso")}
@@ -914,7 +914,7 @@ function drawModel(p){
   if(!modelPointer)return;
   const dx=e.clientX-modelPointer.x,dy=e.clientY-modelPointer.y;
   modelPointer={x:e.clientX,y:e.clientY};
-  modelCamera.yaw+=dx*.009;modelCamera.pitch=Math.max(-.15,Math.min(1.52,modelCamera.pitch+dy*.007));
+  modelCamera.yaw-=dx*.009;modelCamera.pitch=Math.max(-.15,Math.min(1.52,modelCamera.pitch+dy*.007));
   if(geomResult.width)drawModel(geomResult);
  });
  const release=()=>{modelPointer=null};
