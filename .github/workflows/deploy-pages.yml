@@ -25,6 +25,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Validate inline JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          html = Path("index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r'<script\\b(?![^>]*\\bsrc=)[^>]*>(.*?)</script\\s*>', html, flags=re.IGNORECASE | re.DOTALL)
+          if len(scripts) != 1:
+              raise SystemExit(f"Expected one inline application script, found {len(scripts)}")
+          Path("/tmp/sahroud-inline.js").write_text(scripts[0], encoding="utf-8")
+          print(f"Extracted {len(scripts[0])} characters of inline JavaScript")
+          PY
+          node --check /tmp/sahroud-inline.js
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
