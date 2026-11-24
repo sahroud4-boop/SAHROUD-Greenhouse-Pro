@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.30.0</title>
+<title>SAHROUD Greenhouse Pro v3.31.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -51,7 +51,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.30.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.31.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -385,7 +385,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.30.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.31.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -1192,7 +1192,8 @@ function calculateFoundationTakeoff(){
  const totalRebar=mainRebar!==null||stirrupRebar!==null?(mainRebar||0)+(stirrupRebar||0):null;
  const rebarOrderWeight=totalRebar!==null&&rebarWaste!==null?totalRebar*(1+rebarWaste/100):null;
  if(rebarOrderWeight!==null)addRow("آرماتور با پرت سفارش",rebarOrderWeight,"kg",totalRebar+" × (1 + "+rebarWaste+"/100)",rate("fndRebarRate","نرخ میلگرد"),"وزن سفارش؛ ردیف وزن خالص نیز جداگانه گزارش شده است");
- const knownCost=rows.filter(r=>Number.isFinite(r.cost)).reduce((s,r)=>s+r.cost,0),hasCost=rows.some(r=>Number.isFinite(r.cost)),civilCost=hasCost?knownCost:null;
+ if(rebarOrderWeight!==null){for(const r of rows)if(r.name==="میلگردهای اصلی پی"||r.name==="خاموت و سنجاقی پی")r.cost=null;}
+  const knownCost=rows.filter(r=>Number.isFinite(r.cost)).reduce((s,r)=>s+r.cost,0),hasCost=rows.some(r=>Number.isFinite(r.cost)),civilCost=hasCost?knownCost:null;
  const geometryCosts=[p.steelCost,p.coverCost,p.gutterCost,p.fastenerCost].filter(Number.isFinite),accessoryCost=Number.isFinite(accessoryTakeoffLast?.cost)?accessoryTakeoffLast.cost:null;
  const projectCostItems=[...geometryCosts,accessoryCost,civilCost].filter(Number.isFinite),projectCost=projectCostItems.length?projectCostItems.reduce((s,x)=>s+x,0):null;
  const complete=warnings.length===0&&rows.length>0;
@@ -1216,13 +1217,13 @@ function exportFoundationTakeoffCSV(){
 function runFoundationTakeoffSelfTest(){
  const p=geomResult.width?geomResult:calculateGeometry();if(!p?.width){status("foundationTakeoffStatus","ابتدا هندسه معتبر را محاسبه کنید.",true);return null}
  const saved=Object.fromEntries(foundationTakeoffFieldIds.map(id=>[id,$(id)?.value??""]));
- const sample={fndFootingCount:2,fndFootingLength:2,fndFootingWidth:2,fndFootingDepth:.6,fndBlindingLength:2.2,fndBlindingWidth:2.2,fndBlindingThickness:.1,fndExcavationClearance:.3,fndExcavationDepth:1,fndMainBarsPerFooting:8,fndMainBarLength:3.5,fndMainBarMass:.888,fndStirrupsPerFooting:4,fndStirrupLength:4,fndStirrupMass:.888,fndExcavationRate:"",fndBlindingRate:"",fndConcreteRate:"",fndRebarRate:"",fndSoilSwell:25,fndSoilDisposalRate:"",fndRebarWaste:5,fndFormworkRate:""};
+ const sample={fndFootingCount:2,fndFootingLength:2,fndFootingWidth:2,fndFootingDepth:.6,fndBlindingLength:2.2,fndBlindingWidth:2.2,fndBlindingThickness:.1,fndExcavationClearance:.3,fndExcavationDepth:1,fndMainBarsPerFooting:8,fndMainBarLength:3.5,fndMainBarMass:.888,fndStirrupsPerFooting:4,fndStirrupLength:4,fndStirrupMass:.888,fndExcavationRate:"",fndBlindingRate:"",fndConcreteRate:"",fndRebarRate:1000,fndSoilSwell:25,fndSoilDisposalRate:"",fndRebarWaste:5,fndFormworkRate:""};
  const checks=[];let finalStatus="",failed=false;
  try{
   for(const [id,value] of Object.entries(sample))$(id).value=String(value);
   const d=calculateFoundationTakeoff();if(!d)throw new Error("محاسبه نمونه فونداسیون اجرا نشد.");
   const expected={"حجم بتن پی":{actual:d.footingConcreteVolume,expected:4.8},"حجم بتن مگر":{actual:d.blindingVolume,expected:.968},"حجم خاک‌برداری":{actual:d.excavationVolume,expected:13.52},"وزن میلگرد اصلی":{actual:d.mainRebarWeight,expected:49.728},"وزن خاموت":{actual:d.stirrupRebarWeight,expected:28.416},"وزن کل آرماتور":{actual:d.totalRebarWeight,expected:78.144}};
-  expected["خاک سست حمل"]={actual:d.looseSoilVolume,expected:13.52*1.25};expected["قالب‌بندی جانبی"]={actual:d.formworkArea,expected:2*2*(2+2)*.6};expected["وزن سفارش آرماتور"]={actual:d.rebarOrderWeight,expected:78.144*1.05};
+  expected["خاک سست حمل"]={actual:d.looseSoilVolume,expected:13.52*1.25};expected["قالب‌بندی جانبی"]={actual:d.formworkArea,expected:2*2*(2+2)*.6};expected["وزن سفارش آرماتور"]={actual:d.rebarOrderWeight,expected:78.144*1.05};expected["هزینه آرماتور بدون دوباره‌شماری"]={actual:d.civilCost,expected:78.144*1.05*1000};
   for(const [label,q] of Object.entries(expected)){const ok=Number.isFinite(q.actual)&&Math.abs(q.actual-q.expected)<1e-9*Math.max(1,Math.abs(q.expected));checks.push({label,...q,ok})}
   checks.push({label:"وضعیت کامل نمونه",actual:d.complete?"کامل":"ناقص",expected:"کامل",ok:d.complete});
   const passed=checks.filter(x=>x.ok).length;
@@ -1459,7 +1460,8 @@ function hydroInput(){const ids=["hRows","hChannels","hLength","hSupport","hDiam
 function calculateHydro(){
  const v=hydroInput();if(!(v.hRows>0&&v.hChannels>0&&v.hLength>0&&v.hSupport>0&&v.hDiameter>0)){status("hydroStatus","تعداد ردیف، کانال، طول، فاصله پایه و قطر باید مثبت باشند.",true);return}
  const channels=v.hRows*v.hChannels,channelLength=channels*v.hLength,supports=channels*(Math.ceil(v.hLength/v.hSupport)+1),pipeLength=v.hMainLength+v.hBranchLength;
- hydroResult={channels,channelLength,supports,pipeLength,elbows:v.hElbows,tees:v.hTees,valves:v.hValves,filters:v.hFilters,tankVolume:v.hTank,channelCost:v.hChannelPrice>0?channelLength*v.hChannelPrice:null,pipeCost:v.hPipePrice>0?pipeLength*v.hPipePrice:null};
+ const channelCost=v.hChannelPrice>0?channelLength*v.hChannelPrice:null,pipeCost=v.hPipePrice>0?pipeLength*v.hPipePrice:null;
+  hydroResult={channels,channelLength,supports,pipeLength,elbows:v.hElbows,tees:v.hTees,valves:v.hValves,filters:v.hFilters,tankVolume:v.hTank,channelCost,pipeCost,knownCost:[channelCost,pipeCost].filter(Number.isFinite).reduce((a,b)=>a+b,0),missingCostItems:[channelCost,pipeCost].filter(x=>!Number.isFinite(x)).length};
  renderHydro(hydroResult);status("hydroStatus","متره مقدماتی هیدروپونیک محاسبه شد.");
 }
 function renderHydro(r){$("hydroResults").innerHTML=`<div class="result"><h4>جدول متره سامانه</h4><table><thead><tr><th>شرح</th><th>مقدار</th><th>واحد</th></tr></thead><tbody>
@@ -1521,7 +1523,7 @@ function runExecutionCostSelfTest(){
 
 
 function calculateProjectEstimate(data={}){
- const g=data.geometry||geomResult||{},a=data.accessories||accessoryTakeoffLast||{},f=data.foundation||foundationTakeoffLast||{},e=data.executionCost||calculateExecutionCost();
+ const g=data.geometry||geomResult||{},a=data.accessories||accessoryTakeoffLast||{},f=data.foundation||foundationTakeoffLast||{},e=data.executionCost||calculateExecutionCost(),h=data.hydro||hydroResult||null,fb=data.fabrication||fabTakeoffLast||null;
  const geometryItems=[["فولاد اصلی",g.steelCost],["پوشش گلخانه",g.coverCost],["ناودان مفهومی",g.gutterCost],["پیچ و بست",g.fastenerCost]].map(([label,amount])=>({label,amount:Number.isFinite(amount)?amount:null}));
  const geometryKnown=geometryItems.filter(x=>Number.isFinite(x.amount));
  const geometrySubtotal=geometryKnown.length?geometryKnown.reduce((sum,x)=>sum+x.amount,0):null;
@@ -1529,7 +1531,9 @@ function calculateProjectEstimate(data={}){
   {key:"geometry",label:"تأمین اصلی گلخانه",amount:geometrySubtotal,details:geometryItems,missing:geometryItems.filter(x=>x.amount===null).length},
   {key:"accessories",label:"بادبندها و اتصالات تکمیلی",amount:Number.isFinite(a.cost)?a.cost:null,details:[],missing:Number.isFinite(a.cost)?0:1},
   {key:"civil",label:"فونداسیون و عملیات عمرانی",amount:Number.isFinite(f.civilCost)?f.civilCost:null,details:(f.rows||[]).map(x=>({label:x.name,amount:Number.isFinite(x.cost)?x.cost:null})),missing:(f.rows||[]).filter(x=>!Number.isFinite(x.cost)).length},
-  {key:"execution",label:"دستمزد، ماشین‌آلات، حمل و سایر اجرا",amount:Number.isFinite(e.subtotal)?e.subtotal:null,details:(e.items||[]).map(x=>({label:x.label,amount:Number.isFinite(x.amount)?x.amount:null})),missing:e.missingCount||0}
+  {key:"execution",label:"دستمزد، ماشین‌آلات، حمل و سایر اجرا",amount:Number.isFinite(e.subtotal)?e.subtotal:null,details:(e.items||[]).map(x=>({label:x.label,amount:Number.isFinite(x.amount)?x.amount:null})),missing:e.missingCount||0},
+  {key:"hydro",label:"سامانه هیدروپونیک",amount:Number.isFinite(h?.knownCost)&&h.knownCost>0?h.knownCost:null,details:[{label:"کانال",amount:h?.channelCost??null},{label:"لوله",amount:h?.pipeCost??null}],missing:h?(h.missingCostItems??2):2},
+  {key:"fabrication",label:"ساخت، برش، جوش و رنگ",amount:Number.isFinite(fb?.knownTotal)?fb.knownTotal:null,details:(fb?.rows||[]).map(x=>({label:"خرید "+x.profile,amount:x.cost??null})).concat([{label:"جوشکاری",amount:fb?.weldCost??null},{label:"رنگ",amount:fb?.paintCost??null}]),missing:fb?(fb.warnings?.length||0):1}
  ];
  const known=categories.filter(x=>Number.isFinite(x.amount)),baseSubtotal=known.length?known.reduce((sum,x)=>sum+x.amount,0):null;
  const reserve=Number.isFinite(e.contingencyAmount)?e.contingencyAmount:null;
@@ -1539,19 +1543,19 @@ function calculateProjectEstimate(data={}){
  return {categories,geometryItems,baseSubtotal,reserve,reserveRate:e.contingencyRate??null,total,knownCategoryCount:known.length,missingCategories,missingDetailCount,executionMissing:e.missingCount??0,complete:missingCategories===0&&missingDetailCount===0&&e.missingCount===0};
 }
 function renderProjectEstimate(){
- const d=calculateProjectEstimate(),out=$("projectEstimateOutput");if(!out)return d;
+ const d=calculateProjectEstimate({hydro:hydroResult,fabrication:fabTakeoffLast}),out=$("projectEstimateOutput");if(!out)return d;
  const money=x=>Number.isFinite(x)?fmt(x,0)+" تومان":"ثبت نشده / نامشخص";
  out.innerHTML='<div class="result"><h4>برآورد تجمیعی هزینه پروژه</h4><div class="tablewrap"><table><tr><th>بخش هزینه</th><th>مبلغ قابل محاسبه (تومان)</th><th>وضعیت</th></tr>'+d.categories.map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+money(x.amount)+'</td><td>'+(Number.isFinite(x.amount)?"مبلغ ثبت شده":"ناقص یا ثبت نشده")+'</td></tr>').join("")+'<tr><th>جمع هزینه‌های پایه قابل محاسبه</th><th>'+money(d.baseSubtotal)+'</th><th></th></tr><tr><td>ذخیره هزینه‌های اجرایی ('+(d.reserveRate===null?"ثبت نشده":fmt(d.reserveRate,1)+" %")+')</td><td>'+money(d.reserve)+'</td><td>فقط روی ردیف‌های اجرایی ثبت‌شده</td></tr><tr><th>جمع برآورد فعلی</th><th>'+money(d.total)+'</th><th></th></tr></table></div><p class="muted">بخش‌های فاقد جمع قابل محاسبه: '+d.missingCategories+'؛ ردیف‌های جزئی فاقد نرخ/مقدار: '+d.missingDetailCount+'؛ ردیف‌های اجرایی ثبت‌نشده: '+d.executionMissing+'. این عدد جمع مبالغ موجود است و تا تکمیل نرخ‌ها و مقادیر، برآورد نهایی یا سقف هزینه پروژه محسوب نمی‌شود.</p><details><summary>ریز هزینه‌های تأمین اصلی</summary><ul>'+d.geometryItems.map(x=>'<li>'+esc(x.label)+': '+money(x.amount)+'</li>').join("")+'</ul></details></div>';
  return d;
 }
 function runProjectEstimateSelfTest(){
- const d=calculateProjectEstimate({geometry:{steelCost:100,coverCost:200,gutterCost:30,fastenerCost:20},accessories:{cost:50},foundation:{civilCost:400,rows:[]},executionCost:{subtotal:740,contingencyAmount:74,contingencyRate:10,missingCount:0,items:[]}});
- const ok=d.baseSubtotal===1540&&d.total===1614&&d.knownCategoryCount===4;
+ const d=calculateProjectEstimate({geometry:{steelCost:100,coverCost:200,gutterCost:30,fastenerCost:20},accessories:{cost:50},foundation:{civilCost:400,rows:[]},executionCost:{subtotal:740,contingencyAmount:74,contingencyRate:10,missingCount:0,items:[]},hydro:{knownCost:300,channelCost:200,pipeCost:100,missingCostItems:0},fabrication:{knownTotal:50,warnings:[],rows:[],weldCost:null,paintCost:null}});
+ const ok=d.baseSubtotal===1890&&d.total===1964&&d.knownCategoryCount===6;
  $("executionCostTestOutput").innerHTML+='<div class="result"><b>آزمون تجمیع هزینه پروژه:</b> '+(ok?"موفق":"ناموفق")+' — جمع پایه ۱٬۵۴۰ و با ذخیره ۱٬۶۱۴ واحد پولی.</div>';
  status("executionCostStatus",ok?"آزمون تجمیع هزینه پروژه موفق بود.":"آزمون تجمیع هزینه پروژه ناموفق بود.",!ok);return ok;
 }
 
-function reportData(){return {project:activeProject?.meta||{name:$("project").value},geometry:geomResult,accessories:calculateSupplementaryTakeoff()||accessoryTakeoffLast,foundation:calculateFoundationTakeoff()||foundationTakeoffLast,climate:activeProject?.climate||climateLast,hydro:hydroResult,structural:structuralLast,beam:beamLast,frameAnalysis:frameAnalysisLast,longTrussAnalysis:longTrussAnalysisLast,executionCost:calculateExecutionCost(),projectEstimate:calculateProjectEstimate({geometry:geomResult,accessories:accessoryTakeoffLast,foundation:foundationTakeoffLast,executionCost:calculateExecutionCost()}),fabrication:calculateFabTakeoff()}}
+function reportData(){const fabrication=calculateFabTakeoff();return {project:activeProject?.meta||{name:$("project").value},geometry:geomResult,accessories:calculateSupplementaryTakeoff()||accessoryTakeoffLast,foundation:calculateFoundationTakeoff()||foundationTakeoffLast,climate:activeProject?.climate||climateLast,hydro:hydroResult,structural:structuralLast,beam:beamLast,frameAnalysis:frameAnalysisLast,longTrussAnalysis:longTrussAnalysisLast,executionCost:calculateExecutionCost(),fabrication,projectEstimate:calculateProjectEstimate({geometry:geomResult,accessories:accessoryTakeoffLast,foundation:foundationTakeoffLast,executionCost:calculateExecutionCost(),hydro:hydroResult,fabrication})}}
 function exportXLSX(){
  if(!window.XLSX){status("exportStatus","کتابخانه Excel بارگذاری نشده است؛ اتصال اینترنت را بررسی کنید.",true);return}
  if(!geomResult.width)calculateGeometry();const d=reportData(),wb=XLSX.utils.book_new();
