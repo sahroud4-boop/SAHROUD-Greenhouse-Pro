@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.37.0</title>
+<title>SAHROUD Greenhouse Pro v3.38.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 .climate-tabs button.active{background:var(--green);color:#fff}.climate-tab[hidden]{display:none!important}.climate-tab{padding-top:12px}
@@ -301,7 +301,19 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
   <div><label>استاندارد مبنا</label><select id="std"><option value="">انتخاب نشده</option><option>مقررات ملی ساختمان ایران</option><option>Eurocode</option><option>ASCE / IBC</option><option>ورودی سفارشی مهندس</option></select></div>
   <div><label>فاصله قاب‌ها (m)</label><input id="sFrame" type="number" min=".1" value="4"></div><div><label>بار مرده اضافی D (kN/m²)</label><input id="sD" type="number" min="0" step=".01" value="0"></div>
   <div><label>بار بهره‌برداری L (kN/m²)</label><input id="sL" type="number" min="0" step=".01" value="0"></div><div><label>فشار/مکش باد W (kN/m²)</label><input id="sW" type="number" step=".01" value="0"></div><div><label>بار برف S (kN/m²)</label><input id="sS" type="number" min="0" step=".01" value="0"></div>
- </div><div class="notice">مقادیر صفر صرفاً ورودی صفر هستند و به معنی حذف بار قانونی نیستند. سرعت باد (m/s) به‌تنهایی فشار/مکش باد (kN/m²) نیست؛ برای تبدیل به فشار باید ضوابط، رده مواجهه، ضرایب فشار داخلی/خارجی و ضرایب شکل اعمال شوند. بار برف طراحی نیز پیش از ورود به این جدول باید با ضرایب شکل و توزیع مناسب سقف تعیین شود.</div><div class="toolbar"><button onclick="runStructural()">محاسبه بار خطی قاب</button><button class="btn-soft" onclick="auditStructuralInputs()">کنترل کفایت ورودی‌های طراحی</button></div><div id="structuralAudit" class="status"></div><div id="structuralOutput"></div></div>
+ </div><div class="notice">مقادیر صفر صرفاً ورودی صفر هستند و به معنی حذف بار قانونی نیستند. سرعت باد (m/s) به‌تنهایی فشار/مکش باد (kN/m²) نیست؛ برای تبدیل به فشار باید ضوابط، رده مواجهه، ضرایب فشار داخلی/خارجی و ضرایب شکل اعمال شوند. بار برف طراحی نیز پیش از ورود به این جدول باید با ضرایب شکل و توزیع مناسب سقف تعیین شود.</div><div class="toolbar"><button onclick="runStructural()">محاسبه بار خطی قاب</button><button class="btn-soft" onclick="auditStructuralInputs()">کنترل کفایت ورودی‌های طراحی</button></div><div id="structuralAudit" class="status"></div><div id="structuralOutput"></div>
+ <div class="card" style="margin-top:14px"><h3>سناریوهای ترکیب خطی بار — قابل ویرایش</h3>
+ <p class="muted">ضرایب زیر فقط سناریوهای جبری نمونه برای مقایسه هستند و ترکیبات آیین‌نامه‌ای یا ضرایب طراحی تأییدشده محسوب نمی‌شوند. ضرایب را مطابق استاندارد انتخابی، ویرایش معتبر و نظر مهندس مسئول اصلاح کنید. علامت ضریب W جهت فشار/مکش را مشخص می‌کند؛ W ورودی باید با قرارداد علامت روشن وارد شود.</p>
+ <div class="table-wrap"><table><thead><tr><th>نام سناریو</th><th>ضریب D</th><th>ضریب L</th><th>ضریب W</th><th>ضریب S</th></tr></thead><tbody>
+ <tr><td><input id="lcName1" value="D + L"></td><td><input id="lcD1" type="number" step=".01" value="1"></td><td><input id="lcL1" type="number" step=".01" value="1"></td><td><input id="lcW1" type="number" step=".01" value="0"></td><td><input id="lcS1" type="number" step=".01" value="0"></td></tr>
+ <tr><td><input id="lcName2" value="D + S"></td><td><input id="lcD2" type="number" step=".01" value="1"></td><td><input id="lcL2" type="number" step=".01" value="0"></td><td><input id="lcW2" type="number" step=".01" value="0"></td><td><input id="lcS2" type="number" step=".01" value="1"></td></tr>
+ <tr><td><input id="lcName3" value="D + W (+)"></td><td><input id="lcD3" type="number" step=".01" value="1"></td><td><input id="lcL3" type="number" step=".01" value="0"></td><td><input id="lcW3" type="number" step=".01" value="1"></td><td><input id="lcS3" type="number" step=".01" value="0"></td></tr>
+ <tr><td><input id="lcName4" value="D + W (-)"></td><td><input id="lcD4" type="number" step=".01" value="1"></td><td><input id="lcL4" type="number" step=".01" value="0"></td><td><input id="lcW4" type="number" step=".01" value="-1"></td><td><input id="lcS4" type="number" step=".01" value="0"></td></tr>
+ <tr><td><input id="lcName5" value="D + 0.75L + 0.75S"></td><td><input id="lcD5" type="number" step=".01" value="1"></td><td><input id="lcL5" type="number" step=".01" value=".75"></td><td><input id="lcW5" type="number" step=".01" value="0"></td><td><input id="lcS5" type="number" step=".01" value=".75"></td></tr>
+ </tbody></table></div>
+ <button class="btn-soft" onclick="runLoadCombinations()">محاسبه و مقایسه سناریوها</button><div id="loadCombinationOutput"></div>
+ <div class="notice">خروجی فقط جمع جبری بارهای سطحی و تبدیل آن‌ها به بار خطی با فاصله قاب است. این بخش بار نامتقارن برف، فشار داخلی/خارجی باد، مکش موضعی، ضرایب شکل، بار زلزله، اثرات مرتبه دوم، پایداری و ترکیبات رسمی استاندارد را تولید یا کنترل نمی‌کند. بارهای هم‌زمان و ضرایب باید از مرجع طراحی استخراج شوند.</div>
+ </div></div>
  <div class="card"><h3>کنترل مقدماتی تیر فولادی دوسر ساده</h3><div class="g3">
   <div><label>دهانه L (m)</label><input id="bL" type="number" min=".1" value="4"></div><div><label>بار گسترده w (kN/m)</label><input id="bW" type="number" min="0" value="0"></div><div><label>مدول E (GPa)</label><input id="bE" type="number" min="1" value="200"></div>
   <div><label>ممان دوم سطح I (cm⁴)</label><input id="bI" type="number" min=".01" value="1000"></div><div><label>مدول مقطع Z (cm³)</label><input id="bZ" type="number" min=".01" value="100"></div><div><label>تنش تسلیم Fy (MPa)</label><input id="bFy" type="number" min="1" value="240"></div><div><label>حد خیز L /</label><input id="bLimit" type="number" min="1" value="240"></div>
@@ -1650,6 +1662,25 @@ function runStructural(){
  if(!standard||!(spacing>0)||D===null||L===null||W===null||S===null||D<0||L<0||S<0){$("structuralOutput").textContent="استاندارد، فاصله قاب و مقادیر بار معتبر را وارد کنید.";return}
  structuralLast={standard,spacing,surface:{D,L,W,S},line:{D:D*spacing,L:L*spacing,W:W*spacing,S:S*spacing},status:"preliminary"};
  $("structuralOutput").innerHTML=`<div class="result"><h4>بار خطی معادل روی قاب</h4><table><thead><tr><th>بار</th><th>سطحی (kN/m²)</th><th>خطی (kN/m)</th></tr></thead><tbody>${["D","L","W","S"].map(k=>`<tr><td>${k}</td><td>${fmt(structuralLast.surface[k])}</td><td>${fmt(structuralLast.line[k])}</td></tr>`).join("")}</tbody></table><p class="muted">این تبدیل صرفاً ضرب بار سطحی در فاصله قاب است؛ توزیع واقعی بار روی اعضا، بارگذاری نامتقارن و تحلیل قاب انجام نشده است.</p></div>`;
+}
+function runLoadCombinations(){
+ const spacing=num("sFrame"),loads={D:num("sD"),L:num("sL"),W:num("sW"),S:num("sS")};
+ if(!(spacing>0)||Object.values(loads).some(v=>v===null)||loads.D<0||loads.L<0||loads.S<0){
+  $("loadCombinationOutput").innerHTML='<p class="error">ابتدا فاصله قاب و همه بارهای D/L/W/S را معتبر وارد کنید.</p>';return null;
+ }
+ const rows=[];
+ for(let i=1;i<=5;i++){
+  const name=$("lcName"+i).value.trim()||("سناریو "+i),c={};
+  for(const k of ["D","L","W","S"]){c[k]=num("lc"+k+i);if(c[k]===null){$("loadCombinationOutput").textContent="تمام ضرایب باید عددی باشند.";return null}}
+  const parts=Object.fromEntries(["D","L","W","S"].map(k=>[k,c[k]*loads[k]]));
+  const surface=Object.values(parts).reduce((a,b)=>a+b,0);
+  rows.push({name,c,parts,surface,line:surface*spacing});
+ }
+ const max=rows.reduce((a,b)=>Math.abs(b.line)>Math.abs(a.line)?b:a,rows[0]);
+ $("loadCombinationOutput").innerHTML='<div class="result"><table><thead><tr><th>سناریو</th><th>بار سطحی معادل (kN/m²)</th><th>بار خطی قاب (kN/m)</th><th>تفکیک سهم‌ها (kN/m²)</th></tr></thead><tbody>'+
+ rows.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+fmt(r.surface,3)+'</td><td>'+fmt(r.line,3)+'</td><td>'+["D","L","W","S"].map(k=>k+': '+fmt(r.parts[k],3)).join(' | ')+'</td></tr>').join('')+
+ '</tbody></table><p><b>بیشترین قدرمطلق بار خطی در این فهرست:</b> '+esc(max.name)+' — '+fmt(max.line,3)+' kN/m</p><p class="muted">این بیشینه صرفاً مقایسه عددی همین پنج سناریوی واردشده است؛ الزاماً حالت بحرانی طراحی یا بیشینه اثر داخلی اعضا نیست.</p></div>';
+ return rows;
 }
 function runBeam(){
  const L=num("bL"),w=num("bW"),E=num("bE"),I=num("bI"),Z=num("bZ"),Fy=num("bFy"),lim=num("bLimit");
