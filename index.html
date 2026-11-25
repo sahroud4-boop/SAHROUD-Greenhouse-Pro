@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.34.2</title>
+<title>SAHROUD Greenhouse Pro v3.34.3</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -51,7 +51,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.34.2</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.34.3</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -994,6 +994,9 @@ function calculateGeometry(){
  $("quantityRows").innerHTML=rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+fmt(r[3])+'</td><td>'+r[4]+'</td></tr>').join("");
  $("memberRows").innerHTML=members.map(m=>'<tr><td>'+m.name+'</td><td>'+esc(m.profile||"—")+'</td><td>'+fmt(m.count,0)+'</td><td>'+fmt(m.unitLength)+'</td><td>'+fmt(m.totalLength)+'</td><td>'+(m.massPerM===null?"—":fmt(m.massPerM))+'</td><td>'+(m.weight===null?"—":fmt(m.weight,1))+'</td></tr>').join("");
  const missingProfiles=members.filter(m=>!m.profile).map(m=>m.name),missingMass=members.filter(m=>m.massPerM===null).map(m=>m.name);
+ if($("fndFootingCount")&&$("fndFootingCount").dataset.manual!=="1")$("fndFootingCount").value=String(frames*(p.bays+1));
+ p.footingCount=num("fndFootingCount")||0;
+ geomResult.footingCount=p.footingCount;
  const audit=[];
  if(missingProfiles.length)audit.push("کد مقطع ثبت نشده: "+missingProfiles.join("، "));
  if(missingMass.length)audit.push("جرم واحد طول ناقص: "+missingMass.join("، "));
@@ -1002,8 +1005,7 @@ function calculateGeometry(){
  if(!(p.footingDepth>0))audit.push("عمق فونداسیون وارد نشده است؛ طول دفن ستون فعلاً صفر است و باید پس از ثبت عمق پی به‌روزرسانی شود.");
  else if(!(p.footingLength>0&&p.footingWidth>0)||p.footingCount!==p.frames*(p.bays+1))audit.push("ابعاد یا تعداد پی با یک پی زیر هر ستون منطبق نیست؛ بلوک‌های پی در نمای سه‌بعدی ترسیم نشده‌اند و جانمایی واقعی باید از پلان فونداسیون تعیین شود.");
  audit.push("اقلام خارج از مدل هندسی خودکار: جزئیات ورق گاست، پیچ‌های اتصال، جوش، برش/وصله و پرت برش بهینه.");
- if($("fndFootingCount")&&$("fndFootingCount").dataset.manual!=="1")$("fndFootingCount").value=String(frames*(p.bays+1));
- p.footingCount=num("fndFootingCount")||0;renderBracingSelector(frameYs);
+ renderBracingSelector(frameYs);
  if(typeof foundationTakeoffLast!=="undefined"&&foundationTakeoffLast&&$("foundationTakeoffOutput"))calculateFoundationTakeoff();
  $("geometryWarning").textContent="کنترل کیفیت متره: "+(audit.length?audit.join(" | "):"ورودی‌های پایه کامل‌اند.")+" این متره همچنان هندسی و مقدماتی است و باید با نقشه اجرایی تطبیق داده شود.";
  drawModel(p);$("activeProjectText").textContent="پروژه فعال: "+(p.project||"بدون نام");return geomResult;
