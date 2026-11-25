@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.40.0</title>
+<title>SAHROUD Greenhouse Pro v3.41.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 .climate-tabs button.active{background:var(--green);color:#fff}.climate-tab[hidden]{display:none!important}.climate-tab{padding-top:12px}
@@ -337,7 +337,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="status" id="autoFrameStatus"></div>
  <label>تعریف مدل به‌صورت JSON — واحدها: مختصات mm، نیرو N، لنگر N·mm، E بر حسب MPa، A بر حسب mm² و I بر حسب mm⁴</label>
  <textarea id="frameModel" rows="13" spellcheck="false" style="direction:ltr;text-align:left;font-family:Consolas,monospace;font-size:11px" placeholder="مدل JSON را بارگذاری کنید یا دکمه نمونه را بزنید"></textarea>
- <div class="toolbar" style="margin-top:10px"><button class="btn-soft" onclick="loadFrameExample()">بارگذاری نمونه تیر طره‌ای</button><button onclick="runFrameAnalysis()">اجرای تحلیل قاب 2D</button><button class="btn-soft" onclick="runFrameSelfTests()">آزمون صحت حل‌گر</button><button class="btn-soft" onclick="compareFrameWindScenarios()">مقایسه سناریوهای باد دوطرفه</button></div>
+ <div class="toolbar" style="margin-top:10px"><button class="btn-soft" onclick="loadFrameExample()">بارگذاری نمونه تیر طره‌ای</button><button onclick="runFrameAnalysis()">اجرای تحلیل قاب 2D</button><button class="btn-soft" onclick="runFrameSelfTests()">آزمون صحت حل‌گر</button><button class="btn-soft" onclick="compareFrameWindScenarios()">مقایسه سناریوهای باد دوطرفه</button><button class="btn-soft" onclick="compareFrameRoofScenarios()">مقایسه بار نامتقارن دو شیب سقف</button></div>
  <div class="status" id="frameStatus"></div><div id="frameOutput"></div><div class="status" id="frameSelfTestStatus"></div><div id="frameSelfTestOutput"></div>
  <div class="notice">محدودیت این مرحله: فقط بارهای گره‌ای و بار گسترده یکنواخت عضو در محورهای محلی؛ رفتار خطی الاستیک و تغییرشکل کوچک. بارهای غیر یکنواخت/مثلثی، تحلیل مرتبه دوم، مفصل/فنر، اندرکنش محوری-خمشی، کمانش، طراحی مقطع و کنترل آیین‌نامه‌ای هنوز پیاده‌سازی نشده‌اند. این هسته هنوز به هندسه خودکار گلخانه متصل نیست و نباید مبنای ساخت قرار گیرد. نمونه پیش‌فرض صرفاً تست عددی است.</div>
  </div>
@@ -919,8 +919,9 @@ function compareFrameWindScenarios(){
   const sideIndices=base.elements.map((e,i)=>({e,i})).filter(x=>String(x.e.id||"").startsWith("ستون-"));
   if(sideIndices.length<2)throw new Error("ستون‌های کناری قاب برای استخراج سناریو پیدا نشدند.");
   const leftIndex=sideIndices[0].i,rightIndex=sideIndices[sideIndices.length-1].i;
-  const sideLoad=(model,index)=>{const row=(model.elementLoads||[]).find(x=>x.element===index);return row?Number(row.qx||0):0};
-  const left=sideLoad(base,leftIndex),right=sideLoad(base,rightIndex);
+  // ستون‌ها قائم و از پای ستون به سمت بالا تعریف شده‌اند؛ بار جهانی X در محور محلی y ظاهر می‌شود.
+  const sideLoadGlobalX=(model,index)=>{const row=(model.elementLoads||[]).find(x=>x.element===index);return row?-Number(row.qy||0):0};
+  const left=sideLoadGlobalX(base,leftIndex),right=sideLoadGlobalX(base,rightIndex);
   const cases=[
    {name:"مبنای ورودی",l:left,r:right},
    {name:"معکوس‌کردن جهت هر دو دیوار",l:-left,r:-right},
@@ -931,8 +932,8 @@ function compareFrameWindScenarios(){
   for(const c of cases){
    const model=JSON.parse(JSON.stringify(base));
    model.elementLoads=(model.elementLoads||[]).filter(x=>x.element!==leftIndex&&x.element!==rightIndex);
-   if(c.l!==0)model.elementLoads.push({element:leftIndex,qx:c.l,qy:0});
-   if(c.r!==0)model.elementLoads.push({element:rightIndex,qx:c.r,qy:0});
+   if(c.l!==0)model.elementLoads.push({element:leftIndex,qx:0,qy:-c.l});
+   if(c.r!==0)model.elementLoads.push({element:rightIndex,qx:0,qy:-c.r});
    const out=analyzeFrame2D(model);
    const maxDisp=Math.max(0,...out.displacements.filter(x=>x.dof!=="rz_rad").map(x=>Math.abs(x.value)));
    const maxN=Math.max(0,...out.members.map(m=>Math.max(Math.abs(m.local_end_forces_N_Nmm[0]),Math.abs(m.local_end_forces_N_Nmm[3]))));
@@ -941,10 +942,65 @@ function compareFrameWindScenarios(){
    results.push({...c,maxDisp,maxN,maxM,rx:support.fx,ry:support.fy,equilibrium:out.equilibrium.passed});
   }
   const rows=results.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+fmt(x.l,3)+'</td><td>'+fmt(x.r,3)+'</td><td>'+fmt(x.maxDisp,4)+'</td><td>'+fmt(x.maxN/1000,3)+'</td><td>'+fmt(x.maxM/1e6,3)+'</td><td>'+fmt(x.rx/1000,3)+'</td><td>'+fmt(x.ry/1000,3)+'</td><td>'+(x.equilibrium?"قبول":"بررسی")+'</td></tr>').join("");
-  $("frameOutput").innerHTML+='<h4 style="margin-top:16px">مقایسه چهار حالت جبری بار دیوارهای جانبی</h4><div class="notice">هندسه، مقاطع و بارهای سقف در هر چهار تحلیل ثابت‌اند. فقط بارهای افقی دیوارهای کناری با علامت و/یا جایگاه متفاوت بازآرایی شده‌اند. «معکوس» و «جابجایی» نام سناریوهای مقایسه‌ای هستند، نه حالت‌های بارگذاری آیین‌نامه‌ای؛ فشار داخلی/خارجی، ضرایب باد و توزیع ارتفاعی در این مدل لحاظ نشده‌اند.</div><div class="tablewrap"><table><tr><th>سناریو</th><th>بار چپ qx (N/mm)</th><th>بار راست qx (N/mm)</th><th>بیشینه جابه‌جایی (mm)</th><th>بیشینه |N| (kN)</th><th>بیشینه |M| (kN·m)</th><th>واکنش ΣFx (kN)</th><th>واکنش ΣFy (kN)</th><th>تعادل</th></tr>'+rows+'</table></div><p class="muted">مقادیر نیرو و جابه‌جایی خروجی حل‌گر خطی الاستیک قاب دوبعدی‌اند؛ این مقایسه به‌تنهایی کنترل مقاومت، پایداری یا کفایت سازه نیست.</p>';
+  $("frameOutput").innerHTML+='<h4 style="margin-top:16px">مقایسه چهار حالت جبری بار دیوارهای جانبی</h4><div class="notice">هندسه، مقاطع و بارهای سقف در هر چهار تحلیل ثابت‌اند. فقط بارهای افقی دیوارهای کناری با علامت و/یا جایگاه متفاوت بازآرایی شده‌اند. «معکوس» و «جابجایی» نام سناریوهای مقایسه‌ای هستند، نه حالت‌های بارگذاری آیین‌نامه‌ای؛ فشار داخلی/خارجی، ضرایب باد و توزیع ارتفاعی در این مدل لحاظ نشده‌اند.</div><div class="tablewrap"><table><tr><th>سناریو</th><th>بار جهانی X چپ (N/mm)</th><th>بار جهانی X راست (N/mm)</th><th>بیشینه جابه‌جایی (mm)</th><th>بیشینه |N| (kN)</th><th>بیشینه |M| (kN·m)</th><th>واکنش ΣFx (kN)</th><th>واکنش ΣFy (kN)</th><th>تعادل</th></tr>'+rows+'</table></div><p class="muted">مقادیر نیرو و جابه‌جایی خروجی حل‌گر خطی الاستیک قاب دوبعدی‌اند؛ این مقایسه به‌تنهایی کنترل مقاومت، پایداری یا کفایت سازه نیست.</p>';
   status("frameStatus","چهار سناریوی جبری با موفقیت تحلیل شدند. بارهای سقف و مشخصات قاب در همه حالت‌ها ثابت نگه داشته شدند.");
   return results;
  }catch(e){status("frameStatus","خطا در مقایسه سناریوها: "+e.message,true);return null}
+}
+
+
+function compareFrameRoofScenarios(){
+ try{
+  const base=JSON.parse($("frameModel").value);
+  if(base.modelType!=="greenhouse-generated-2D-frame"||!Array.isArray(base.elements)||!Array.isArray(base.nodes))throw new Error("ابتدا قاب گلخانه را از هندسه فعلی تولید کنید.");
+  if(!base.generationInputs||JSON.stringify(base.generationInputs)!==JSON.stringify(greenhouseFrameGenerationInputs()))throw new Error("ورودی‌ها تغییر کرده‌اند یا مدل قدیمی است؛ ابتدا قاب را دوباره بسازید.");
+  const g=base.generationInputs.geometry||{},loads=base.generationInputs.loads||{};
+  const spacing=Number(g.spacing),leftBase=Number(loads.roofLeft),rightBase=Number(loads.roofRight);
+  if(!(spacing>0)||![leftBase,rightBase].every(Number.isFinite))throw new Error("فاصله قاب یا بارهای دو شیب در اطلاعات مدل معتبر نیست.");
+  const leftMembers=[],rightMembers=[];
+  base.elements.forEach((e,i)=>{
+   const id=String(e.id||"");
+   if(id.startsWith("رفتر چپ دهانه"))leftMembers.push(i);
+   if(id.startsWith("رفتر راست دهانه"))rightMembers.push(i);
+  });
+  if(!leftMembers.length||leftMembers.length!==rightMembers.length)throw new Error("اعضای رفتر چپ و راست برای همه دهانه‌ها شناسایی نشدند.");
+  const scenarios=[
+   {name:"مبنای ورودی",left:leftBase,right:rightBase},
+   {name:"فقط بار شیب چپ",left:leftBase,right:0},
+   {name:"فقط بار شیب راست",left:0,right:rightBase},
+   {name:"جابجایی بار دو شیب",left:rightBase,right:leftBase},
+   {name:"بار متقارن با میانگین دو ورودی",left:(leftBase+rightBase)/2,right:(leftBase+rightBase)/2}
+  ];
+  const results=[];
+  for(const c of scenarios){
+   const model=JSON.parse(JSON.stringify(base));
+   const roofSet=new Set([...leftMembers,...rightMembers]);
+   model.elementLoads=(model.elementLoads||[]).filter(x=>!roofSet.has(x.element));
+   const apply=(indices,pressure)=>{
+    if(pressure===0)return;
+    for(const index of indices){
+     const e=model.elements[index],ni=model.nodes[e.i],nj=model.nodes[e.j];
+     const dx=nj.x-ni.x,dy=nj.y-ni.y,L=Math.hypot(dx,dy);
+     if(!(L>0))throw new Error("طول یکی از رفترها نامعتبر است.");
+     const co=dx/L,si=dy/L;
+     // kN/m² × frame spacing (m) gives N/mm; pressure is on horizontal projection.
+     const globalQy=-pressure*spacing*Math.abs(co);
+     const qx=globalQy*si,qy=globalQy*co;
+     model.elementLoads.push({element:index,qx,qy});
+    }
+   };
+   apply(leftMembers,c.left);apply(rightMembers,c.right);
+   const out=analyzeFrame2D(model);
+   const maxDisp=Math.max(0,...out.displacements.filter(x=>x.dof!=="rz_rad").map(x=>Math.abs(x.value)));
+   const maxN=Math.max(0,...out.members.map(m=>Math.max(Math.abs(m.local_end_forces_N_Nmm[0]),Math.abs(m.local_end_forces_N_Nmm[3]))));
+   const maxM=Math.max(0,...out.members.map(m=>Math.max(Math.abs(m.local_end_forces_N_Nmm[2]),Math.abs(m.local_end_forces_N_Nmm[5]))));
+   results.push({...c,maxDisp,maxN,maxM,rx:out.equilibrium.support.fx,ry:out.equilibrium.support.fy,equilibrium:out.equilibrium.passed});
+  }
+  const rows=results.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+fmt(x.left,3)+'</td><td>'+fmt(x.right,3)+'</td><td>'+fmt(x.maxDisp,4)+'</td><td>'+fmt(x.maxN/1000,3)+'</td><td>'+fmt(x.maxM/1e6,3)+'</td><td>'+fmt(x.rx/1000,3)+'</td><td>'+fmt(x.ry/1000,3)+'</td><td>'+(x.equilibrium?"قبول":"بررسی")+'</td></tr>').join("");
+  $("frameOutput").innerHTML+='<h4 style="margin-top:16px">مقایسه پنج سناریوی بارگذاری دو شیب سقف</h4><div class="notice">در تمام سناریوها هندسه، مقاطع و بار دیوارها ثابت‌اند و فقط بار قائم رفترهای چپ و راست تغییر می‌کند. بار سطحی بر مبنای تصویر افقی به بار گسترده محلی عضو تبدیل می‌شود. این حالات، مقایسه جبری بارهای واردشده هستند و جایگزین توزیع نامتقارن برف، مکش/فشار باد، ضرایب شکل یا ترکیبات بار آیین‌نامه‌ای نیستند.</div><div class="tablewrap"><table><tr><th>سناریو</th><th>بار سطحی شیب چپ (kN/m²)</th><th>بار سطحی شیب راست (kN/m²)</th><th>بیشینه جابه‌جایی (mm)</th><th>بیشینه |N| (kN)</th><th>بیشینه |M| (kN·m)</th><th>واکنش ΣFx (kN)</th><th>واکنش ΣFy (kN)</th><th>تعادل</th></tr>'+rows+'</table></div><p class="muted">علامت مثبت/منفی ورودی‌ها جهت بار قائم را تعیین می‌کند. خروجی تحلیل خطی قاب دوبعدی مقدماتی است و کنترل مقاومت، کمانش، پایداری، اتصالات و انطباق آیین‌نامه‌ای را انجام نمی‌دهد.</p>';
+  status("frameStatus","پنج سناریوی بارگذاری دو شیب سقف تحلیل شدند؛ بار دیوارها، هندسه و مقاطع ثابت ماندند.");
+  return results;
+ }catch(e){status("frameStatus","خطا در مقایسه بار سقف: "+e.message,true);return null}
 }
 
 function runFrameSelfTests(){
@@ -1838,7 +1894,7 @@ function printReport(){renderReport();showPage("reports");setTimeout(()=>window.
 /* autosync geometry only; don't autosave project on every keystroke */
 $("frameModel").addEventListener("input",()=>{frameAnalysisLast=null;$("frameOutput").innerHTML="";});
 accessoryTakeoffFieldIds.forEach(id=>{const el=$(id);if(el)el.addEventListener("input",calculateSupplementaryTakeoff)});
-const frameInputIds=["frameColumnProfile","frameRafterProfile","autoFrameA","autoFrameE","autoFrameI","autoRoofLeft","autoRoofRight","autoSideWind"];
+const frameInputIds=["frameColumnProfile","frameRafterProfile","autoFrameA","autoFrameE","autoFrameI","autoRoofLeft","autoRoofRight","autoSideWindLeft","autoSideWindRight"];
 frameInputIds.forEach(id=>{const el=$(id);if(!el)return;const markStale=()=>{let generated=false;try{generated=!!JSON.parse($("frameModel").value||"{}").generationInputs}catch(e){}if(generated){frameAnalysisLast=null;$("frameOutput").innerHTML="";status("frameStatus","بارگذاری یا مقاطع قاب تغییر کرده‌اند؛ مدل قاب قدیمی است. ابتدا مدل را دوباره بسازید.")}};el.addEventListener("input",markStale);el.addEventListener("change",markStale)});$("longTrussModel").addEventListener("input",()=>{longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();});
 ["longTrussProfile","longTrussColumnProfile","longTrussRafterProfile","longTrussLongProfile","longTrussBraceProfile","longTrussTieProfile","longTrussA","longTrussE","longTrussFy","longTrussForce"].forEach(id=>$(id).addEventListener("input",()=>{if(["longTrussA","longTrussE","longTrussFy"].includes(id))$("longTrussProfile").value="";longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();status("longTrussStatus","پارامترهای خرپای طولی تغییر کرده‌اند؛ برای اعمال آن‌ها، مدل را دوباره تولید و تحلیل کنید.")}));
 $("bracingMass")?.addEventListener("input",()=>calculateGeometry());
