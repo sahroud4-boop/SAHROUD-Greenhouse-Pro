@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.34.3</title>
+<title>SAHROUD Greenhouse Pro v3.34.4</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -51,7 +51,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.34.3</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.34.4</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -1026,6 +1026,17 @@ function runGeometryIntegrationAudit(){
  add("هندسه","تعداد قاب‌ها",p.frames,Math.ceil(p.length/p.spacing)+1,0);
  add("متره","جمع طول اعضای فهرست‌شده (m)",p.totalSteelLength,p.members.reduce((s,m)=>s+m.totalLength,0));
  add("متره","طول خالص هر ستون (ارتفاع + مدفون) (m)",p.members[0].unitLength,p.height+p.columnEmbedment);add("متره","طول کل ستون‌ها با دفن (m)",p.members[0].totalLength,p.frames*(p.bays+1)*(p.height+p.columnEmbedment));
+ const expectedFootings=p.frames*(p.bays+1);
+ add("فونداسیون","تعداد پی با فرض یک پی زیر هر ستون",p.footingCount,expectedFootings,0);
+ if(p.footingDepth>0)add("فونداسیون","فاصله انتهای ستون تا کف پی (m)",p.footingDepth-p.columnEmbedment,.15);
+ const fl=Number($("fndFootingLength")?.value),fw=Number($("fndFootingWidth")?.value),fd=Number($("fndFootingDepth")?.value),fcRaw=$("fndFootingCount")?.value?.trim()??"",fc=Number(fcRaw);
+ if(fcRaw!==""&&Number.isInteger(fc)&&fc>=0&&Number.isFinite(fl)&&fl>0&&Number.isFinite(fw)&&fw>0&&Number.isFinite(fd)&&fd>0){
+  const concrete=calculateFoundationTakeoff();
+  add("متره فونداسیون","حجم بتن پی از تعداد و ابعاد (m³)",concrete?.footingConcreteVolume??NaN,fc*fl*fw*fd);
+ }
+ const persistenceCases=[!shouldRestoreManualFootingCount({input:{fndFootingCount:10}},10),shouldRestoreManualFootingCount({input:{fndFootingCount:8}},10),!shouldRestoreManualFootingCount({manualFootingCount:false,input:{fndFootingCount:8}},10),shouldRestoreManualFootingCount({manualFootingCount:true,input:{fndFootingCount:10}},10)];
+ const persistenceOk=persistenceCases.every(Boolean);
+ rows.push({group:"ذخیره/بازیابی",label:"حفظ حالت خودکار و دستی تعداد پی (آزمون چهارحالته)",actual:persistenceOk?"چهار حالت صحیح":"خطا",expected:"چهار حالت صحیح",ok:persistenceOk});
  add("مهاربندی","تعداد مهاربندها",p.braceCount,p.bracingBays.length*(4+4*p.bays),0);
  const frameRaw=$("frameModel")?.value?.trim()||"";
  if(frameRaw){
@@ -1359,10 +1370,15 @@ const DB=(()=>{let promise;const dbName="SAHROUD_Greenhouse_Pro_v35",storeName="
  return {open,put:p=>request("readwrite",s=>s.put(p)),get:id=>request("readonly",s=>s.get(id)),all:()=>request("readonly",s=>s.getAll()),del:id=>request("readwrite",s=>s.delete(id))};
 })();
 let activeProject=null;
-function newModel(){return {schemaVersion:"3.33.1",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:"",country:"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
+function shouldRestoreManualFootingCount(record,automaticCount){
+ if(typeof record?.manualFootingCount==="boolean")return record.manualFootingCount;
+ const saved=record?.input?.fndFootingCount;
+ return saved!==undefined&&saved!==null&&String(saved).trim()!==""&&Number.isFinite(Number(saved))&&Number(saved)!==Number(automaticCount);
+}
+function newModel(){return {schemaVersion:"3.34.4",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:"",country:"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
 function collectModel(){
- const p=activeProject||newModel();p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
- p.notes=$("metaNotes").value;p.geometry={...geomResult,bracingBays:getSelectedBracingBays()};p.hydroponics={input:hydroInput(),last:hydroResult};calculateSupplementaryTakeoff();calculateFoundationTakeoff();p.results={...(p.results||{}),bracingBays:getSelectedBracingBays(),equipmentTakeoff:{input:equipmentInputs(),result:equipmentTakeoffLast},fabTakeoff:{input:fabInputs(),result:fabTakeoffLast},executionCosts:{input:executionCostInputs()},accessoryTakeoff:{input:accessoryTakeoffInputs(),result:accessoryTakeoffLast},foundationTakeoff:{input:foundationTakeoffInputs(),result:foundationTakeoffLast},structural:structuralLast,beam:beamLast,frameModel:$("frameModel").value,frameAnalysis:frameAnalysisLast,longTrussModel:$("longTrussModel").value,longTrussInput:{profile:$("longTrussProfile").value,groupProfiles:{columns:$("longTrussColumnProfile").value,rafters:$("longTrussRafterProfile").value,longitudinal:$("longTrussLongProfile").value,braces:$("longTrussBraceProfile").value,ties:$("longTrussTieProfile").value},area:num("longTrussA"),E:num("longTrussE"),Fy:num("longTrussFy"),force:num("longTrussForce")},longTrussAnalysis:longTrussAnalysisLast};return p;
+ const p=activeProject||newModel();p.schemaVersion="3.34.4";p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
+ p.notes=$("metaNotes").value;p.geometry={...geomResult,bracingBays:getSelectedBracingBays()};p.hydroponics={input:hydroInput(),last:hydroResult};calculateSupplementaryTakeoff();calculateFoundationTakeoff();p.results={...(p.results||{}),bracingBays:getSelectedBracingBays(),equipmentTakeoff:{input:equipmentInputs(),result:equipmentTakeoffLast},fabTakeoff:{input:fabInputs(),result:fabTakeoffLast},executionCosts:{input:executionCostInputs()},accessoryTakeoff:{input:accessoryTakeoffInputs(),result:accessoryTakeoffLast},foundationTakeoff:{manualFootingCount:$("fndFootingCount")?.dataset.manual==="1",input:foundationTakeoffInputs(),result:foundationTakeoffLast},structural:structuralLast,beam:beamLast,frameModel:$("frameModel").value,frameAnalysis:frameAnalysisLast,longTrussModel:$("longTrussModel").value,longTrussInput:{profile:$("longTrussProfile").value,groupProfiles:{columns:$("longTrussColumnProfile").value,rafters:$("longTrussRafterProfile").value,longitudinal:$("longTrussLongProfile").value,braces:$("longTrussBraceProfile").value,ties:$("longTrussTieProfile").value},area:num("longTrussA"),E:num("longTrussE"),Fy:num("longTrussFy"),force:num("longTrussForce")},longTrussAnalysis:longTrussAnalysisLast};return p;
 }
 function applyModel(p){
  activeProject=p;
@@ -1375,9 +1391,9 @@ function applyModel(p){
  const accessoryData=p.results?.accessoryTakeoff?.input||{};
  for(const id of accessoryTakeoffFieldIds)if($(id))$(id).value=accessoryData[id]??"";
  accessoryTakeoffLast=null;calculateSupplementaryTakeoff();
- const foundationData=p.results?.foundationTakeoff?.input||{};
+ const foundationRecord=p.results?.foundationTakeoff||{},foundationData=foundationRecord.input||{};
  for(const id of foundationTakeoffFieldIds)if($(id))$(id).value=id==="fndFootingCount"&&foundationData[id]===undefined?String(geomResult.frames*(geomResult.bays+1)):foundationData[id]??"";
- if($("fndFootingCount"))$("fndFootingCount").dataset.manual=foundationData.fndFootingCount!==undefined&&foundationData.fndFootingCount!==null?"1":"";
+ if($("fndFootingCount"))$("fndFootingCount").dataset.manual=shouldRestoreManualFootingCount(foundationRecord,geomResult.frames*(geomResult.bays+1))?"1":"";
  foundationTakeoffLast=null;calculateGeometry();calculateFoundationTakeoff();renderProjectEstimate();
  if(p.climate){climateLast=p.climate;renderClimate(p.climate)}
  if(p.hydroponics?.input){Object.entries(p.hydroponics.input).forEach(([k,v])=>{if($(k))$(k).value=v})}
@@ -1394,7 +1410,7 @@ async function saveProject(){
 async function renderProjects(){const el=$("projectList");if(!el)return;const all=(await DB.all()||[]).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));if(!all.length){el.textContent="هنوز پروژه‌ای ذخیره نشده است.";return}el.innerHTML=all.map(p=>`<div class="projectitem"><div><b>${esc(p.meta?.name||"بدون نام")}</b><small>${esc(p.meta?.city||"شهر نامشخص")} · ${esc(p.meta?.type||"")}</small></div><div class="toolbar"><button class="btn-soft" onclick="loadProject('${esc(p.id)}')">بازکردن</button><button class="btn-red" onclick="deleteProject('${esc(p.id)}')">حذف</button></div></div>`).join("")}
 async function loadProject(id){const p=await DB.get(id);if(p){applyModel(p);status("projectStatus","پروژه بارگذاری شد.")}}
 async function deleteProject(id){if(!confirm("پروژه حذف شود؟"))return;await DB.del(id);if(activeProject?.id===id)activeProject=null;renderProjects()}
-async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.22.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
+async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.34.4",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
 async function importBackup(ev){const f=ev.target.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text()),arr=Array.isArray(d)?d:d.projects;if(!Array.isArray(arr))throw Error("ساختار فایل نامعتبر است");for(const p of arr)if(p?.id&&p.meta)await DB.put(p);await renderProjects();status("projectStatus","بازیابی فایل انجام شد.")}catch(e){status("projectStatus",e.message,true)}ev.target.value=""}
 
 /* Ventilation equipment takeoff: quantities and prices entered by the user */
