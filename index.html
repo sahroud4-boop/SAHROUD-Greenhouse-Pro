@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.34.1</title>
+<title>SAHROUD Greenhouse Pro v3.34.2</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 :root{--green:#087f5b;--green2:#0b956b;--dark:#064e3b;--light:#e8f5ef;--bg:#f3f7f4;--border:#dce7e0;--text:#18332a;--muted:#718078;--amber:#fff8e8;--red:#a83232}
@@ -51,7 +51,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.34.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.34.2</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -114,12 +114,12 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="pagehead"><div><h2>طراحی هندسی و متره گلخانه</h2><p>مدل شماتیک پارامتریک و برآورد مقدماتی بر مبنای فایل ارسالی شما</p></div><span class="muted" id="activeProjectText">پروژه فعال: پروژه نمونه</span></div>
  <div class="layout">
   <aside class="panel">
-   <h3>پارامترهای هندسی</h3><div class="notice">پیش‌فرض شروع: گلخانه یک‌ردیفه با طول ۵۰ متر، عرض کل ۵۰ متر و ارتفاع ستون ۸٫۰ متر (عدد «۸۰» به‌صورت ۸٫۰ متر تفسیر شده است). همه ابعاد قابل تغییرند.</div><button class="btn-soft" type="button" style="width:100%;margin:8px 0" onclick="applySingleRowPreset()">اعمال الگوی گلخانه یک‌ردیفه ۵۰×۵۰×۸ متر</button>
+   <h3>پارامترهای هندسی</h3><button class="btn-soft" type="button" style="width:100%;margin:8px 0" onclick="applySingleRowPreset()">بازنشانی به پیش‌فرض آغازین گلخانه یک‌ردیفه ۲۰×۱۲×۵ متر</button>
    <label>نام پروژه</label><input id="project" value="گلخانه نمونه">
-   <div class="g2"><div><label>تعداد دهانه</label><input id="bays" type="number" min="1" value="1"></div><div><label>عرض هر دهانه (m)</label><input id="bayWidth" type="number" min="1" step=".1" value="50"></div></div>
-   <div class="g2"><div><label>طول گلخانه (m)</label><input id="length" type="number" min="1" value="50"></div><div><label>فاصله قاب‌ها (m)</label><input id="spacing" type="number" min=".1" step=".1" value="5"></div></div>
-   <div class="g2"><div><label>ارتفاع ستون (m)</label><input id="height" type="number" min="1" step=".1" value="8.0"></div><div><label>شیب هدف سقف (درجه؛ با ارتفاع تاج کنترل می‌شود)</label><input id="slope" type="number" min="1" max="60" value="20"></div></div>
-   <label>افزایش ارتفاع تاج نسبت به ستون (m)</label><input id="ridge" type="number" min="0" step=".1" value="9.1">
+   <div class="g2"><div><label>تعداد دهانه</label><input id="bays" type="number" min="1" value="1"></div><div><label>عرض هر دهانه (m)</label><input id="bayWidth" type="number" min="1" step=".1" value="12"></div></div>
+   <div class="g2"><div><label>طول گلخانه (m)</label><input id="length" type="number" min="1" value="20"></div><div><label>فاصله قاب‌ها (m)</label><input id="spacing" type="number" min=".1" step=".1" value="5"></div></div>
+   <div class="g2"><div><label>ارتفاع ستون (m)</label><input id="height" type="number" min="1" step=".1" value="5"></div><div><label>شیب هدف سقف (درجه؛ با ارتفاع تاج کنترل می‌شود)</label><input id="slope" type="number" min="1" max="60" value="21.80"></div></div>
+   <label>افزایش ارتفاع تاج نسبت به ستون (m)</label><input id="ridge" type="number" min="0" step=".1" value="2.4">
    <h3 style="margin-top:20px">مقاطع و قیمت</h3>
    <label>جرم واحد طول عمومی (kg/m) – مقدار جایگزین</label><input id="mass" type="number" min="0" step=".01" placeholder="در صورت خالی بودن مقاطع اختصاصی">
    <details style="margin:12px 0"><summary style="cursor:pointer;color:var(--green);font-weight:bold">مقاطع اختصاصی اعضا و جرم واحد طول</summary><p class="muted">نام مقطع و جرم واحد طول را دقیقاً از دیتاشیت سازنده وارد کنید. مقدار عمومی بالا فقط جای خالی جرم اختصاصی را پر می‌کند.</p><div class="g2"><div><label>مقطع ستون‌ها</label><input id="profile_columns" placeholder="نام/کد مقطع"></div><div><label>جرم ستون (kg/m)</label><input id="mass_columns" type="number" min="0" step=".01"></div><div><label>مقطع رفترها</label><input id="profile_rafters" placeholder="نام/کد مقطع"></div><div><label>جرم رفتر (kg/m)</label><input id="mass_rafters" type="number" min="0" step=".01"></div><div><label>مقطع تیرهای لبه</label><input id="profile_eaves" placeholder="نام/کد مقطع"></div><div><label>جرم تیر لبه (kg/m)</label><input id="mass_eaves" type="number" min="0" step=".01"></div><div><label>مقطع تیرهای تاج</label><input id="profile_ridges" placeholder="نام/کد مقطع"></div><div><label>جرم تیر تاج (kg/m)</label><input id="mass_ridges" type="number" min="0" step=".01"></div><div><label>مقطع لاپه‌ها</label><input id="profile_purlins" placeholder="نام/کد مقطع"></div><div><label>جرم لاپه (kg/m)</label><input id="mass_purlins" type="number" min="0" step=".01"></div></div></details>
@@ -168,9 +168,9 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
     <p class="muted">محل ورود ابعاد فونداسیون همین بخش است: تعداد پی، طول و عرض هر پی و عمق/ضخامت پی را در چهار کادر زیر وارد کنید. این بخش در صفحه «هندسه و متره» پایین‌تر از بخش متره تکمیلی قرار دارد. این ماژول پی منفرد، بتن مگر، خاک‌برداری و آرماتور را متره می‌کند. ستون فولادی مستقیماً در بتن پی مدفون می‌شود و طول مدفون آن برابر عمق فونداسیون منهای ۰٫۱۵ متر است. ابعاد پی و آرماتور باید از نقشه مهندسی وارد شوند.</p>
     <h4>پی منفرد و بتن سازه‌ای با ستون مدفون</h4><div class="g3">
      <div><label>تعداد پی (عدد؛ مقدار آغازین از هندسه)</label><input id="fndFootingCount" type="number" min="0" step="1" placeholder="از نقشه" onchange="this.dataset.manual='1'"></div>
-     <div><label>طول هر پی (m)</label><input id="fndFootingLength" type="number" min="0.01" step="0.01" placeholder="از نقشه"></div>
-     <div><label>عرض هر پی (m)</label><input id="fndFootingWidth" type="number" min="0.01" step="0.01" placeholder="از نقشه"></div>
-     <div><label>عمق فونداسیون از روی پی تا کف (m)</label><input id="fndFootingDepth" type="number" min="0.16" step="0.01" placeholder="از نقشه"></div>
+     <div><label>طول هر پی (m)</label><input id="fndFootingLength" type="number" min="0.01" step="0.01" value="0.5" placeholder="از نقشه"></div>
+     <div><label>عرض هر پی (m)</label><input id="fndFootingWidth" type="number" min="0.01" step="0.01" value="0.5" placeholder="از نقشه"></div>
+     <div><label>عمق فونداسیون از روی پی تا کف (m)</label><input id="fndFootingDepth" type="number" min="0.16" step="0.01" value="0.8" placeholder="از نقشه"></div>
     </div>
     <p class="notice">اتصال ستون در این مدل: ستون فولادی مستقیماً داخل بتن پی ادامه می‌یابد؛ ارتفاع ستون در صفحه هندسه از روی پی اندازه‌گیری می‌شود و انتهای فولاد ۱۵ سانتی‌متر بالاتر از کف پی متوقف می‌شود. طول فولاد هر ستون برای متره و لیست خرید = ارتفاع روی پی + طول مدفون = ارتفاع روی پی + (عمق فونداسیون − ۰٫۱۵ متر). این فرض هندسی به‌تنهایی کنترل مهار، خوردگی، انتقال نیرو یا طول گیرایی ستون مدفون نیست.</p>
     <h4>بتن مگر و خاک‌برداری</h4><div class="g3">
@@ -940,7 +940,7 @@ function setBracingBay(bay,checked){if(bay===1||bay===Number(geomResult.frames)-
 function syncRoofRiseFromSlope(){const w=Number($("bayWidth").value),a=Number($("slope").value);if(Number.isFinite(w)&&w>0&&Number.isFinite(a)&&a>0&&a<89)$("ridge").value=(w/2*Math.tan(a*Math.PI/180)).toFixed(3)}
 function syncRoofSlopeFromRise(){const w=Number($("bayWidth").value),r=Number($("ridge").value);if(Number.isFinite(w)&&w>0&&Number.isFinite(r)&&r>0)$("slope").value=(Math.atan2(r,w/2)*180/Math.PI).toFixed(2)}
 function refreshGeometryDependents(){calculateFoundationTakeoff();calculateSupplementaryTakeoff();calculateEquipmentTakeoff();renderProjectEstimate()}
-function applySingleRowPreset(){ $("bays").value="1";$("bayWidth").value="50";$("length").value="50";$("height").value="8.0";$("spacing").value="5";$("slope").value="20";syncRoofRiseFromSlope();$("fndFootingCount").dataset.manual="";calculateGeometry();refreshGeometryDependents();status("projectStatus","الگوی یک‌ردیفه اعمال شد؛ هندسه، تعداد قاب‌ها، تعداد پی‌های پیش‌فرض و متره‌های وابسته به‌روزرسانی شدند. ابعاد واقعی پی را از نقشه وارد کنید.");}
+function applySingleRowPreset(){ $("bays").value="1";$("bayWidth").value="12";$("length").value="20";$("height").value="5";$("spacing").value="5";$("ridge").value=(Number($("bayWidth").value)*0.20).toFixed(3);syncRoofSlopeFromRise();$("fndFootingLength").value="0.5";$("fndFootingWidth").value="0.5";$("fndFootingDepth").value="0.8";$("fndFootingCount").dataset.manual="";calculateGeometry();refreshGeometryDependents();status("projectStatus","پیش‌فرض آغازین یک‌ردیفه ۲۰×۱۲×۵ متر و پی ۰٫۵×۰٫۵×۰٫۸ متر اعمال شد؛ همه ابعاد همچنان قابل ویرایش‌اند.");}
 function geometryParams(){const footingDepth=num("fndFootingDepth")||0;return {memberSpecs:memberSpecs(),project:$("project").value,bays:Math.max(1,Math.floor(num("bays")||1)),bayWidth:num("bayWidth")||0,length:num("length")||0,spacing:Math.max(.1,num("spacing")||.1),height:num("height")||0,slope:num("slope")||0,ridge:num("ridge")||0,footingDepth,columnEmbedment:footingDepth>0?footingDepth-.15:0,footingLength:num("fndFootingLength")||0,footingWidth:num("fndFootingWidth")||0,footingCount:num("fndFootingCount")||0,bracingMass:num("bracingMass")||0,mass:num("mass")||0,steelPrice:num("steelPrice")||0,coverPrice:num("coverPrice")||0,coverType:$("coverType").value,steelWaste:num("steelWaste")||0,coverWaste:num("coverWaste")||0,gutterPrice:num("gutterPrice")||0,fastenersRate:num("fastenersRate")||0,fastenerPrice:num("fastenerPrice")||0,coverOpeningDoor:num("coverOpeningDoor")||0,coverOpeningVent:num("coverOpeningVent")||0,coverOpeningOther:num("coverOpeningOther")||0}}
 function memberSpecs(){const keys=["columns","rafters","eaves","ridges","purlins"];const out={};for(const k of keys){const p=$("profile_"+k),m=$("mass_"+k);out[k]={profile:p?.value?.trim()||"",massPerM:m&&m.value.trim()!==""?Number(m.value):null}}return out}
 function calculateGeometry(){
