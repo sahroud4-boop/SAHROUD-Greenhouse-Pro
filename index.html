@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.41.0</title>
+<title>SAHROUD Greenhouse Pro v3.42.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 .climate-tabs button.active{background:var(--green);color:#fff}.climate-tab[hidden]{display:none!important}.climate-tab{padding-top:12px}
@@ -330,6 +330,8 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
   <div><label>ممان اینرسی I (mm⁴)</label><input id="autoFrameI" type="number" min="0.01" placeholder="از دیتاشیت"></div>
   <div><label>بار قائم سقف چپ بر مبنای سطح افقی (kN/m²)</label><input id="autoRoofLeft" type="number" step="0.01" value="0"></div>
   <div><label>بار قائم سقف راست بر مبنای سطح افقی (kN/m²)</label><input id="autoRoofRight" type="number" step="0.01" value="0"></div>
+  <div><label>باد عمود بر شیب چپ؛ مثبت = فشار به داخل، منفی = مکش (kN/m²)</label><input id="autoRoofWindLeft" type="number" step="0.01" value="0"></div>
+  <div><label>باد عمود بر شیب راست؛ مثبت = فشار به داخل، منفی = مکش (kN/m²)</label><input id="autoRoofWindRight" type="number" step="0.01" value="0"></div>
   <div><label>بار افقی دیوار چپ، جهت مثبت محور X (kN/m²)</label><input id="autoSideWindLeft" type="number" step="0.01" value="0"></div>
   <div><label>بار افقی دیوار راست، جهت مثبت محور X (kN/m²)</label><input id="autoSideWindRight" type="number" step="0.01" value="0"></div>
  </div>
@@ -337,9 +339,9 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="status" id="autoFrameStatus"></div>
  <label>تعریف مدل به‌صورت JSON — واحدها: مختصات mm، نیرو N، لنگر N·mm، E بر حسب MPa، A بر حسب mm² و I بر حسب mm⁴</label>
  <textarea id="frameModel" rows="13" spellcheck="false" style="direction:ltr;text-align:left;font-family:Consolas,monospace;font-size:11px" placeholder="مدل JSON را بارگذاری کنید یا دکمه نمونه را بزنید"></textarea>
- <div class="toolbar" style="margin-top:10px"><button class="btn-soft" onclick="loadFrameExample()">بارگذاری نمونه تیر طره‌ای</button><button onclick="runFrameAnalysis()">اجرای تحلیل قاب 2D</button><button class="btn-soft" onclick="runFrameSelfTests()">آزمون صحت حل‌گر</button><button class="btn-soft" onclick="compareFrameWindScenarios()">مقایسه سناریوهای باد دوطرفه</button><button class="btn-soft" onclick="compareFrameRoofScenarios()">مقایسه بار نامتقارن دو شیب سقف</button></div>
+ <div class="toolbar" style="margin-top:10px"><button class="btn-soft" onclick="loadFrameExample()">بارگذاری نمونه تیر طره‌ای</button><button onclick="runFrameAnalysis()">اجرای تحلیل قاب 2D</button><button class="btn-soft" onclick="runFrameSelfTests()">آزمون صحت حل‌گر</button><button class="btn-soft" onclick="compareFrameWindScenarios()">مقایسه سناریوهای باد دوطرفه</button><button class="btn-soft" onclick="compareFrameRoofScenarios()">مقایسه بار نامتقارن دو شیب سقف</button><button class="btn-soft" onclick="compareFrameRoofWindScenarios()">مقایسه سناریوهای باد سقف</button></div>
  <div class="status" id="frameStatus"></div><div id="frameOutput"></div><div class="status" id="frameSelfTestStatus"></div><div id="frameSelfTestOutput"></div>
- <div class="notice">محدودیت این مرحله: فقط بارهای گره‌ای و بار گسترده یکنواخت عضو در محورهای محلی؛ رفتار خطی الاستیک و تغییرشکل کوچک. بارهای غیر یکنواخت/مثلثی، تحلیل مرتبه دوم، مفصل/فنر، اندرکنش محوری-خمشی، کمانش، طراحی مقطع و کنترل آیین‌نامه‌ای هنوز پیاده‌سازی نشده‌اند. این هسته هنوز به هندسه خودکار گلخانه متصل نیست و نباید مبنای ساخت قرار گیرد. نمونه پیش‌فرض صرفاً تست عددی است.</div>
+ <div class="notice">قرارداد بار سقف: بار قائم بر مبنای تصویر افقی وارد می‌شود؛ بار باد سقف مستقل و عمود بر سطح شیب‌دار است (مثبت = فشار به داخل، منفی = مکش به خارج). هر دو به‌صورت بار گسترده یکنواخت محلی به رفتر مربوط اعمال می‌شوند. این ورودی‌ها فشار طراحی را خودکار از اقلیم استخراج نمی‌کنند. محدودیت این مرحله: فقط بارهای گره‌ای و بار گسترده یکنواخت عضو در محورهای محلی؛ رفتار خطی الاستیک و تغییرشکل کوچک. بارهای غیر یکنواخت/مثلثی، تحلیل مرتبه دوم، مفصل/فنر، اندرکنش محوری-خمشی، کمانش، طراحی مقطع و کنترل آیین‌نامه‌ای هنوز پیاده‌سازی نشده‌اند. این هسته هنوز به هندسه خودکار گلخانه متصل نیست و نباید مبنای ساخت قرار گیرد. نمونه پیش‌فرض صرفاً تست عددی است.</div>
  </div>
 
  <div class="card"><h3>تحلیل خرپای فضایی طولی سه‌بعدی (3D)</h3>
@@ -779,7 +781,7 @@ function greenhouseFrameGenerationInputs(){
  const p=geometryParams();
  return {
   geometry:{bays:p.bays,bayWidth:p.bayWidth,length:p.length,spacing:p.spacing,height:p.height,slope:p.slope,ridge:p.ridge,footingDepth:p.footingDepth,columnEmbedment:p.columnEmbedment},
-  loads:{roofLeft:num("autoRoofLeft"),roofRight:num("autoRoofRight"),sideWindLeft:num("autoSideWindLeft"),sideWindRight:num("autoSideWindRight")},
+  loads:{roofLeft:num("autoRoofLeft"),roofRight:num("autoRoofRight"),roofWindLeft:num("autoRoofWindLeft"),roofWindRight:num("autoRoofWindRight"),sideWindLeft:num("autoSideWindLeft"),sideWindRight:num("autoSideWindRight")},
   sections:{
    columnProfile:$("frameColumnProfile")?.value||"",rafterProfile:$("frameRafterProfile")?.value||"",
    columnData:(()=>{const p=findSectionProfile($("frameColumnProfile")?.value);return p?{area:p.area,E:p.E,Ix:p.Ix,Wx:p.Wx,Wy:p.Wy,Fy:p.Fy}:null})(),
@@ -796,12 +798,12 @@ function generateGreenhouseFrame(){
    const sectionFor=profile=>profile?{A:Number(profile.area),E:Number(profile.E),I:Number(profile.Ix),W:[Number(profile.Wx),Number(profile.Wy)].filter(v=>Number.isFinite(v)&&v>0).sort((a,b)=>a-b)[0]||null,Fy:Number(profile.Fy),profile:profile.name}:null;
    const colSection=sectionFor(colProfile),rafSection=sectionFor(rafProfile);
    const A=colSection?.A||manualA,E=colSection?.E||manualE,I=colSection?.I||manualI;
-  const roofLeft=num("autoRoofLeft"),roofRight=num("autoRoofRight"),sideWindLeft=num("autoSideWindLeft"),sideWindRight=num("autoSideWindRight");
+  const roofLeft=num("autoRoofLeft"),roofRight=num("autoRoofRight"),roofWindLeft=num("autoRoofWindLeft"),roofWindRight=num("autoRoofWindRight"),sideWindLeft=num("autoSideWindLeft"),sideWindRight=num("autoSideWindRight");
   if(!(p.bays>0&&p.bayWidth>0&&p.height>0&&p.ridge>0))throw new Error("ابتدا هندسه معتبر گلخانه را محاسبه کنید؛ افزایش ارتفاع تاج باید مثبت باشد.");
   if(!(A>0&&E>0&&I>0))throw new Error("برای تحلیل، A و I باید از مشخصات مقطع معتبر وارد شوند و E نیز مثبت باشد.");
    if(colProfile&&!(colSection.A>0&&colSection.E>0&&colSection.I>0&&colSection.Fy>0))throw new Error("مشخصات مقطع ستون ناقص است؛ Ag، Ix، E و Fy را در بانک تکمیل کنید.");
    if(rafProfile&&!(rafSection.A>0&&rafSection.E>0&&rafSection.I>0&&rafSection.Fy>0))throw new Error("مشخصات مقطع رفتر ناقص است؛ Ag، Ix، E و Fy را در بانک تکمیل کنید.");
-  if([roofLeft,roofRight,sideWindLeft,sideWindRight].some(v=>v===null||!Number.isFinite(v)))throw new Error("تمام بارهای سطحی باید عددی باشند.");
+  if([roofLeft,roofRight,roofWindLeft,roofWindRight,sideWindLeft,sideWindRight].some(v=>v===null||!Number.isFinite(v)))throw new Error("تمام بارهای سطحی باید عددی باشند.");
   const nodes=[],elements=[],restraints=[],elementLoads=[],base=[],eave=[];
   for(let j=0;j<=p.bays;j++){
    const x=j*p.bayWidth*1000;
@@ -824,13 +826,15 @@ function generateGreenhouseFrame(){
   for(let j=0;j<p.bays;j++){
    const x=(j+.5)*p.bayWidth*1000;
    const ridge=nodes.length;nodes.push({x,y:(p.height+p.ridge)*1000});
-   const pairs=[[eave[j],ridge,"رفتر چپ دهانه "+(j+1),roofLeft],[ridge,eave[j+1],"رفتر راست دهانه "+(j+1),roofRight]];
-   for(const [ni,nj,id,pressure] of pairs){
+   const pairs=[[eave[j],ridge,"رفتر چپ دهانه "+(j+1),roofLeft,roofWindLeft],[ridge,eave[j+1],"رفتر راست دهانه "+(j+1),roofRight,roofWindRight]];
+   for(const [ni,nj,id,verticalPressure,normalWindPressure] of pairs){
     const elIndex=elements.length,dx=nodes[nj].x-nodes[ni].x,dy=nodes[nj].y-nodes[ni].y,L=Math.hypot(dx,dy),c=dx/L,ss=dy/L;
     elements.push({id,i:ni,j:nj,A:rafSection?.A||A,E:rafSection?.E||E,I:rafSection?.I||I,section:rafSection?{A:rafSection.A,W:rafSection.W,Fy:rafSection.Fy,profile:rafSection.profile}:null});
-    // Roof pressure is defined per horizontal projected area; cos(theta) converts it to load per sloped member length.
-    const globalQy=-pressure*tributary*Math.abs(c),load=toLocal(0,globalQy,c,ss);
-    if(pressure!==0)elementLoads.push({element:elIndex,...load});
+    // Vertical roof load uses horizontal projection; wind pressure is normal to the roof and signed positive inward.
+    const verticalGlobalQy=-verticalPressure*tributary*Math.abs(c),verticalLocal=toLocal(0,verticalGlobalQy,c,ss);
+    const windLocalQy=-normalWindPressure*tributary;
+    const qx=verticalLocal.qx,qy=verticalLocal.qy+windLocalQy;
+    if(qx!==0||qy!==0)elementLoads.push({element:elIndex,qx,qy});
    }
   }
   const model={units:"N, mm, MPa, mm2, mm4",modelType:"greenhouse-generated-2D-frame",generationInputs:greenhouseFrameGenerationInputs(),assumptions:"قاب عرضی دوبعدی داخلی، اتصالات صلب، پای ستون گیردار، مقاطع ثابت؛ بارهای سطحی واردشده صرفاً بارهای سناریویی و نه بارهای طراحی آیین‌نامه‌ای",nodes,elements,restraints,loads:[],elementLoads};
@@ -1001,6 +1005,53 @@ function compareFrameRoofScenarios(){
   status("frameStatus","پنج سناریوی بارگذاری دو شیب سقف تحلیل شدند؛ بار دیوارها، هندسه و مقاطع ثابت ماندند.");
   return results;
  }catch(e){status("frameStatus","خطا در مقایسه بار سقف: "+e.message,true);return null}
+}
+
+
+function compareFrameRoofWindScenarios(){
+ try{
+  const base=JSON.parse($("frameModel").value);
+  if(base.modelType!=="greenhouse-generated-2D-frame"||!Array.isArray(base.elements)||!Array.isArray(base.nodes))throw new Error("ابتدا قاب گلخانه را از هندسه فعلی تولید کنید.");
+  if(!base.generationInputs||JSON.stringify(base.generationInputs)!==JSON.stringify(greenhouseFrameGenerationInputs()))throw new Error("ورودی‌ها تغییر کرده‌اند یا مدل قدیمی است؛ ابتدا قاب را دوباره بسازید.");
+  const g=base.generationInputs.geometry||{},v=base.generationInputs.loads||{},spacing=Number(g.spacing);
+  const leftG=Number(v.roofLeft),rightG=Number(v.roofRight),leftW=Number(v.roofWindLeft||0),rightW=Number(v.roofWindRight||0);
+  if(!(spacing>0)||![leftG,rightG,leftW,rightW].every(Number.isFinite))throw new Error("فاصله قاب یا بارهای سقف در اطلاعات مدل معتبر نیست.");
+  const left=[],right=[];
+  base.elements.forEach((e,i)=>{const id=String(e.id||"");if(id.startsWith("رفتر چپ دهانه"))left.push(i);if(id.startsWith("رفتر راست دهانه"))right.push(i)});
+  if(!left.length||left.length!==right.length)throw new Error("اعضای دو شیب سقف برای همه دهانه‌ها شناسایی نشدند.");
+  const roofSet=new Set([...left,...right]);
+  const cases=[
+   {name:"باد مبنای ورودی",l:leftW,r:rightW},
+   {name:"معکوس‌کردن جهت باد هر دو شیب",l:-leftW,r:-rightW},
+   {name:"فقط باد شیب چپ",l:leftW,r:0},
+   {name:"فقط باد شیب راست",l:0,r:rightW},
+   {name:"جابجایی باد چپ و راست",l:rightW,r:leftW},
+   {name:"باد متقارن با میانگین دو ورودی",l:(leftW+rightW)/2,r:(leftW+rightW)/2}
+  ];
+  const results=[];
+  for(const c of cases){
+   const model=JSON.parse(JSON.stringify(base));
+   model.elementLoads=(model.elementLoads||[]).filter(x=>!roofSet.has(x.element));
+   const apply=(indices,verticalPressure,windPressure)=>{
+    for(const index of indices){
+     const e=model.elements[index],a=model.nodes[e.i],b=model.nodes[e.j],dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy);
+     if(!(L>0))throw new Error("طول رفتر نامعتبر است.");
+     const co=dx/L,si=dy/L,globalVertical=-verticalPressure*spacing*Math.abs(co);
+     const qx=globalVertical*si,qy=globalVertical*co-windPressure*spacing;
+     if(qx!==0||qy!==0)model.elementLoads.push({element:index,qx,qy});
+    }
+   };
+   apply(left,leftG,c.l);apply(right,rightG,c.r);
+   const out=analyzeFrame2D(model),maxDisp=Math.max(0,...out.displacements.filter(x=>x.dof!=="rz_rad").map(x=>Math.abs(x.value)));
+   const maxN=Math.max(0,...out.members.map(m=>Math.max(Math.abs(m.local_end_forces_N_Nmm[0]),Math.abs(m.local_end_forces_N_Nmm[3]))));
+   const maxM=Math.max(0,...out.members.map(m=>Math.max(Math.abs(m.local_end_forces_N_Nmm[2]),Math.abs(m.local_end_forces_N_Nmm[5]))));
+   results.push({...c,maxDisp,maxN,maxM,rx:out.equilibrium.support.fx,ry:out.equilibrium.support.fy,equilibrium:out.equilibrium.passed});
+  }
+  const rows=results.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+fmt(x.l,3)+'</td><td>'+fmt(x.r,3)+'</td><td>'+fmt(x.maxDisp,4)+'</td><td>'+fmt(x.maxN/1000,3)+'</td><td>'+fmt(x.maxM/1e6,3)+'</td><td>'+fmt(x.rx/1000,3)+'</td><td>'+fmt(x.ry/1000,3)+'</td><td>'+(x.equilibrium?"قبول":"بررسی")+'</td></tr>').join("");
+  $("frameOutput").innerHTML+='<h4 style="margin-top:16px">مقایسه شش سناریوی باد عمود بر دو شیب سقف</h4><div class="notice">در همه حالت‌ها بار قائم سقف و بار دیوارها ثابت است؛ فقط مؤلفه باد عمود بر سطح شیب‌دار تغییر می‌کند. فشار مثبت به داخل و مکش منفی به خارج تعریف شده است. بار باد با فاصله قاب به بار خطی محلی رفتر تبدیل می‌شود. این سناریوها ضرایب فشار خارجی/داخلی، نواحی لبه و گوشه، اثر ارتفاع، تلاطم یا ترکیبات رسمی آیین‌نامه‌ای را تعیین نمی‌کنند.</div><div class="tablewrap"><table><tr><th>سناریو</th><th>باد شیب چپ (kN/m²)</th><th>باد شیب راست (kN/m²)</th><th>بیشینه جابه‌جایی (mm)</th><th>بیشینه |N| (kN)</th><th>بیشینه |M| (kN·m)</th><th>واکنش ΣFx (kN)</th><th>واکنش ΣFy (kN)</th><th>تعادل</th></tr>'+rows+'</table></div><p class="muted">این تحلیل خطی و دوبعدی است؛ خروجی برای بررسی حساسیت مدل به ورودی باد است و تأیید طراحی یا کفایت سازه محسوب نمی‌شود.</p>';
+  status("frameStatus","شش سناریوی باد عمود بر شیب سقف تحلیل شدند؛ بار قائم سقف و بار دیوارها ثابت ماندند.");
+  return results;
+ }catch(e){status("frameStatus","خطا در مقایسه باد سقف: "+e.message,true);return null}
 }
 
 function runFrameSelfTests(){
@@ -1894,7 +1945,7 @@ function printReport(){renderReport();showPage("reports");setTimeout(()=>window.
 /* autosync geometry only; don't autosave project on every keystroke */
 $("frameModel").addEventListener("input",()=>{frameAnalysisLast=null;$("frameOutput").innerHTML="";});
 accessoryTakeoffFieldIds.forEach(id=>{const el=$(id);if(el)el.addEventListener("input",calculateSupplementaryTakeoff)});
-const frameInputIds=["frameColumnProfile","frameRafterProfile","autoFrameA","autoFrameE","autoFrameI","autoRoofLeft","autoRoofRight","autoSideWindLeft","autoSideWindRight"];
+const frameInputIds=["frameColumnProfile","frameRafterProfile","autoFrameA","autoFrameE","autoFrameI","autoRoofLeft","autoRoofRight","autoRoofWindLeft","autoRoofWindRight","autoSideWindLeft","autoSideWindRight"];
 frameInputIds.forEach(id=>{const el=$(id);if(!el)return;const markStale=()=>{let generated=false;try{generated=!!JSON.parse($("frameModel").value||"{}").generationInputs}catch(e){}if(generated){frameAnalysisLast=null;$("frameOutput").innerHTML="";status("frameStatus","بارگذاری یا مقاطع قاب تغییر کرده‌اند؛ مدل قاب قدیمی است. ابتدا مدل را دوباره بسازید.")}};el.addEventListener("input",markStale);el.addEventListener("change",markStale)});$("longTrussModel").addEventListener("input",()=>{longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();});
 ["longTrussProfile","longTrussColumnProfile","longTrussRafterProfile","longTrussLongProfile","longTrussBraceProfile","longTrussTieProfile","longTrussA","longTrussE","longTrussFy","longTrussForce"].forEach(id=>$(id).addEventListener("input",()=>{if(["longTrussA","longTrussE","longTrussFy"].includes(id))$("longTrussProfile").value="";longTrussAnalysisLast=null;$("longTrussOutput").innerHTML="";renderLongTrussModel();status("longTrussStatus","پارامترهای خرپای طولی تغییر کرده‌اند؛ برای اعمال آن‌ها، مدل را دوباره تولید و تحلیل کنید.")}));
 $("bracingMass")?.addEventListener("input",()=>calculateGeometry());
