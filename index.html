@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.38.0</title>
+<title>SAHROUD Greenhouse Pro v3.39.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 .climate-tabs button.active{background:var(--green);color:#fff}.climate-tab[hidden]{display:none!important}.climate-tab{padding-top:12px}
@@ -330,7 +330,8 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
   <div><label>ممان اینرسی I (mm⁴)</label><input id="autoFrameI" type="number" min="0.01" placeholder="از دیتاشیت"></div>
   <div><label>بار قائم سقف چپ بر مبنای سطح افقی (kN/m²)</label><input id="autoRoofLeft" type="number" step="0.01" value="0"></div>
   <div><label>بار قائم سقف راست بر مبنای سطح افقی (kN/m²)</label><input id="autoRoofRight" type="number" step="0.01" value="0"></div>
-  <div><label>فشار افقی دیوار جانبی (kN/m²)</label><input id="autoSideWind" type="number" step="0.01" value="0"></div>
+  <div><label>بار افقی دیوار چپ، جهت مثبت محور X (kN/m²)</label><input id="autoSideWindLeft" type="number" step="0.01" value="0"></div>
+  <div><label>بار افقی دیوار راست، جهت مثبت محور X (kN/m²)</label><input id="autoSideWindRight" type="number" step="0.01" value="0"></div>
  </div>
  <div class="toolbar" style="margin-top:10px"><button onclick="generateGreenhouseFrame()">ساخت مدل قاب از هندسه فعلی</button><button class="btn-soft" onclick="evaluateSectionCandidates()">ارزیابی خودکار مقاطع بانک</button></div>
  <div class="status" id="autoFrameStatus"></div>
@@ -778,7 +779,7 @@ function greenhouseFrameGenerationInputs(){
  const p=geometryParams();
  return {
   geometry:{bays:p.bays,bayWidth:p.bayWidth,length:p.length,spacing:p.spacing,height:p.height,slope:p.slope,ridge:p.ridge,footingDepth:p.footingDepth,columnEmbedment:p.columnEmbedment},
-  loads:{roofLeft:num("autoRoofLeft"),roofRight:num("autoRoofRight"),sideWind:num("autoSideWind")},
+  loads:{roofLeft:num("autoRoofLeft"),roofRight:num("autoRoofRight"),sideWindLeft:num("autoSideWindLeft"),sideWindRight:num("autoSideWindRight")},
   sections:{
    columnProfile:$("frameColumnProfile")?.value||"",rafterProfile:$("frameRafterProfile")?.value||"",
    columnData:(()=>{const p=findSectionProfile($("frameColumnProfile")?.value);return p?{area:p.area,E:p.E,Ix:p.Ix,Wx:p.Wx,Wy:p.Wy,Fy:p.Fy}:null})(),
@@ -795,12 +796,12 @@ function generateGreenhouseFrame(){
    const sectionFor=profile=>profile?{A:Number(profile.area),E:Number(profile.E),I:Number(profile.Ix),W:[Number(profile.Wx),Number(profile.Wy)].filter(v=>Number.isFinite(v)&&v>0).sort((a,b)=>a-b)[0]||null,Fy:Number(profile.Fy),profile:profile.name}:null;
    const colSection=sectionFor(colProfile),rafSection=sectionFor(rafProfile);
    const A=colSection?.A||manualA,E=colSection?.E||manualE,I=colSection?.I||manualI;
-  const roofLeft=num("autoRoofLeft"),roofRight=num("autoRoofRight"),sideWind=num("autoSideWind");
+  const roofLeft=num("autoRoofLeft"),roofRight=num("autoRoofRight"),sideWindLeft=num("autoSideWindLeft"),sideWindRight=num("autoSideWindRight");
   if(!(p.bays>0&&p.bayWidth>0&&p.height>0&&p.ridge>0))throw new Error("ابتدا هندسه معتبر گلخانه را محاسبه کنید؛ افزایش ارتفاع تاج باید مثبت باشد.");
   if(!(A>0&&E>0&&I>0))throw new Error("برای تحلیل، A و I باید از مشخصات مقطع معتبر وارد شوند و E نیز مثبت باشد.");
    if(colProfile&&!(colSection.A>0&&colSection.E>0&&colSection.I>0&&colSection.Fy>0))throw new Error("مشخصات مقطع ستون ناقص است؛ Ag، Ix، E و Fy را در بانک تکمیل کنید.");
    if(rafProfile&&!(rafSection.A>0&&rafSection.E>0&&rafSection.I>0&&rafSection.Fy>0))throw new Error("مشخصات مقطع رفتر ناقص است؛ Ag، Ix، E و Fy را در بانک تکمیل کنید.");
-  if([roofLeft,roofRight,sideWind].some(v=>v===null||!Number.isFinite(v)))throw new Error("تمام بارهای سطحی باید عددی باشند.");
+  if([roofLeft,roofRight,sideWindLeft,sideWindRight].some(v=>v===null||!Number.isFinite(v)))throw new Error("تمام بارهای سطحی باید عددی باشند.");
   const nodes=[],elements=[],restraints=[],elementLoads=[],base=[],eave=[];
   for(let j=0;j<=p.bays;j++){
    const x=j*p.bayWidth*1000;
@@ -811,12 +812,13 @@ function generateGreenhouseFrame(){
   }
   const tributary=p.spacing;
   const toLocal=(qgx,qgy,c,ss)=>({qx:qgx*c+qgy*ss,qy:-qgx*ss+qgy*c});
-  const sideLineLoad=sideWind*tributary; // kN/m² × m = kN/m = N/mm
-  if(sideLineLoad!==0){
-   // Transverse in-plane load on the two exterior sidewall columns only.
-   for(const j of [0,p.bays]){
-    const elIndex=j,load=toLocal(sideLineLoad,0,0,1);
-    elementLoads.push({element:elIndex,...load});
+  // Signed global-X pressures are independent on the two exterior walls.
+  // kN/m² × tributary spacing (m) = kN/m = N/mm.
+  for(const [j,pressure] of [[0,sideWindLeft],[p.bays,sideWindRight]]){
+   const lineLoad=pressure*tributary;
+   if(lineLoad!==0){
+    const load=toLocal(lineLoad,0,0,1);
+    elementLoads.push({element:j,...load});
    }
   }
   for(let j=0;j<p.bays;j++){
