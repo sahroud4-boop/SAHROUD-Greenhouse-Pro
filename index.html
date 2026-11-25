@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.36.1</title>
+<title>SAHROUD Greenhouse Pro v3.37.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 .climate-tabs button.active{background:var(--green);color:#fff}.climate-tab[hidden]{display:none!important}.climate-tab{padding-top:12px}
@@ -301,7 +301,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
   <div><label>استاندارد مبنا</label><select id="std"><option value="">انتخاب نشده</option><option>مقررات ملی ساختمان ایران</option><option>Eurocode</option><option>ASCE / IBC</option><option>ورودی سفارشی مهندس</option></select></div>
   <div><label>فاصله قاب‌ها (m)</label><input id="sFrame" type="number" min=".1" value="4"></div><div><label>بار مرده اضافی D (kN/m²)</label><input id="sD" type="number" min="0" step=".01" value="0"></div>
   <div><label>بار بهره‌برداری L (kN/m²)</label><input id="sL" type="number" min="0" step=".01" value="0"></div><div><label>فشار/مکش باد W (kN/m²)</label><input id="sW" type="number" step=".01" value="0"></div><div><label>بار برف S (kN/m²)</label><input id="sS" type="number" min="0" step=".01" value="0"></div>
- </div><div class="notice">مقادیر صفر صرفاً ورودی صفر هستند و به معنی حذف بار قانونی نیستند. باد، برف نامتقارن، بارهای داخلی، زلزله و ضرایب آیین‌نامه‌ای در این ماژول به‌صورت کامل تحلیل نمی‌شوند.</div><button onclick="runStructural()">محاسبه بار خطی قاب</button><div id="structuralOutput"></div></div>
+ </div><div class="notice">مقادیر صفر صرفاً ورودی صفر هستند و به معنی حذف بار قانونی نیستند. سرعت باد (m/s) به‌تنهایی فشار/مکش باد (kN/m²) نیست؛ برای تبدیل به فشار باید ضوابط، رده مواجهه، ضرایب فشار داخلی/خارجی و ضرایب شکل اعمال شوند. بار برف طراحی نیز پیش از ورود به این جدول باید با ضرایب شکل و توزیع مناسب سقف تعیین شود.</div><div class="toolbar"><button onclick="runStructural()">محاسبه بار خطی قاب</button><button class="btn-soft" onclick="auditStructuralInputs()">کنترل کفایت ورودی‌های طراحی</button></div><div id="structuralAudit" class="status"></div><div id="structuralOutput"></div></div>
  <div class="card"><h3>کنترل مقدماتی تیر فولادی دوسر ساده</h3><div class="g3">
   <div><label>دهانه L (m)</label><input id="bL" type="number" min=".1" value="4"></div><div><label>بار گسترده w (kN/m)</label><input id="bW" type="number" min="0" value="0"></div><div><label>مدول E (GPa)</label><input id="bE" type="number" min="1" value="200"></div>
   <div><label>ممان دوم سطح I (cm⁴)</label><input id="bI" type="number" min=".01" value="1000"></div><div><label>مدول مقطع Z (cm³)</label><input id="bZ" type="number" min=".01" value="100"></div><div><label>تنش تسلیم Fy (MPa)</label><input id="bFy" type="number" min="1" value="240"></div><div><label>حد خیز L /</label><input id="bLimit" type="number" min="1" value="240"></div>
@@ -1629,6 +1629,22 @@ function calculateHydraulics(){
 
 /* Preliminary structural load conversion and beam */
 let structuralLast=null,beamLast=null,frameAnalysisLast=null,longTrussAnalysisLast=null;
+function auditStructuralInputs(){
+ const d=climateProfile?.design||{},checks=[];
+ const std=$("std")?.value||"",spacing=num("sFrame"),D=num("sD"),L=num("sL"),W=num("sW"),S=num("sS");
+ checks.push({label:"استاندارد/ویرایش مبنا",ok:!!std,detail:std||"انتخاب نشده"});
+ checks.push({label:"فاصله قاب‌ها",ok:spacing!==null&&spacing>0,detail:spacing===null?"ثبت نشده":spacing+" m"});
+ checks.push({label:"بارهای D و L",ok:D!==null&&D>=0&&L!==null&&L>=0,detail:"D="+(D??"ثبت نشده")+" ، L="+(L??"ثبت نشده")+" kN/m²"});
+ checks.push({label:"فشار/مکش باد W",ok:W!==null,detail:W===null?"ثبت نشده":W+" kN/m²"});
+ checks.push({label:"بار برف S",ok:S!==null&&S>=0,detail:S===null?"ثبت نشده":S+" kN/m²"});
+ checks.push({label:"سرعت باد مبنای طراحی در بانک اقلیم",ok:Number.isFinite(d.designWindSpeedMs)&&d.designWindSpeedMs>0,detail:Number.isFinite(d.designWindSpeedMs)?d.designWindSpeedMs+" m/s":"ثبت نشده"});
+ checks.push({label:"بار برف مبنای طراحی در بانک اقلیم",ok:Number.isFinite(d.designSnowLoadKPa)&&d.designSnowLoadKPa>=0,detail:Number.isFinite(d.designSnowLoadKPa)?d.designSnowLoadKPa+" kPa":"ثبت نشده"});
+ checks.push({label:"پهنه زلزله و رده خاک",ok:!!d.seismicZone&&!!d.soilDesignCategory,detail:(d.seismicZone||"پهنه زلزله ثبت نشده")+" / "+(d.soilDesignCategory||"رده خاک ثبت نشده")});
+ checks.push({label:"منبع، دوره و شماره گزارش ورودی‌های طرح",ok:!!(d.notes||"").trim(),detail:(d.notes||"").trim()||"منبع مستند ثبت نشده"});
+ const passed=checks.filter(x=>x.ok).length;
+ $("structuralAudit").innerHTML='<b>نتیجه کنترل داده‌ها: '+passed+' از '+checks.length+' مورد دارای ورودی</b><ul>'+checks.map(x=>'<li style="color:'+(x.ok?'var(--success,#16845b)':'var(--danger,#b45309)')+'">'+(x.ok?'✓ ':'! ')+esc(x.label)+' — '+esc(x.detail)+'</li>').join("")+'</ul><p><b>تذکر مهندسی:</b> این گزارش فقط کامل‌بودن اولیه ورودی‌ها را بررسی می‌کند؛ صحت منبع، انتخاب ضرایب، ترکیبات بار، توزیع باد/برف، تحلیل پایداری و انطباق آیین‌نامه‌ای را تأیید نمی‌کند. سرعت باد اقلیمی را به فشار W تبدیل نکنید و بار برف را بدون ضرایب شکل سقف وارد نکنید.</p>';
+ return checks;
+}
 function runStructural(){
  const spacing=num("sFrame"),D=num("sD"),L=num("sL"),W=num("sW"),S=num("sS"),standard=$("std").value;
  if(!standard||!(spacing>0)||D===null||L===null||W===null||S===null||D<0||L<0||S<0){$("structuralOutput").textContent="استاندارد، فاصله قاب و مقادیر بار معتبر را وارد کنید.";return}
