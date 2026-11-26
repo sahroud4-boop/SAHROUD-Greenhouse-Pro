@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.44.0</title>
+<title>SAHROUD Greenhouse Pro v3.45.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 .climate-tabs button.active{background:var(--green);color:#fff}.climate-tab[hidden]{display:none!important}.climate-tab{padding-top:12px}
@@ -52,7 +52,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.44.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.45.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -226,6 +226,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
    <div><label>ممان اینرسی Iy (mm⁴)</label><input id="profileIy" type="number" min="0" step="any"></div>
    <div><label>مدول مقطع Wx (mm³)</label><input id="profileWx" type="number" min="0" step="any"></div>
    <div><label>مدول مقطع Wy (mm³)</label><input id="profileWy" type="number" min="0" step="any"></div>
+   <div><label>سطح مؤثر برش Av (mm²، اختیاری از دیتاشیت)</label><input id="profileAv" type="number" min="0" step="any"></div>
    <div><label>شعاع ژیراسیون rx (mm)</label><input id="profileRx" type="number" min="0" step="any"></div>
    <div><label>شعاع ژیراسیون ry (mm)</label><input id="profileRy" type="number" min="0" step="any"></div>
    <div><label>منبع / شماره دیتاشیت</label><input id="profileSource" placeholder="عنوان، ناشر، شماره صفحه"></div>
@@ -447,7 +448,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.44.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.45.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -470,7 +471,7 @@ function profileField(id){const e=$(id);if(!e||e.value.trim()==="")return null;c
 function addSectionProfile(){
  const name=$("profileName").value.trim(),mass=profileField("profileMass");
  if(!name||mass===null||mass<=0){status("profileStatus","نام مقطع و جرم واحد طول مثبت الزامی است.",true);return}
- const item={id:"sp-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6),name,standard:$("profileStandard").value.trim(),grade:$("profileGrade").value.trim(),mass,area:profileField("profileArea"),Fy:profileField("profileFy"),E:profileField("profileE"),Ix:profileField("profileIx"),Iy:profileField("profileIy"),Wx:profileField("profileWx"),Wy:profileField("profileWy"),rx:profileField("profileRx"),ry:profileField("profileRy"),source:$("profileSource").value.trim(),notes:$("profileNotes").value.trim(),updatedAt:new Date().toISOString()};
+ const item={id:"sp-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6),name,standard:$("profileStandard").value.trim(),grade:$("profileGrade").value.trim(),mass,area:profileField("profileArea"),Fy:profileField("profileFy"),E:profileField("profileE"),Ix:profileField("profileIx"),Iy:profileField("profileIy"),Wx:profileField("profileWx"),Wy:profileField("profileWy"),Av:profileField("profileAv"),rx:profileField("profileRx"),ry:profileField("profileRy"),source:$("profileSource").value.trim(),notes:$("profileNotes").value.trim(),updatedAt:new Date().toISOString()};
  const duplicate=sectionProfileBank.findIndex(p=>p.name.toLowerCase()===name.toLowerCase());
  if(duplicate>=0){if(!confirm("این کد مقطع وجود دارد. جایگزین شود؟"))return;sectionProfileBank[duplicate]=item}else sectionProfileBank.push(item);
  persistSectionProfileBank();status("profileStatus","مقطع ثبت شد. برای اتصال به اعضا، کد آن را در فیلد مقطع وارد کنید.");
@@ -816,7 +817,7 @@ function generateGreenhouseFrame(){
   if(!calculateGeometry())throw new Error("ابتدا تمام ورودی‌های هندسی را اصلاح و محاسبه کنید.");
   const p=geometryParams(),manualA=num("autoFrameA"),manualE=num("autoFrameE"),manualI=num("autoFrameI");
    const colProfile=findSectionProfile($("frameColumnProfile")?.value),rafProfile=findSectionProfile($("frameRafterProfile")?.value);
-   const sectionFor=profile=>profile?{A:Number(profile.area),E:Number(profile.E),I:Number(profile.Ix),W:[Number(profile.Wx),Number(profile.Wy)].filter(v=>Number.isFinite(v)&&v>0).sort((a,b)=>a-b)[0]||null,Fy:Number(profile.Fy),profile:profile.name}:null;
+   const sectionFor=profile=>profile?{A:Number(profile.area),E:Number(profile.E),I:Number(profile.Ix),W:[Number(profile.Wx),Number(profile.Wy)].filter(v=>Number.isFinite(v)&&v>0).sort((a,b)=>a-b)[0]||null,Av:Number(profile.Av)||null,Fy:Number(profile.Fy),profile:profile.name}:null;
    const colSection=sectionFor(colProfile),rafSection=sectionFor(rafProfile);
    const A=colSection?.A||manualA,E=colSection?.E||manualE,I=colSection?.I||manualI;
   const roofLeft=num("autoRoofLeft"),roofRight=num("autoRoofRight"),roofWindLeft=num("autoRoofWindLeft"),roofWindRight=num("autoRoofWindRight"),sideWindLeft=num("autoSideWindLeft"),sideWindRight=num("autoSideWindRight");
@@ -922,12 +923,13 @@ function runFrameAnalysis(){
  const screened=out.members.map(m=>{
    const q=m.local_end_forces_N_Nmm,s=m.section;
    if(!s||!(Number(s.A)>0&&Number(s.W)>0&&Number(s.Fy)>0))return {id:m.id,missing:true};
-   const N=Math.max(Math.abs(q[0]),Math.abs(q[3])),M=Math.max(Math.abs(q[2]),Math.abs(q[5]));
-   const sigma=N/s.A+M/s.W,ratio=sigma/s.Fy;
-   return {id:m.id,profile:s.profile,N,M,sigma,ratio};
+   const N=Math.max(Math.abs(q[0]),Math.abs(q[3])),V=Math.max(Math.abs(q[1]),Math.abs(q[4])),M=Math.max(Math.abs(q[2]),Math.abs(q[5]));
+   const sigma=N/s.A+M/s.W,normalRatio=sigma/s.Fy,Av=Number(s.Av)>0?Number(s.Av):null;
+   const tau=Av?V/Av:null,vm=tau===null?null:Math.sqrt(sigma*sigma+3*tau*tau),interaction=vm===null?null:vm/s.Fy;
+   return {id:m.id,profile:s.profile,N,V,M,sigma,normalRatio,Av,tau,vm,interaction};
   });
   const eq=out.equilibrium,eqHtml='<h4 style="margin-top:14px">کنترل تعادل کلی مدل</h4><div class="result"><p>'+(eq.passed?"تعادل نیروها و لنگرها در محدوده تلرانس برقرار است.":"عدم تعادل بیش از تلرانس؛ مدل و ورودی‌ها بازبینی شوند.")+'</p><table><tr><th>کمیت</th><th>بار اعمالی</th><th>واکنش تکیه‌گاهی</th><th>باقیمانده</th><th>خطای نسبی</th></tr><tr><td>ΣFx (N)</td><td>'+fmt(eq.applied.fx,4)+'</td><td>'+fmt(eq.support.fx,4)+'</td><td>'+fmt(eq.residual.fx,6)+'</td><td>'+fmt(eq.relative.fx*100,6)+' %</td></tr><tr><td>ΣFy (N)</td><td>'+fmt(eq.applied.fy,4)+'</td><td>'+fmt(eq.support.fy,4)+'</td><td>'+fmt(eq.residual.fy,6)+'</td><td>'+fmt(eq.relative.fy*100,6)+' %</td></tr><tr><td>ΣM (N·mm)</td><td>'+fmt(eq.applied.mz,4)+'</td><td>'+fmt(eq.support.mz,4)+'</td><td>'+fmt(eq.residual.mz,6)+'</td><td>'+fmt(eq.relative.mz*100,6)+' %</td></tr></table><p class="muted">کنترل تعادل با برآیند بارهای گره‌ای و بارهای گسترده معادل و واکنش‌های قیود انجام می‌شود. تلرانس نسبی هر مؤلفه: ۱۰⁻⁶.</p></div>';
-  const screenHtml='<h4 style="margin-top:14px">شاخص تنش الاستیک مقدماتی اعضا</h4><div class="tablewrap"><table><tr><th>عضو</th><th>مقطع</th><th>Nmax (kN)</th><th>Mmax (kN·m)</th><th>σ برآوردی (MPa)</th><th>σ/Fy</th></tr>'+screened.map(x=>x.missing?'<tr><td>'+esc(x.id)+'</td><td colspan="5">داده A/W/Fy متصل نیست؛ کنترل انجام نشد</td></tr>':'<tr><td>'+esc(x.id)+'</td><td>'+esc(x.profile)+'</td><td>'+fmt(x.N/1000,3)+'</td><td>'+fmt(x.M/1e6,3)+'</td><td>'+fmt(x.sigma,2)+'</td><td>'+fmt(x.ratio,3)+'</td></tr>').join("")+'</table></div><div class="notice">این شاخص صرفاً غربالگری تنش الاستیک با رابطه |N|/A + |M|/W و بیشینه نیروهای دو انتهاست؛ W کوچک‌ترِ Wx و Wy موجود انتخاب شده است. جهت‌گیری مقطع، کمانش، کمانش پیچشی-جانبی، لاغری موضعی، برش، اندرکنش کامل، ضرایب مقاومت و ترکیبات بار آیین‌نامه‌ای کنترل نشده‌اند. نسبت کمتر از ۱ به معنی ایمنی یا تأیید طراحی نیست.</div>';
+  const screenHtml='<h4 style="margin-top:14px">غربالگری خمش، برش و اندرکنش الاستیک اعضا</h4><div class="tablewrap"><table><tr><th>عضو</th><th>مقطع</th><th>Nmax (kN)</th><th>Vmax انتهایی (kN)</th><th>Mmax انتهایی (kN·m)</th><th>σ=N/A+M/W (MPa)</th><th>τ=V/Av (MPa)</th><th>نسبت فون‌مایزز/Fy</th></tr>'+screened.map(x=>x.missing?'<tr><td>'+esc(x.id)+'</td><td colspan="7">داده A/W/Fy متصل نیست؛ کنترل تنش انجام نشد</td></tr>':'<tr><td>'+esc(x.id)+'</td><td>'+esc(x.profile)+'</td><td>'+fmt(x.N/1000,3)+'</td><td>'+fmt(x.V/1000,3)+'</td><td>'+fmt(x.M/1e6,3)+'</td><td>'+fmt(x.sigma,2)+'</td><td>'+(x.tau===null?"Av ثبت نشده":fmt(x.tau,2))+'</td><td>'+(x.interaction===null?"نیازمند Av":fmt(x.interaction,3))+'</td></tr>').join("")+'</table></div><div class="notice">N، V و M از نیروهای انتهایی محلی حل‌گر و به‌صورت بیشینه قدرمطلق دو انتها استخراج شده‌اند؛ این گزارش کنترل کامل نمودار داخلی در طول عضو نیست. تنش نرمال با تقریب محافظه‌کارانه |N|/A+|M|/W و W کوچک‌ترِ Wx/Wy برآورد شده است. در صورت ثبت Av معتبر از دیتاشیت، τ=|V|/Av و شاخص الاستیک فون‌مایزز √(σ²+3τ²)/Fy نیز محاسبه می‌شود. بدون Av فقط تقاضای برش گزارش می‌شود. این شاخص جایگزین کنترل آیین‌نامه‌ای مقاومت خمشی/برشی، کمانش، اندرکنش طراحی، ضرایب مقاومت و ترکیبات بار نیست؛ نسبت کمتر از ۱ به معنی تأیید ایمنی یا مجوز ساخت نیست.</div>';
   $("frameOutput").innerHTML=eqHtml+'<h4>جابجایی‌ها</h4><div class="tablewrap"><table><tr><th>گره</th><th>درجه آزادی</th><th>مقدار</th></tr>'+out.displacements.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toExponential(4)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">واکنش تکیه‌گاهی</h4><div class="tablewrap"><table><tr><th>گره</th><th>مؤلفه</th><th>مقدار</th></tr>'+out.reactions.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toFixed(3)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">نیروهای انتهایی محلی اعضا (پس از کسر بار معادل گسترده)</h4><div class="tablewrap"><table><tr><th>عضو</th><th>طول (mm)</th><th>نیروهای محلی [N,N,Nmm] در دو انتها</th></tr>'+out.members.map(x=>'<tr><td>'+esc(x.id)+'</td><td>'+x.length_mm.toFixed(1)+'</td><td>'+x.local_end_forces_N_Nmm.map(v=>v.toFixed(2)).join(" | ")+'</td></tr>').join("")+'</table></div>';
  $("frameOutput").innerHTML+=screenHtml;
   status("frameStatus",eq.passed?"تحلیل عددی اجرا شد و کنترل تعادل کلی نیز قبول شد؛ خروجی همچنان مقدماتی و غیرآیین‌نامه‌ای است.":"تحلیل عددی انجام شد، اما کنترل تعادل کلی ناموفق است؛ مدل و بارگذاری را بازبینی کنید.",!eq.passed);
@@ -1624,9 +1626,9 @@ function shouldRestoreManualFootingCount(record,automaticCount){
  const saved=record?.input?.fndFootingCount;
  return saved!==undefined&&saved!==null&&String(saved).trim()!==""&&Number.isFinite(Number(saved))&&Number(saved)!==Number(automaticCount);
 }
-function newModel(){return {schemaVersion:"3.44.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:climateProfile?.city?.name||"شاهرود",country:climateProfile?.city?.country||"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,climateProfile:cloneClimateProfile(climateProfile),hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
+function newModel(){return {schemaVersion:"3.45.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:climateProfile?.city?.name||"شاهرود",country:climateProfile?.city?.country||"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,climateProfile:cloneClimateProfile(climateProfile),hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
 function collectModel(){
- const p=activeProject||newModel();p.schemaVersion="3.44.0";p.climateProfile=cloneClimateProfile(climateProfile);p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
+ const p=activeProject||newModel();p.schemaVersion="3.45.0";p.climateProfile=cloneClimateProfile(climateProfile);p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
  p.notes=$("metaNotes").value;p.geometry={...geomResult,bracingBays:getSelectedBracingBays()};p.hydroponics={input:hydroInput(),last:hydroResult};calculateSupplementaryTakeoff();calculateFoundationTakeoff();p.results={...(p.results||{}),bracingBays:getSelectedBracingBays(),equipmentTakeoff:{input:equipmentInputs(),result:equipmentTakeoffLast},fabTakeoff:{input:fabInputs(),result:fabTakeoffLast},executionCosts:{input:executionCostInputs()},accessoryTakeoff:{input:accessoryTakeoffInputs(),result:accessoryTakeoffLast},foundationTakeoff:{manualFootingCount:$("fndFootingCount")?.dataset.manual==="1",input:foundationTakeoffInputs(),result:foundationTakeoffLast},structural:structuralLast,beam:beamLast,frameModel:$("frameModel").value,frameAnalysis:frameAnalysisLast,longTrussModel:$("longTrussModel").value,longTrussInput:{profile:$("longTrussProfile").value,groupProfiles:{columns:$("longTrussColumnProfile").value,rafters:$("longTrussRafterProfile").value,longitudinal:$("longTrussLongProfile").value,braces:$("longTrussBraceProfile").value,ties:$("longTrussTieProfile").value},area:num("longTrussA"),E:num("longTrussE"),Fy:num("longTrussFy"),force:num("longTrussForce")},longTrussAnalysis:longTrussAnalysisLast};return p;
 }
 function applyModel(p){
@@ -1661,7 +1663,7 @@ async function saveProject(){
 async function renderProjects(){const el=$("projectList");if(!el)return;const all=(await DB.all()||[]).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));if(!all.length){el.textContent="هنوز پروژه‌ای ذخیره نشده است.";return}el.innerHTML=all.map(p=>`<div class="projectitem"><div><b>${esc(p.meta?.name||"بدون نام")}</b><small>${esc(p.meta?.city||"شهر نامشخص")} · ${esc(p.meta?.type||"")}</small></div><div class="toolbar"><button class="btn-soft" onclick="loadProject('${esc(p.id)}')">بازکردن</button><button class="btn-red" onclick="deleteProject('${esc(p.id)}')">حذف</button></div></div>`).join("")}
 async function loadProject(id){const p=await DB.get(id);if(p){applyModel(p);status("projectStatus","پروژه بارگذاری شد.")}}
 async function deleteProject(id){if(!confirm("پروژه حذف شود؟"))return;await DB.del(id);if(activeProject?.id===id)activeProject=null;renderProjects()}
-async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.44.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
+async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.45.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
 async function importBackup(ev){const f=ev.target.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text()),arr=Array.isArray(d)?d:d.projects;if(!Array.isArray(arr))throw Error("ساختار فایل نامعتبر است");for(const p of arr)if(p?.id&&p.meta)await DB.put(p);await renderProjects();status("projectStatus","بازیابی فایل انجام شد.")}catch(e){status("projectStatus",e.message,true)}ev.target.value=""}
 
 /* Ventilation equipment takeoff: quantities and prices entered by the user */
