@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.45.0</title>
+<title>SAHROUD Greenhouse Pro v3.46.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 .climate-tabs button.active{background:var(--green);color:#fff}.climate-tab[hidden]{display:none!important}.climate-tab{padding-top:12px}
@@ -52,7 +52,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.45.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.46.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -448,7 +448,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.45.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.46.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -553,7 +553,7 @@ function analyzeFrame2D(model){
   if(!Number.isFinite(qx)||!Number.isFinite(qy))throw new Error("بار گسترده عضو باید عددی باشد.");
   const fe=[qx*L/2,qy*L/2,qy*L*L/12,qx*L/2,qy*L/2,-qy*L*L/12],feg=matVec(transpose(T),fe);
   for(let a=0;a<6;a++)F[dofs[a]]+=feg[a];
-  elementData.push({id:el.id||("E"+(elementData.length+1)),section:el.section||null,dofs,kl,T,L,fe});
+  elementData.push({id:el.id||("E"+(elementData.length+1)),section:el.section||null,dofs,kl,T,L,fe,qx,qy});
  }
  const restrained=new Set();for(const item of model.restraints){if(!Number.isInteger(item.node)||!model.nodes[item.node]||!Array.isArray(item.dofs)||item.dofs.length!==3||item.dofs.some(v=>typeof v!=="boolean"))throw new Error("تعریف تکیه‌گاه نامعتبر است؛ سه مقدار true/false لازم است.");item.dofs.forEach((v,j)=>{if(v)restrained.add(3*item.node+j)})}
  const free=Array.from({length:nd},(_,i)=>i).filter(i=>!restrained.has(i));if(!free.length)throw new Error("تمام درجات آزادی مقید شده‌اند.");
@@ -564,7 +564,14 @@ function analyzeFrame2D(model){
  const residual={fx:applied.fx+support.fx,fy:applied.fy+support.fy,mz:applied.mz+support.mz};
  const relative={fx:Math.abs(residual.fx)/Math.max(1,Math.abs(applied.fx),Math.abs(support.fx)),fy:Math.abs(residual.fy)/Math.max(1,Math.abs(applied.fy),Math.abs(support.fy)),mz:Math.abs(residual.mz)/Math.max(1,Math.abs(applied.mz),Math.abs(support.mz))};
  const equilibrium={applied,support,residual,relative,maxRelativeError:Math.max(relative.fx,relative.fy,relative.mz),tolerance:1e-6,passed:Math.max(relative.fx,relative.fy,relative.mz)<=1e-6};
- const members=elementData.map(ed=>{const ug=ed.dofs.map(i=>u[i]),ul=matVec(ed.T,ug),q=matVec(ed.kl,ul).map((v,i)=>v-ed.fe[i]);return {id:ed.id,section:ed.section||null,length_mm:ed.L,local_end_forces_N_Nmm:q,uniform_load_local_N_per_mm:{qx:ed.fe[0]===0?0:(ed.fe[0]*2/ed.L),qy:ed.fe[1]*2/ed.L}}});
+ const members=elementData.map(ed=>{
+  const ug=ed.dofs.map(i=>u[i]),ul=matVec(ed.T,ug),q=matVec(ed.kl,ul).map((v,i)=>v-ed.fe[i]);
+  const L=ed.L,qx=ed.qx,qy=ed.qy,stations=[0,L];
+  if(Math.abs(qy)>1e-12){const x=-q[1]/qy;if(x>1e-9&&x<L-1e-9)stations.push(x)}
+  const forceDiagram=stations.sort((a,b)=>a-b).map(x=>({x_mm:x,N_N:-q[0]-qx*x,V_N:-q[1]-qy*x,M_Nmm:-q[2]-q[1]*x-qy*x*x/2}));
+  const maxAbs=key=>Math.max(...forceDiagram.map(p=>Math.abs(p[key])));
+  return {id:ed.id,section:ed.section||null,length_mm:L,local_end_forces_N_Nmm:q,uniform_load_local_N_per_mm:{qx,qy},force_diagram_local:forceDiagram,max_internal:{N_N:maxAbs("N_N"),V_N:maxAbs("V_N"),M_Nmm:maxAbs("M_Nmm")}};
+ });
  return {displacements:u.map((v,i)=>({node:Math.floor(i/3),dof:["ux_mm","uy_mm","rz_rad"][i%3],value:v})),reactions:reactions.map((v,i)=>({node:Math.floor(i/3),dof:["Fx_N","Fy_N","Mz_Nmm"][i%3],value:v})).filter(x=>restrained.has(3*x.node+["Fx_N","Fy_N","Mz_Nmm"].indexOf(x.dof))),members,equilibrium};
 }
 
@@ -923,13 +930,13 @@ function runFrameAnalysis(){
  const screened=out.members.map(m=>{
    const q=m.local_end_forces_N_Nmm,s=m.section;
    if(!s||!(Number(s.A)>0&&Number(s.W)>0&&Number(s.Fy)>0))return {id:m.id,missing:true};
-   const N=Math.max(Math.abs(q[0]),Math.abs(q[3])),V=Math.max(Math.abs(q[1]),Math.abs(q[4])),M=Math.max(Math.abs(q[2]),Math.abs(q[5]));
+   const N=m.max_internal.N_N,V=m.max_internal.V_N,M=m.max_internal.M_Nmm;
    const sigma=N/s.A+M/s.W,normalRatio=sigma/s.Fy,Av=Number(s.Av)>0?Number(s.Av):null;
    const tau=Av?V/Av:null,vm=tau===null?null:Math.sqrt(sigma*sigma+3*tau*tau),interaction=vm===null?null:vm/s.Fy;
    return {id:m.id,profile:s.profile,N,V,M,sigma,normalRatio,Av,tau,vm,interaction};
   });
   const eq=out.equilibrium,eqHtml='<h4 style="margin-top:14px">کنترل تعادل کلی مدل</h4><div class="result"><p>'+(eq.passed?"تعادل نیروها و لنگرها در محدوده تلرانس برقرار است.":"عدم تعادل بیش از تلرانس؛ مدل و ورودی‌ها بازبینی شوند.")+'</p><table><tr><th>کمیت</th><th>بار اعمالی</th><th>واکنش تکیه‌گاهی</th><th>باقیمانده</th><th>خطای نسبی</th></tr><tr><td>ΣFx (N)</td><td>'+fmt(eq.applied.fx,4)+'</td><td>'+fmt(eq.support.fx,4)+'</td><td>'+fmt(eq.residual.fx,6)+'</td><td>'+fmt(eq.relative.fx*100,6)+' %</td></tr><tr><td>ΣFy (N)</td><td>'+fmt(eq.applied.fy,4)+'</td><td>'+fmt(eq.support.fy,4)+'</td><td>'+fmt(eq.residual.fy,6)+'</td><td>'+fmt(eq.relative.fy*100,6)+' %</td></tr><tr><td>ΣM (N·mm)</td><td>'+fmt(eq.applied.mz,4)+'</td><td>'+fmt(eq.support.mz,4)+'</td><td>'+fmt(eq.residual.mz,6)+'</td><td>'+fmt(eq.relative.mz*100,6)+' %</td></tr></table><p class="muted">کنترل تعادل با برآیند بارهای گره‌ای و بارهای گسترده معادل و واکنش‌های قیود انجام می‌شود. تلرانس نسبی هر مؤلفه: ۱۰⁻⁶.</p></div>';
-  const screenHtml='<h4 style="margin-top:14px">غربالگری خمش، برش و اندرکنش الاستیک اعضا</h4><div class="tablewrap"><table><tr><th>عضو</th><th>مقطع</th><th>Nmax (kN)</th><th>Vmax انتهایی (kN)</th><th>Mmax انتهایی (kN·m)</th><th>σ=N/A+M/W (MPa)</th><th>τ=V/Av (MPa)</th><th>نسبت فون‌مایزز/Fy</th></tr>'+screened.map(x=>x.missing?'<tr><td>'+esc(x.id)+'</td><td colspan="7">داده A/W/Fy متصل نیست؛ کنترل تنش انجام نشد</td></tr>':'<tr><td>'+esc(x.id)+'</td><td>'+esc(x.profile)+'</td><td>'+fmt(x.N/1000,3)+'</td><td>'+fmt(x.V/1000,3)+'</td><td>'+fmt(x.M/1e6,3)+'</td><td>'+fmt(x.sigma,2)+'</td><td>'+(x.tau===null?"Av ثبت نشده":fmt(x.tau,2))+'</td><td>'+(x.interaction===null?"نیازمند Av":fmt(x.interaction,3))+'</td></tr>').join("")+'</table></div><div class="notice">N، V و M از نیروهای انتهایی محلی حل‌گر و به‌صورت بیشینه قدرمطلق دو انتها استخراج شده‌اند؛ این گزارش کنترل کامل نمودار داخلی در طول عضو نیست. تنش نرمال با تقریب محافظه‌کارانه |N|/A+|M|/W و W کوچک‌ترِ Wx/Wy برآورد شده است. در صورت ثبت Av معتبر از دیتاشیت، τ=|V|/Av و شاخص الاستیک فون‌مایزز √(σ²+3τ²)/Fy نیز محاسبه می‌شود. بدون Av فقط تقاضای برش گزارش می‌شود. این شاخص جایگزین کنترل آیین‌نامه‌ای مقاومت خمشی/برشی، کمانش، اندرکنش طراحی، ضرایب مقاومت و ترکیبات بار نیست؛ نسبت کمتر از ۱ به معنی تأیید ایمنی یا مجوز ساخت نیست.</div>';
+  const screenHtml='<h4 style="margin-top:14px">غربالگری خمش، برش و اندرکنش الاستیک اعضا</h4><div class="tablewrap"><table><tr><th>عضو</th><th>مقطع</th><th>Nmax داخلی (kN)</th><th>Vmax داخلی (kN)</th><th>Mmax داخلی (kN·m)</th><th>σ=N/A+M/W (MPa)</th><th>τ=V/Av (MPa)</th><th>نسبت فون‌مایزز/Fy</th></tr>'+screened.map(x=>x.missing?'<tr><td>'+esc(x.id)+'</td><td colspan="7">داده A/W/Fy متصل نیست؛ کنترل تنش انجام نشد</td></tr>':'<tr><td>'+esc(x.id)+'</td><td>'+esc(x.profile)+'</td><td>'+fmt(x.N/1000,3)+'</td><td>'+fmt(x.V/1000,3)+'</td><td>'+fmt(x.M/1e6,3)+'</td><td>'+fmt(x.sigma,2)+'</td><td>'+(x.tau===null?"Av ثبت نشده":fmt(x.tau,2))+'</td><td>'+(x.interaction===null?"نیازمند Av":fmt(x.interaction,3))+'</td></tr>').join("")+'</table></div><div class="notice">N، V و M از تعادل قطعه‌ای عضو با بار گسترده یکنواخت محلی استخراج می‌شوند؛ نقاط انتهایی و نقطه داخلی V=0 برای یافتن بیشینه لنگر بررسی می‌شوند. این نمودار برای بار گسترده ثابت در هر عضو معتبر است و بار متغیر، بار متمرکز داخلی، بار حرارتی و اثرات مرتبه دوم را پوشش نمی‌دهد. تنش نرمال با تقریب محافظه‌کارانه |N|/A+|M|/W و W کوچک‌ترِ Wx/Wy برآورد شده است. در صورت ثبت Av معتبر از دیتاشیت، τ=|V|/Av و شاخص الاستیک فون‌مایزز √(σ²+3τ²)/Fy نیز محاسبه می‌شود. بدون Av فقط تقاضای برش گزارش می‌شود. این شاخص جایگزین کنترل آیین‌نامه‌ای مقاومت خمشی/برشی، کمانش، اندرکنش طراحی، ضرایب مقاومت و ترکیبات بار نیست؛ نسبت کمتر از ۱ به معنی تأیید ایمنی یا مجوز ساخت نیست.</div>';
   $("frameOutput").innerHTML=eqHtml+'<h4>جابجایی‌ها</h4><div class="tablewrap"><table><tr><th>گره</th><th>درجه آزادی</th><th>مقدار</th></tr>'+out.displacements.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toExponential(4)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">واکنش تکیه‌گاهی</h4><div class="tablewrap"><table><tr><th>گره</th><th>مؤلفه</th><th>مقدار</th></tr>'+out.reactions.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+x.value.toFixed(3)+'</td></tr>').join("")+'</table></div><h4 style="margin-top:12px">نیروهای انتهایی محلی اعضا (پس از کسر بار معادل گسترده)</h4><div class="tablewrap"><table><tr><th>عضو</th><th>طول (mm)</th><th>نیروهای محلی [N,N,Nmm] در دو انتها</th></tr>'+out.members.map(x=>'<tr><td>'+esc(x.id)+'</td><td>'+x.length_mm.toFixed(1)+'</td><td>'+x.local_end_forces_N_Nmm.map(v=>v.toFixed(2)).join(" | ")+'</td></tr>').join("")+'</table></div>';
  $("frameOutput").innerHTML+=screenHtml;
   status("frameStatus",eq.passed?"تحلیل عددی اجرا شد و کنترل تعادل کلی نیز قبول شد؛ خروجی همچنان مقدماتی و غیرآیین‌نامه‌ای است.":"تحلیل عددی انجام شد، اما کنترل تعادل کلی ناموفق است؛ مدل و بارگذاری را بازبینی کنید.",!eq.passed);
@@ -1626,9 +1633,9 @@ function shouldRestoreManualFootingCount(record,automaticCount){
  const saved=record?.input?.fndFootingCount;
  return saved!==undefined&&saved!==null&&String(saved).trim()!==""&&Number.isFinite(Number(saved))&&Number(saved)!==Number(automaticCount);
 }
-function newModel(){return {schemaVersion:"3.45.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:climateProfile?.city?.name||"شاهرود",country:climateProfile?.city?.country||"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,climateProfile:cloneClimateProfile(climateProfile),hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
+function newModel(){return {schemaVersion:"3.46.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:climateProfile?.city?.name||"شاهرود",country:climateProfile?.city?.country||"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,climateProfile:cloneClimateProfile(climateProfile),hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
 function collectModel(){
- const p=activeProject||newModel();p.schemaVersion="3.45.0";p.climateProfile=cloneClimateProfile(climateProfile);p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
+ const p=activeProject||newModel();p.schemaVersion="3.46.0";p.climateProfile=cloneClimateProfile(climateProfile);p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
  p.notes=$("metaNotes").value;p.geometry={...geomResult,bracingBays:getSelectedBracingBays()};p.hydroponics={input:hydroInput(),last:hydroResult};calculateSupplementaryTakeoff();calculateFoundationTakeoff();p.results={...(p.results||{}),bracingBays:getSelectedBracingBays(),equipmentTakeoff:{input:equipmentInputs(),result:equipmentTakeoffLast},fabTakeoff:{input:fabInputs(),result:fabTakeoffLast},executionCosts:{input:executionCostInputs()},accessoryTakeoff:{input:accessoryTakeoffInputs(),result:accessoryTakeoffLast},foundationTakeoff:{manualFootingCount:$("fndFootingCount")?.dataset.manual==="1",input:foundationTakeoffInputs(),result:foundationTakeoffLast},structural:structuralLast,beam:beamLast,frameModel:$("frameModel").value,frameAnalysis:frameAnalysisLast,longTrussModel:$("longTrussModel").value,longTrussInput:{profile:$("longTrussProfile").value,groupProfiles:{columns:$("longTrussColumnProfile").value,rafters:$("longTrussRafterProfile").value,longitudinal:$("longTrussLongProfile").value,braces:$("longTrussBraceProfile").value,ties:$("longTrussTieProfile").value},area:num("longTrussA"),E:num("longTrussE"),Fy:num("longTrussFy"),force:num("longTrussForce")},longTrussAnalysis:longTrussAnalysisLast};return p;
 }
 function applyModel(p){
@@ -1663,7 +1670,7 @@ async function saveProject(){
 async function renderProjects(){const el=$("projectList");if(!el)return;const all=(await DB.all()||[]).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));if(!all.length){el.textContent="هنوز پروژه‌ای ذخیره نشده است.";return}el.innerHTML=all.map(p=>`<div class="projectitem"><div><b>${esc(p.meta?.name||"بدون نام")}</b><small>${esc(p.meta?.city||"شهر نامشخص")} · ${esc(p.meta?.type||"")}</small></div><div class="toolbar"><button class="btn-soft" onclick="loadProject('${esc(p.id)}')">بازکردن</button><button class="btn-red" onclick="deleteProject('${esc(p.id)}')">حذف</button></div></div>`).join("")}
 async function loadProject(id){const p=await DB.get(id);if(p){applyModel(p);status("projectStatus","پروژه بارگذاری شد.")}}
 async function deleteProject(id){if(!confirm("پروژه حذف شود؟"))return;await DB.del(id);if(activeProject?.id===id)activeProject=null;renderProjects()}
-async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.45.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
+async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.46.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
 async function importBackup(ev){const f=ev.target.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text()),arr=Array.isArray(d)?d:d.projects;if(!Array.isArray(arr))throw Error("ساختار فایل نامعتبر است");for(const p of arr)if(p?.id&&p.meta)await DB.put(p);await renderProjects();status("projectStatus","بازیابی فایل انجام شد.")}catch(e){status("projectStatus",e.message,true)}ev.target.value=""}
 
 /* Ventilation equipment takeoff: quantities and prices entered by the user */
