@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.46.0</title>
+<title>SAHROUD Greenhouse Pro v3.47.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 .climate-tabs button.active{background:var(--green);color:#fff}.climate-tab[hidden]{display:none!important}.climate-tab{padding-top:12px}
@@ -52,7 +52,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.46.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.47.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -361,6 +361,11 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  </div>
  <div class="toolbar"><button onclick="runFrameDisplacementScreen()">محاسبه غربالگری تغییرمکان</button></div>
  <div id="frameDisplacementOutput"></div><div class="status" id="frameDisplacementStatus"></div>
+ <hr><h4>غربالگری خیز موضعی اعضای ستون و رفتر</h4>
+ <p class="muted">خیز موضعی در امتداد هر عضو قاب دوبعدی، از توابع شکل تیر-قاب و اصلاح تحلیلی بار گسترده یکنواخت محلی بازسازی می‌شود. حد مجاز را مهندس وارد کند.</p>
+ <div class="g2"><div><label>حد مجاز قدرمطلق خیز موضعی (mm)</label><input id="frameAllowMemberDeflection" type="number" min="0.001" step="0.1" placeholder="ورودی مهندس"></div></div>
+ <div class="toolbar"><button onclick="runFrameMemberDeflectionScreen()">محاسبه خیز موضعی اعضا</button></div>
+ <div id="frameMemberDeflectionOutput"></div><div class="status" id="frameMemberDeflectionStatus"></div>
  <div class="notice">این مقایسه فقط جابه‌جایی گره‌های مدل قاب دوبعدی تحلیل‌شده را با دو حد ورودی مهندس می‌سنجد. اثرات مرتبه دوم، ارتعاش، تغییرشکل موضعی پوشش، معیارهای اختصاصی تجهیزات و کنترل کامل آیین‌نامه‌ای در این بخش لحاظ نشده است. نتیجه، تأیید طراحی یا مجوز ساخت نیست.</div>
 </div><div class="status" id="frameSelfTestStatus"></div><div id="frameSelfTestOutput"></div>
  <div class="notice">قرارداد بار سقف: بار قائم بر مبنای تصویر افقی وارد می‌شود؛ بار باد سقف مستقل و عمود بر سطح شیب‌دار است (مثبت = فشار به داخل، منفی = مکش به خارج). هر دو به‌صورت بار گسترده یکنواخت محلی به رفتر مربوط اعمال می‌شوند. این ورودی‌ها فشار طراحی را خودکار از اقلیم استخراج نمی‌کنند. محدودیت این مرحله: فقط بارهای گره‌ای و بار گسترده یکنواخت عضو در محورهای محلی؛ رفتار خطی الاستیک و تغییرشکل کوچک. بارهای غیر یکنواخت/مثلثی، تحلیل مرتبه دوم، مفصل/فنر، اندرکنش محوری-خمشی و طراحی کامل مقطع/کمانش آیین‌نامه‌ای هنوز پیاده‌سازی نشده‌اند؛ غربالگری جداگانه اویلر فقط شاخص مقدماتی بار بحرانی الاستیک ستون را می‌دهد. این هسته هنوز به هندسه خودکار گلخانه متصل نیست و نباید مبنای ساخت قرار گیرد. نمونه پیش‌فرض صرفاً تست عددی است.</div>
@@ -448,7 +453,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.46.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.47.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -570,7 +575,16 @@ function analyzeFrame2D(model){
   if(Math.abs(qy)>1e-12){const x=-q[1]/qy;if(x>1e-9&&x<L-1e-9)stations.push(x)}
   const forceDiagram=stations.sort((a,b)=>a-b).map(x=>({x_mm:x,N_N:-q[0]-qx*x,V_N:-q[1]-qy*x,M_Nmm:-q[2]-q[1]*x-qy*x*x/2}));
   const maxAbs=key=>Math.max(...forceDiagram.map(p=>Math.abs(p[key])));
-  return {id:ed.id,section:ed.section||null,length_mm:L,local_end_forces_N_Nmm:q,uniform_load_local_N_per_mm:{qx,qy},force_diagram_local:forceDiagram,max_internal:{N_N:maxAbs("N_N"),V_N:maxAbs("V_N"),M_Nmm:maxAbs("M_Nmm")}};
+  const EI=Number(model.elements[elementData.indexOf(ed)].E)*Number(model.elements[elementData.indexOf(ed)].I);
+  const deflectionCurve=Array.from({length:41},(_,i)=>{
+   const x=L*i/40,t=x/L,t2=t*t,t3=t2*t,t4=t2*t2;
+   const axial=(1-t)*ul[0]+t*ul[3];
+   const hermite=(1-3*t2+2*t3)*ul[1]+L*(t-2*t2+t3)*ul[2]+(3*t2-2*t3)*ul[4]+L*(-t2+t3)*ul[5];
+   const loadCorrection=Math.abs(qy)>0?qy*x*x*(L-x)*(L-x)/(24*EI):0;
+   return {x_mm:x,axial_mm:axial,transverse_mm:hermite+loadCorrection};
+  });
+  const criticalDeflection=deflectionCurve.reduce((best,p)=>Math.abs(p.transverse_mm)>Math.abs(best.transverse_mm)?p:best,deflectionCurve[0]);
+  return {id:ed.id,section:ed.section||null,length_mm:L,local_end_forces_N_Nmm:q,local_end_displacements_mm_rad:ul,uniform_load_local_N_per_mm:{qx,qy},force_diagram_local:forceDiagram,max_internal:{N_N:maxAbs("N_N"),V_N:maxAbs("V_N"),M_Nmm:maxAbs("M_Nmm")},deflection_curve_local:deflectionCurve,max_transverse_deflection:{value_mm:criticalDeflection.transverse_mm,x_mm:criticalDeflection.x_mm}};
  });
  return {displacements:u.map((v,i)=>({node:Math.floor(i/3),dof:["ux_mm","uy_mm","rz_rad"][i%3],value:v})),reactions:reactions.map((v,i)=>({node:Math.floor(i/3),dof:["Fx_N","Fy_N","Mz_Nmm"][i%3],value:v})).filter(x=>restrained.has(3*x.node+["Fx_N","Fy_N","Mz_Nmm"].indexOf(x.dof))),members,equilibrium};
 }
@@ -944,6 +958,23 @@ function runFrameAnalysis(){
 }
 
 
+
+function runFrameMemberDeflectionScreen(){
+ try{
+  if(!frameAnalysisLast||!frameAnalysisLast.model||!frameAnalysisLast.output)throw new Error("ابتدا مدل قاب گلخانه را تولید و تحلیل کنید.");
+  const current=JSON.parse($("frameModel").value);
+  if(JSON.stringify(current)!==JSON.stringify(frameAnalysisLast.model))throw new Error("مدل پس از تحلیل تغییر کرده است؛ ابتدا تحلیل قاب را دوباره اجرا کنید.");
+  const allow=Number($("frameAllowMemberDeflection").value);
+  if(!(Number.isFinite(allow)&&allow>0))throw new Error("حد مجاز خیز موضعی باید عددی مثبت و بر حسب میلی‌متر باشد.");
+  const members=frameAnalysisLast.output.members;
+  if(!members.length||members.some(m=>!Array.isArray(m.deflection_curve_local)||!m.deflection_curve_local.length))throw new Error("منحنی تغییرشکل اعضا در خروجی تحلیل موجود نیست؛ تحلیل را دوباره اجرا کنید.");
+  const rows=members.map(m=>({id:m.id,L:m.length_mm,max:Math.abs(m.max_transverse_deflection.value_mm),signed:m.max_transverse_deflection.value_mm,x:m.max_transverse_deflection.x_mm,ratio:Math.abs(m.max_transverse_deflection.value_mm)/allow}));
+  const overall=rows.reduce((a,b)=>b.max>a.max?b:a,rows[0]),passed=rows.every(x=>x.ratio<=1);
+  $("frameMemberDeflectionOutput").innerHTML='<div class="result"><p><b>بیشینه خیز موضعی:</b> '+fmt(overall.max,3)+' mm — عضو '+esc(overall.id)+' در فاصله '+fmt(overall.x,1)+' mm از ابتدای محور محلی</p><div class="tablewrap"><table><tr><th>عضو</th><th>طول (mm)</th><th>بیشینه |v| (mm)</th><th>موقعیت x (mm)</th><th>حد مهندس (mm)</th><th>نسبت |v|/حد</th><th>وضعیت</th></tr>'+rows.map(x=>'<tr><td>'+esc(x.id)+'</td><td>'+fmt(x.L,1)+'</td><td>'+fmt(x.max,3)+'</td><td>'+fmt(x.x,1)+'</td><td>'+fmt(allow,2)+'</td><td>'+fmt(x.ratio,4)+'</td><td>'+(x.ratio<=1?"در محدوده ورودی":"بیش از حد ورودی")+'</td></tr>').join("")+'</table></div></div>';
+  status("frameMemberDeflectionStatus",passed?"خیز اعضا با حد ورودی مهندس مقایسه شد؛ این غربالگری تأیید آیین‌نامه‌ای نیست.":"حد خیز ورودی در یک یا چند عضو تجاوز شده است؛ مدل، بارگذاری و معیار مجاز را بررسی کنید.",!passed);
+  return {passed,maximum_mm:overall.max,critical_member:overall.id,rows};
+ }catch(e){$("frameMemberDeflectionOutput").innerHTML="";status("frameMemberDeflectionStatus","خطا: "+e.message,true)}
+}
 
 function runFrameDisplacementScreen(){
  try{
@@ -1633,9 +1664,9 @@ function shouldRestoreManualFootingCount(record,automaticCount){
  const saved=record?.input?.fndFootingCount;
  return saved!==undefined&&saved!==null&&String(saved).trim()!==""&&Number.isFinite(Number(saved))&&Number(saved)!==Number(automaticCount);
 }
-function newModel(){return {schemaVersion:"3.46.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:climateProfile?.city?.name||"شاهرود",country:climateProfile?.city?.country||"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,climateProfile:cloneClimateProfile(climateProfile),hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
+function newModel(){return {schemaVersion:"3.47.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:climateProfile?.city?.name||"شاهرود",country:climateProfile?.city?.country||"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,climateProfile:cloneClimateProfile(climateProfile),hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
 function collectModel(){
- const p=activeProject||newModel();p.schemaVersion="3.46.0";p.climateProfile=cloneClimateProfile(climateProfile);p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
+ const p=activeProject||newModel();p.schemaVersion="3.47.0";p.climateProfile=cloneClimateProfile(climateProfile);p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
  p.notes=$("metaNotes").value;p.geometry={...geomResult,bracingBays:getSelectedBracingBays()};p.hydroponics={input:hydroInput(),last:hydroResult};calculateSupplementaryTakeoff();calculateFoundationTakeoff();p.results={...(p.results||{}),bracingBays:getSelectedBracingBays(),equipmentTakeoff:{input:equipmentInputs(),result:equipmentTakeoffLast},fabTakeoff:{input:fabInputs(),result:fabTakeoffLast},executionCosts:{input:executionCostInputs()},accessoryTakeoff:{input:accessoryTakeoffInputs(),result:accessoryTakeoffLast},foundationTakeoff:{manualFootingCount:$("fndFootingCount")?.dataset.manual==="1",input:foundationTakeoffInputs(),result:foundationTakeoffLast},structural:structuralLast,beam:beamLast,frameModel:$("frameModel").value,frameAnalysis:frameAnalysisLast,longTrussModel:$("longTrussModel").value,longTrussInput:{profile:$("longTrussProfile").value,groupProfiles:{columns:$("longTrussColumnProfile").value,rafters:$("longTrussRafterProfile").value,longitudinal:$("longTrussLongProfile").value,braces:$("longTrussBraceProfile").value,ties:$("longTrussTieProfile").value},area:num("longTrussA"),E:num("longTrussE"),Fy:num("longTrussFy"),force:num("longTrussForce")},longTrussAnalysis:longTrussAnalysisLast};return p;
 }
 function applyModel(p){
@@ -1670,7 +1701,7 @@ async function saveProject(){
 async function renderProjects(){const el=$("projectList");if(!el)return;const all=(await DB.all()||[]).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));if(!all.length){el.textContent="هنوز پروژه‌ای ذخیره نشده است.";return}el.innerHTML=all.map(p=>`<div class="projectitem"><div><b>${esc(p.meta?.name||"بدون نام")}</b><small>${esc(p.meta?.city||"شهر نامشخص")} · ${esc(p.meta?.type||"")}</small></div><div class="toolbar"><button class="btn-soft" onclick="loadProject('${esc(p.id)}')">بازکردن</button><button class="btn-red" onclick="deleteProject('${esc(p.id)}')">حذف</button></div></div>`).join("")}
 async function loadProject(id){const p=await DB.get(id);if(p){applyModel(p);status("projectStatus","پروژه بارگذاری شد.")}}
 async function deleteProject(id){if(!confirm("پروژه حذف شود؟"))return;await DB.del(id);if(activeProject?.id===id)activeProject=null;renderProjects()}
-async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.46.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
+async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.47.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
 async function importBackup(ev){const f=ev.target.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text()),arr=Array.isArray(d)?d:d.projects;if(!Array.isArray(arr))throw Error("ساختار فایل نامعتبر است");for(const p of arr)if(p?.id&&p.meta)await DB.put(p);await renderProjects();status("projectStatus","بازیابی فایل انجام شد.")}catch(e){status("projectStatus",e.message,true)}ev.target.value=""}
 
 /* Ventilation equipment takeoff: quantities and prices entered by the user */
