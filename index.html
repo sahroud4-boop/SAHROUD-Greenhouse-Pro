@@ -350,6 +350,17 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="toolbar"><button onclick="runColumnBucklingScreen()">محاسبه غربالگری کمانش ستون</button><button class="btn-soft" onclick="runBucklingSelfTest()">آزمون فرمول اویلر</button></div>
  <div id="bucklingOutput"></div><div class="status" id="bucklingStatus"></div>
  <div class="notice">این بخش فقط بار بحرانی الاستیک اویلر را برای عضو ایده‌آل مستقیم با شرایط انتهایی خلاصه‌شده در K محاسبه می‌کند. نقص اولیه، تنش پسماند، کمانش موضعی، کمانش خمشی‌پیچشی، اندرکنش N-M، ضوابط مقاومت و ترکیبات بار آیین‌نامه‌ای در آن لحاظ نشده‌اند. نتیجه، کنترل طراحی یا مجوز ساخت نیست.</div>
+</div>
+<div class="card" style="margin-top:14px">
+ <h3>غربالگری تغییرمکان قاب بر اساس حد مجاز مهندس</h3>
+ <p class="muted">بیشینه جابه‌جایی افقی و قائم از خروجی تحلیل قاب استخراج می‌شود. حدود مجاز باید بر اساس نوع پوشش، تجهیزات، بهره‌برداری و مرجع طراحی توسط مهندس وارد شوند؛ نرم‌افزار حد آیین‌نامه‌ای را حدس نمی‌زند.</p>
+ <div class="g2">
+  <div><label>حد مجاز جابه‌جایی افقی (mm)</label><input id="frameAllowUx" type="number" min="0.001" step="0.1" placeholder="ورودی مهندس"></div>
+  <div><label>حد مجاز جابه‌جایی قائم (mm)</label><input id="frameAllowUy" type="number" min="0.001" step="0.1" placeholder="ورودی مهندس"></div>
+ </div>
+ <div class="toolbar"><button onclick="runFrameDisplacementScreen()">محاسبه غربالگری تغییرمکان</button></div>
+ <div id="frameDisplacementOutput"></div><div class="status" id="frameDisplacementStatus"></div>
+ <div class="notice">این مقایسه فقط جابه‌جایی گره‌های مدل قاب دوبعدی تحلیل‌شده را با دو حد ورودی مهندس می‌سنجد. اثرات مرتبه دوم، ارتعاش، تغییرشکل موضعی پوشش، معیارهای اختصاصی تجهیزات و کنترل کامل آیین‌نامه‌ای در این بخش لحاظ نشده است. نتیجه، تأیید طراحی یا مجوز ساخت نیست.</div>
 </div><div class="status" id="frameSelfTestStatus"></div><div id="frameSelfTestOutput"></div>
  <div class="notice">قرارداد بار سقف: بار قائم بر مبنای تصویر افقی وارد می‌شود؛ بار باد سقف مستقل و عمود بر سطح شیب‌دار است (مثبت = فشار به داخل، منفی = مکش به خارج). هر دو به‌صورت بار گسترده یکنواخت محلی به رفتر مربوط اعمال می‌شوند. این ورودی‌ها فشار طراحی را خودکار از اقلیم استخراج نمی‌کنند. محدودیت این مرحله: فقط بارهای گره‌ای و بار گسترده یکنواخت عضو در محورهای محلی؛ رفتار خطی الاستیک و تغییرشکل کوچک. بارهای غیر یکنواخت/مثلثی، تحلیل مرتبه دوم، مفصل/فنر، اندرکنش محوری-خمشی و طراحی کامل مقطع/کمانش آیین‌نامه‌ای هنوز پیاده‌سازی نشده‌اند؛ غربالگری جداگانه اویلر فقط شاخص مقدماتی بار بحرانی الاستیک ستون را می‌دهد. این هسته هنوز به هندسه خودکار گلخانه متصل نیست و نباید مبنای ساخت قرار گیرد. نمونه پیش‌فرض صرفاً تست عددی است.</div>
  </div>
@@ -924,6 +935,24 @@ function runFrameAnalysis(){
 }
 
 
+
+function runFrameDisplacementScreen(){
+ try{
+  if(!frameAnalysisLast||!frameAnalysisLast.model||!frameAnalysisLast.output)throw new Error("ابتدا مدل قاب گلخانه را تولید و تحلیل کنید.");
+  const current=JSON.parse($("frameModel").value);
+  if(JSON.stringify(current)!==JSON.stringify(frameAnalysisLast.model))throw new Error("متن مدل پس از تحلیل تغییر کرده است؛ ابتدا تحلیل قاب را دوباره اجرا کنید.");
+  const uxAllow=Number($("frameAllowUx").value),uyAllow=Number($("frameAllowUy").value);
+  if(!(Number.isFinite(uxAllow)&&uxAllow>0&&Number.isFinite(uyAllow)&&uyAllow>0))throw new Error("هر دو حد مجاز افقی و قائم باید به‌صورت عدد مثبت و بر حسب میلی‌متر وارد شوند.");
+  const d=frameAnalysisLast.output.displacements;
+  const ux=d.filter(x=>x.dof==="ux_mm").reduce((a,x)=>Math.abs(x.value)>Math.abs(a.value)?x:a,{value:0,node:"—"});
+  const uy=d.filter(x=>x.dof==="uy_mm").reduce((a,x)=>Math.abs(x.value)>Math.abs(a.value)?x:a,{value:0,node:"—"});
+  if(!d.length||!d.every(x=>Number.isFinite(x.value)))throw new Error("خروجی جابه‌جایی معتبر و متناهی در دسترس نیست.");
+  const rx=Math.abs(ux.value)/uxAllow,ry=Math.abs(uy.value)/uyAllow,pass=rx<=1&&ry<=1;
+  $("frameDisplacementOutput").innerHTML='<div class="result"><p><b>نتیجه مقایسه:</b> '+(pass?"هر دو جابه‌جایی از حدود واردشده تجاوز نکرده‌اند.":"حداقل یکی از جابه‌جایی‌ها از حد واردشده بیشتر است.")+'</p><div class="tablewrap"><table><tr><th>جهت</th><th>بیشینه قدرمطلق (mm)</th><th>گره</th><th>حد واردشده (mm)</th><th>نسبت δ/δمجاز</th><th>وضعیت</th></tr><tr><td>افقی X</td><td>'+fmt(Math.abs(ux.value),3)+'</td><td>'+ux.node+'</td><td>'+fmt(uxAllow,3)+'</td><td>'+fmt(rx,4)+'</td><td>'+(rx<=1?"در حد":"بیش از حد")+'</td></tr><tr><td>قائم Y</td><td>'+fmt(Math.abs(uy.value),3)+'</td><td>'+uy.node+'</td><td>'+fmt(uyAllow,3)+'</td><td>'+fmt(ry,4)+'</td><td>'+(ry<=1?"در حد":"بیش از حد")+'</td></tr></table></div></div>';
+  status("frameDisplacementStatus",pass?"غربالگری نسبت به حدودی که مهندس وارد کرده انجام شد؛ این نتیجه کنترل آیین‌نامه‌ای کامل نیست.":"تجاوز از حد ورودی در یک یا هر دو جهت مشاهده شد؛ مدل، بارگذاری و حدود مجاز را بررسی کنید.",!pass);
+  return {passed:pass,maxUx_mm:Math.abs(ux.value),nodeUx:ux.node,maxUy_mm:Math.abs(uy.value),nodeUy:uy.node,ratioUx:rx,ratioUy:ry};
+ }catch(e){$("frameDisplacementOutput").innerHTML="";status("frameDisplacementStatus","خطا: "+e.message,true);return null}
+}
 
 function runColumnBucklingScreen(){
  try{
