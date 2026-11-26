@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.42.1</title>
+<title>SAHROUD Greenhouse Pro v3.43.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 .climate-tabs button.active{background:var(--green);color:#fff}.climate-tab[hidden]{display:none!important}.climate-tab{padding-top:12px}
@@ -52,7 +52,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.42.1</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.43.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -340,7 +340,17 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <label>تعریف مدل به‌صورت JSON — واحدها: مختصات mm، نیرو N، لنگر N·mm، E بر حسب MPa، A بر حسب mm² و I بر حسب mm⁴</label>
  <textarea id="frameModel" rows="13" spellcheck="false" style="direction:ltr;text-align:left;font-family:Consolas,monospace;font-size:11px" placeholder="مدل JSON را بارگذاری کنید یا دکمه نمونه را بزنید"></textarea>
  <div class="toolbar" style="margin-top:10px"><button class="btn-soft" onclick="loadFrameExample()">بارگذاری نمونه تیر طره‌ای</button><button onclick="runFrameAnalysis()">اجرای تحلیل قاب 2D</button><button class="btn-soft" onclick="runFrameSelfTests()">آزمون صحت حل‌گر</button><button class="btn-soft" onclick="compareFrameWindScenarios()">مقایسه سناریوهای باد دوطرفه</button><button class="btn-soft" onclick="compareFrameRoofScenarios()">مقایسه بار نامتقارن دو شیب سقف</button><button class="btn-soft" onclick="compareFrameRoofWindScenarios()">مقایسه سناریوهای باد سقف</button></div>
- <div class="status" id="frameStatus"></div><div id="frameOutput"></div><div class="status" id="frameSelfTestStatus"></div><div id="frameSelfTestOutput"></div>
+ <div class="status" id="frameStatus"></div><div id="frameOutput"></div><div class="card" style="margin-top:14px">
+ <h3>غربالگری مقدماتی کمانش الاستیک ستون‌ها (اویلر)</h3>
+ <p class="muted">پس از اجرای تحلیل قاب و اتصال مقطع معتبر ستون، بار فشاری محوری انتهای اعضای ستون با بار بحرانی اویلر در دو محور مقایسه می‌شود. ضرایب طول مؤثر Kx و Ky باید بر اساس مهاربندی و شرایط واقعی قاب توسط مهندس وارد شوند؛ مقدار پیش‌فرضی فرض نشده است.</p>
+ <div class="g2">
+  <div><label>ضریب طول مؤثر K حول محور x</label><input id="bucklingKx" type="number" min="0.01" step="0.01" placeholder="ورودی مهندس"></div>
+  <div><label>ضریب طول مؤثر K حول محور y</label><input id="bucklingKy" type="number" min="0.01" step="0.01" placeholder="ورودی مهندس"></div>
+ </div>
+ <div class="toolbar"><button onclick="runColumnBucklingScreen()">محاسبه غربالگری کمانش ستون</button><button class="btn-soft" onclick="runBucklingSelfTest()">آزمون فرمول اویلر</button></div>
+ <div id="bucklingOutput"></div><div class="status" id="bucklingStatus"></div>
+ <div class="notice">این بخش فقط بار بحرانی الاستیک اویلر را برای عضو ایده‌آل مستقیم با شرایط انتهایی خلاصه‌شده در K محاسبه می‌کند. نقص اولیه، تنش پسماند، کمانش موضعی، کمانش خمشی‌پیچشی، اندرکنش N-M، ضوابط مقاومت و ترکیبات بار آیین‌نامه‌ای در آن لحاظ نشده‌اند. نتیجه، کنترل طراحی یا مجوز ساخت نیست.</div>
+</div><div class="status" id="frameSelfTestStatus"></div><div id="frameSelfTestOutput"></div>
  <div class="notice">قرارداد بار سقف: بار قائم بر مبنای تصویر افقی وارد می‌شود؛ بار باد سقف مستقل و عمود بر سطح شیب‌دار است (مثبت = فشار به داخل، منفی = مکش به خارج). هر دو به‌صورت بار گسترده یکنواخت محلی به رفتر مربوط اعمال می‌شوند. این ورودی‌ها فشار طراحی را خودکار از اقلیم استخراج نمی‌کنند. محدودیت این مرحله: فقط بارهای گره‌ای و بار گسترده یکنواخت عضو در محورهای محلی؛ رفتار خطی الاستیک و تغییرشکل کوچک. بارهای غیر یکنواخت/مثلثی، تحلیل مرتبه دوم، مفصل/فنر، اندرکنش محوری-خمشی، کمانش، طراحی مقطع و کنترل آیین‌نامه‌ای هنوز پیاده‌سازی نشده‌اند. این هسته هنوز به هندسه خودکار گلخانه متصل نیست و نباید مبنای ساخت قرار گیرد. نمونه پیش‌فرض صرفاً تست عددی است.</div>
  </div>
 
@@ -426,7 +436,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.42.1 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.43.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -915,6 +925,43 @@ function runFrameAnalysis(){
 
 
 
+function runColumnBucklingScreen(){
+ try{
+  if(!frameAnalysisLast||!frameAnalysisLast.model||!frameAnalysisLast.output)throw new Error("ابتدا مدل قاب را تولید و تحلیل کنید.");
+  const model=frameAnalysisLast.model,out=frameAnalysisLast.output;
+  if(model.modelType!=="greenhouse-generated-2D-frame")throw new Error("این غربالگری فقط برای مدل قاب تولیدشده از هندسه گلخانه فعال است.");
+  if(model.generationInputs&&JSON.stringify(model.generationInputs)!==JSON.stringify(greenhouseFrameGenerationInputs()))throw new Error("ورودی‌های مدل تغییر کرده‌اند؛ ابتدا قاب را دوباره تولید و تحلیل کنید.");
+  const Kx=Number($("bucklingKx").value),Ky=Number($("bucklingKy").value);
+  if(!(Number.isFinite(Kx)&&Kx>0&&Number.isFinite(Ky)&&Ky>0))throw new Error("ضرایب طول مؤثر Kx و Ky را از تحلیل مهاربندی و شرایط انتهایی وارد کنید.");
+  const selected=$("frameColumnProfile").value,profile=findSectionProfile(selected);
+  if(!profile)throw new Error("مقطع ستون باید از بانک مقاطع انتخاب شده باشد.");
+  const A=Number(profile.area),E=Number(profile.E),Ix=Number(profile.Ix),Iy=Number(profile.Iy);
+  if(![A,E,Ix,Iy].every(v=>Number.isFinite(v)&&v>0))throw new Error("برای مقطع ستون، A، E، Ix و Iy مثبت و معتبر لازم است.");
+  const columns=model.elements.filter(e=>String(e.id||"").startsWith("ستون-"));
+  if(!columns.length)throw new Error("عضو ستون در مدل پیدا نشد.");
+  const rows=columns.map(el=>{
+   const m=out.members.find(x=>x.id===el.id);if(!m)throw new Error("نتیجه تحلیل برای "+el.id+" موجود نیست.");
+   const q=m.local_end_forces_N_Nmm;
+   const Nc=Math.max(0,Number(q[0]),-Number(q[3]));
+   const L=Number(m.length_mm),rx=Number(profile.rx)>0?Number(profile.rx):Math.sqrt(Ix/A),ry=Number(profile.ry)>0?Number(profile.ry):Math.sqrt(Iy/A);
+   const lx=Kx*L/rx,ly=Ky*L/ry;
+   const pcrx=Math.PI**2*E*Ix/(Kx*L)**2,pcry=Math.PI**2*E*Iy/(Ky*L)**2,pcr=Math.min(pcrx,pcry);
+   return {id:el.id,L,Nc,rx,ry,lx,ly,pcrx,pcry,pcr,ratio:Nc/pcr,axis:pcrx<=pcry?"x":"y"};
+  });
+  const html='<div class="result"><p><b>مقطع ستون:</b> '+esc(profile.name)+' · <b>تعداد:</b> '+rows.length+'</p><div class="tablewrap"><table><tr><th>عضو</th><th>L (mm)</th><th>N فشاری (kN)</th><th>KL/r محور x</th><th>KL/r محور y</th><th>Pcr محور x (kN)</th><th>Pcr محور y (kN)</th><th>N/Pcr,min</th></tr>'+rows.map(r=>'<tr><td>'+esc(r.id)+'</td><td>'+fmt(r.L,1)+'</td><td>'+fmt(r.Nc/1000,3)+'</td><td>'+fmt(r.lx,2)+'</td><td>'+fmt(r.ly,2)+'</td><td>'+fmt(r.pcrx/1000,2)+'</td><td>'+fmt(r.pcry/1000,2)+'</td><td>'+fmt(r.ratio,4)+'</td></tr>').join('')+'</table></div><p class="muted">کمترین بار بحرانی محورهای x/y برای نسبت غربالگری گزارش شده است. این نسبت فقط مقایسه نیروی تحلیل‌شده با بار بحرانی الاستیک است و ضریب مقاومت یا نسبت بهره‌برداری آیین‌نامه‌ای نیست.</p></div>';
+  $("bucklingOutput").innerHTML=html;
+  status("bucklingStatus","غربالگری اویلر محاسبه شد؛ Kها، طول مهارنشده و شرایط واقعی عضو باید توسط مهندس سازه تأیید شوند.");
+ }catch(e){$("bucklingOutput").innerHTML="";status("bucklingStatus","خطا: "+e.message,true)}
+}
+function runBucklingSelfTest(){
+ const E=200000,I=8e7,A=2000,L=3000,K=1;
+ const pcr=Math.PI**2*E*I/(K*L)**2;
+ const reference=Math.PI**2*E*I/L**2;
+ const pass=Math.abs(pcr-reference)/reference<1e-12&&Math.abs(Math.sqrt(I/A)-200)<1e-12;
+ $("bucklingOutput").innerHTML='<div class="result">آزمون مرجع اویلر: '+(pass?"قبول":"مردود")+' · Pcr = '+pcr.toFixed(2)+' N · r = '+Math.sqrt(I/A).toFixed(2)+' mm</div>';
+ status("bucklingStatus",pass?"آزمون فرمول اویلر با موفقیت گذشت.":"آزمون فرمول اویلر ناموفق بود.",!pass);
+ return {passed:pass,pcr};
+}
 function compareFrameWindScenarios(){
  try{
   const base=JSON.parse($("frameModel").value);
@@ -1548,9 +1595,9 @@ function shouldRestoreManualFootingCount(record,automaticCount){
  const saved=record?.input?.fndFootingCount;
  return saved!==undefined&&saved!==null&&String(saved).trim()!==""&&Number.isFinite(Number(saved))&&Number(saved)!==Number(automaticCount);
 }
-function newModel(){return {schemaVersion:"3.42.1",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:climateProfile?.city?.name||"شاهرود",country:climateProfile?.city?.country||"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,climateProfile:cloneClimateProfile(climateProfile),hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
+function newModel(){return {schemaVersion:"3.43.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:climateProfile?.city?.name||"شاهرود",country:climateProfile?.city?.country||"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,climateProfile:cloneClimateProfile(climateProfile),hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
 function collectModel(){
- const p=activeProject||newModel();p.schemaVersion="3.42.1";p.climateProfile=cloneClimateProfile(climateProfile);p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
+ const p=activeProject||newModel();p.schemaVersion="3.43.0";p.climateProfile=cloneClimateProfile(climateProfile);p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
  p.notes=$("metaNotes").value;p.geometry={...geomResult,bracingBays:getSelectedBracingBays()};p.hydroponics={input:hydroInput(),last:hydroResult};calculateSupplementaryTakeoff();calculateFoundationTakeoff();p.results={...(p.results||{}),bracingBays:getSelectedBracingBays(),equipmentTakeoff:{input:equipmentInputs(),result:equipmentTakeoffLast},fabTakeoff:{input:fabInputs(),result:fabTakeoffLast},executionCosts:{input:executionCostInputs()},accessoryTakeoff:{input:accessoryTakeoffInputs(),result:accessoryTakeoffLast},foundationTakeoff:{manualFootingCount:$("fndFootingCount")?.dataset.manual==="1",input:foundationTakeoffInputs(),result:foundationTakeoffLast},structural:structuralLast,beam:beamLast,frameModel:$("frameModel").value,frameAnalysis:frameAnalysisLast,longTrussModel:$("longTrussModel").value,longTrussInput:{profile:$("longTrussProfile").value,groupProfiles:{columns:$("longTrussColumnProfile").value,rafters:$("longTrussRafterProfile").value,longitudinal:$("longTrussLongProfile").value,braces:$("longTrussBraceProfile").value,ties:$("longTrussTieProfile").value},area:num("longTrussA"),E:num("longTrussE"),Fy:num("longTrussFy"),force:num("longTrussForce")},longTrussAnalysis:longTrussAnalysisLast};return p;
 }
 function applyModel(p){
@@ -1585,7 +1632,7 @@ async function saveProject(){
 async function renderProjects(){const el=$("projectList");if(!el)return;const all=(await DB.all()||[]).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));if(!all.length){el.textContent="هنوز پروژه‌ای ذخیره نشده است.";return}el.innerHTML=all.map(p=>`<div class="projectitem"><div><b>${esc(p.meta?.name||"بدون نام")}</b><small>${esc(p.meta?.city||"شهر نامشخص")} · ${esc(p.meta?.type||"")}</small></div><div class="toolbar"><button class="btn-soft" onclick="loadProject('${esc(p.id)}')">بازکردن</button><button class="btn-red" onclick="deleteProject('${esc(p.id)}')">حذف</button></div></div>`).join("")}
 async function loadProject(id){const p=await DB.get(id);if(p){applyModel(p);status("projectStatus","پروژه بارگذاری شد.")}}
 async function deleteProject(id){if(!confirm("پروژه حذف شود؟"))return;await DB.del(id);if(activeProject?.id===id)activeProject=null;renderProjects()}
-async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.42.1",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
+async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.43.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
 async function importBackup(ev){const f=ev.target.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text()),arr=Array.isArray(d)?d:d.projects;if(!Array.isArray(arr))throw Error("ساختار فایل نامعتبر است");for(const p of arr)if(p?.id&&p.meta)await DB.put(p);await renderProjects();status("projectStatus","بازیابی فایل انجام شد.")}catch(e){status("projectStatus",e.message,true)}ev.target.value=""}
 
 /* Ventilation equipment takeoff: quantities and prices entered by the user */
