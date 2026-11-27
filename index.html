@@ -909,7 +909,8 @@ function evaluateSectionCandidates(){
   if(!Array.isArray(baseModel.elements)||!baseModel.elements.some(e=>String(e.id||"").startsWith("ستون-"))||!baseModel.elements.some(e=>String(e.id||"").startsWith("رفتر ")))throw new Error("ابتدا مدل قاب را با دکمه «ساخت مدل قاب از هندسه فعلی» تولید کنید.");
   if(!sectionProfileBank.length)throw new Error("بانک مقاطع خالی است؛ ابتدا دیتاشیت مقاطع معتبر را وارد کنید.");
   const Kx=Number($("bucklingKx").value),Ky=Number($("bucklingKy").value);
-  if(!(Number.isFinite(Kx)&&Kx>0&&Number.isFinite(Ky)&&Ky>0))throw new Error("برای ادغام غربالگری کمانش ستون در مقایسه مقاطع، ابتدا Kx و Ky را بر اساس مهاربندی و شرایط واقعی وارد کنید؛ مقدار فرضی اعمال نمی‌شود.");\n  const roles=[{key:"columns",prefix:"ستون-",label:"ستون‌ها"},{key:"rafters",prefix:"رفتر ",label:"رفترها"}];
+  if(!(Number.isFinite(Kx)&&Kx>0&&Number.isFinite(Ky)&&Ky>0))throw new Error("برای ادغام غربالگری کمانش ستون در مقایسه مقاطع، ابتدا Kx و Ky را بر اساس مهاربندی و شرایط واقعی وارد کنید؛ مقدار فرضی اعمال نمی‌شود.");
+  const roles=[{key:"columns",prefix:"ستون-",label:"ستون‌ها"},{key:"rafters",prefix:"رفتر ",label:"رفترها"}];
   frameCandidateResults={columns:[],rafters:[]};
   const results=[];
   for(const role of roles){
