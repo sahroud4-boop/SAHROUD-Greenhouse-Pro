@@ -948,7 +948,7 @@ function evaluateSectionCandidates(){
    html+='<h4>'+item.role.label+'</h4>';
    if(!item.ranked.length){html+='<p class="muted">مقطع قابل ارزیابی یافت نشد. برای هر مقطع باید جرم، Ag، Ix، Iy، E، Fy، Wx و Wy از دیتاشیت معتبر و مثبت باشند.</p>';continue}
    html+='<div class="tablewrap"><table><tr><th>ترتیب</th><th>نقش</th><th>کد مقطع</th><th>جرم (kg/m)</th><th>Fy (MPa)</th><th>بیشینه σ/Fy</th>'+(item.role.key==="columns"?'<th>بیشینه N/Pcr,min</th>':'')+'<th>غربالگری اولیه</th><th>عملیات</th></tr>';
-   html+=item.ranked.slice(0,10).map((p,i)=>'<tr><td>'+(p.baseline?"مبنای مقایسه":i)+'</td><td>'+(p.baseline?"مقطع پیش‌فرض":"جایگزین")+'</td><td>'+esc(p.name)+'</td><td>'+fmt(p.mass,3)+'</td><td>'+fmt(p.fy,1)+'</td><td>'+fmt(p.ratio,3)+'</td><td>'+(p.ratio<1?"نسبت تنش مقدماتی کمتر از ۱":"نسبت تنش مقدماتی برابر/بیشتر از ۱")+'</td><td><button class="btn-soft" onclick="applyRecommendedProfile(\''+item.role.key+'\','+i+')">انتخاب و بازتحلیل</button></td></tr>').join("");
+   html+=item.ranked.slice(0,10).map((p,i)=>'<tr><td>'+(p.baseline?"مبنای مقایسه":i)+'</td><td>'+(p.baseline?"مقطع پیش‌فرض":"جایگزین")+'</td><td>'+esc(p.name)+'</td><td>'+fmt(p.mass,3)+'</td><td>'+fmt(p.fy,1)+'</td><td>'+fmt(p.ratio,3)+'</td>'+(item.role.key==="columns"?'<td>'+fmt(p.bucklingRatio,4)+'</td>':'')+'<td>'+(p.ratio<1?"تنش مقدماتی < ۱":"تنش مقدماتی ≥ ۱")+(item.role.key==="columns"?(p.bucklingRatio<1?"؛ اویلر < ۱":"؛ اویلر ≥ ۱"):"")+'</td><td><button class="btn-soft" onclick="applyRecommendedProfile(\''+item.role.key+'\','+i+')">انتخاب و بازتحلیل</button></td></tr>').join("");
    html+='</table></div>';
   }
   $("frameOutput").innerHTML+=html;
