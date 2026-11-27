@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.53.0</title>
+<title>SAHROUD Greenhouse Pro v3.54.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 .climate-tabs button.active{background:var(--green);color:#fff}.climate-tab[hidden]{display:none!important}.climate-tab{padding-top:12px}
@@ -911,7 +911,10 @@ function evaluateSectionCandidates(){
   const results=[];
   for(const role of roles){
    const members=baseModel.elements.filter(e=>String(e.id||"").startsWith(role.prefix));
+   const baselineName=$(role.key==="columns"?"frameColumnProfile":"frameRafterProfile")?.value||"";
+   if(!baselineName)throw new Error("ابتدا مقطع پیش‌فرض "+role.label+" را از بانک مقاطع انتخاب کنید تا تحلیل پایه با همان مقطع انجام شود.");
    const candidates=sectionProfileBank.filter(p=>Number(p.area)>0&&Number(p.Ix)>0&&Number(p.E)>0&&Number(p.Fy)>0&&[Number(p.Wx),Number(p.Wy)].some(v=>Number.isFinite(v)&&v>0));
+   if(!candidates.some(p=>p.name===baselineName))throw new Error("مقطع پیش‌فرض "+role.label+" در بانک معتبر نیست یا خواص کامل ندارد.");
    const ranked=[];
    for(const profile of candidates){
     const W=Math.min(...[Number(profile.Wx),Number(profile.Wy)].filter(v=>Number.isFinite(v)&&v>0));
@@ -922,22 +925,22 @@ function evaluateSectionCandidates(){
      if(target.length!==members.length)continue;
      const ratios=target.map(m=>{const q=m.local_end_forces_N_Nmm,N=Math.max(Math.abs(q[0]),Math.abs(q[3])),M=Math.max(Math.abs(q[2]),Math.abs(q[5]));return (N/Number(profile.area)+M/W)/Number(profile.Fy)});
      const maxRatio=Math.max(...ratios);
-     if(Number.isFinite(maxRatio))ranked.push({name:profile.name,mass:Number(profile.mass),ratio:maxRatio,fy:Number(profile.Fy)});
+     if(Number.isFinite(maxRatio))ranked.push({name:profile.name,mass:Number(profile.mass),ratio:maxRatio,fy:Number(profile.Fy),baseline:profile.name===baselineName});
     }catch(err){/* candidate singularity or invalid data: skip */}
    }
-   ranked.sort((a,b)=>a.ratio-b.ratio||a.mass-b.mass);
+   ranked.sort((a,b)=>(a.baseline===b.baseline?0:a.baseline?-1:1)||a.ratio-b.ratio||a.mass-b.mass);
    frameCandidateResults[role.key]=ranked;results.push({role,ranked});
   }
-  let html='<h4 style="margin-top:16px">مقایسه آزمایشی مقاطع بانک</h4><div class="notice">برای هر گزینه، تحلیل قاب دوباره با همان بارها و هندسه و با جایگزینی مقطع آن گروه اجرا شده است. رتبه‌بندی بر اساس کمترین بیشینه نسبت تنش الاستیک در همان گروه است؛ این رتبه‌بندی طراحی نهایی یا تأیید ایمنی نیست و اثر کمانش، پایداری، اتصالات، ضوابط آیین‌نامه‌ای و محدودیت‌های اجرایی را لحاظ نمی‌کند.</div>';
+  let html='<h4 style="margin-top:16px">مقایسه آزمایشی مقاطع بانک</h4><div class="notice">برای هر گروه، ابتدا مقطع انتخاب‌شده به‌عنوان «مقطع پیش‌فرض» مبنای تحلیل قرار می‌گیرد و در جدول در ردیف اول مشخص می‌شود؛ سپس مقاطع جایگزین بانک با همان هندسه و بارها تحلیل می‌شوند. ترتیب جایگزین‌ها بر اساس نسبت تنش الاستیک و سپس جرم واحد طول است؛ جرم فقط شاخص اولیه اقتصادی است و بدون قیمت روز، هزینه ساخت/اتصال و کنترل‌های کامل، بهینه اقتصادی محسوب نمی‌شود. این غربالگری طراحی نهایی یا تأیید ایمنی نیست و اثر کامل کمانش، پایداری، اتصالات، ضوابط آیین‌نامه‌ای و محدودیت‌های اجرایی را لحاظ نمی‌کند.</div>';
   for(const item of results){
    html+='<h4>'+item.role.label+'</h4>';
    if(!item.ranked.length){html+='<p class="muted">مقطع قابل ارزیابی یافت نشد. برای هر مقطع باید Ag، Ix، E، Fy و حداقل یکی از Wx یا Wy مثبت باشد.</p>';continue}
-   html+='<div class="tablewrap"><table><tr><th>رتبه</th><th>کد مقطع</th><th>جرم (kg/m)</th><th>Fy (MPa)</th><th>بیشینه σ/Fy</th><th>عملیات</th></tr>';
-   html+=item.ranked.slice(0,10).map((p,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(p.name)+'</td><td>'+fmt(p.mass,3)+'</td><td>'+fmt(p.fy,1)+'</td><td>'+fmt(p.ratio,3)+'</td><td><button class="btn-soft" onclick="applyRecommendedProfile(\''+item.role.key+'\','+i+')">انتخاب و بازتحلیل</button></td></tr>').join("");
+   html+='<div class="tablewrap"><table><tr><th>رتبه</th><th>نقش</th><th>کد مقطع</th><th>جرم (kg/m)</th><th>Fy (MPa)</th><th>بیشینه σ/Fy</th><th>عملیات</th></tr>';
+   html+=item.ranked.slice(0,10).map((p,i)=>'<tr><td>'+(i+1)+'</td><td>'+(p.baseline?"مقطع پیش‌فرض":"جایگزین")+'</td><td>'+esc(p.name)+'</td><td>'+fmt(p.mass,3)+'</td><td>'+fmt(p.fy,1)+'</td><td>'+fmt(p.ratio,3)+'</td><td><button class="btn-soft" onclick="applyRecommendedProfile(\''+item.role.key+'\','+i+')">انتخاب و بازتحلیل</button></td></tr>').join("");
    html+='</table></div>';
   }
   $("frameOutput").innerHTML+=html;
-  status("frameStatus","مقایسه مقاطع انجام شد. گزینه‌ها بر اساس شاخص تنش الاستیک مقدماتی رتبه‌بندی شده‌اند؛ بررسی مهندسی مستقل لازم است.");
+  status("frameStatus","تحلیل از مقطع پیش‌فرض هر گروه آغاز و سپس گزینه‌های جایگزین مقایسه شدند؛ رتبه‌بندی صرفاً غربالگری الاستیک است و کنترل کامل مهندسی لازم است.");
  }catch(e){status("frameStatus","خطا در ارزیابی مقاطع: "+e.message,true)}
 }
 function applyRecommendedProfile(role,index){
@@ -1867,7 +1870,7 @@ const CLIMATE_MONTHS=["ژانویه","فوریه","مارس","آوریل","مه"
 function defaultShahroudClimateProfile(){
  const rows=[[-3.3,1.0,5.4,19.2],[-1.3,3.5,8.3,21.3],[3.0,8.6,14.3,32.8],[8.2,14.1,20.0,26.9],[13.1,19.4,25.7,20.5],[17.8,24.3,30.8,5.2],[20.3,26.6,32.8,3.0],[19.1,25.7,32.3,1.9],[14.8,21.6,28.5,2.7],[8.8,15.3,21.9,6.5],[3.0,8.5,14.0,11.0],[-1.6,2.8,7.3,19.3]];
  const steadiness=[10.5,9.3,7.4,9.1,32.7,63.5,77.6,77.4,60.4,23.7,11.4,11.8],calm=[29.0,25.0,18.2,16.3,13.6,9.9,7.6,10.7,20.3,29.4,31.5,33.5];
- return {city:{name:"شاهرود",province:"سمنان",country:"ایران",lat:36.41819,lon:54.97628,elevation:1347.2,station:"SHAHROUD",wmo:40739},climateClass:"BWk — بیابانی سرد",period:"1991-2020",dataStatus:"نرمال اقلیمی مرجع",annual:{meanTemp:14.52,precipitationMm:168.3},monthly:rows.map((v,i)=>({month:CLIMATE_MONTHS[i],tmin:v[0],tmean:v[1],tmax:v[2],precip:v[3],humidity:null,wind:null,solar:null,et0:null})),wind:{period:"1961-1990",monthly:steadiness.map((v,i)=>({month:CLIMATE_MONTHS[i],steadiness:v,calm:calm[i]}))},design:{meanRelativeHumidityPct:null,meanWindSpeedMs:null,maxWindGustMs:null,solarRadiationMJm2Day:null,sunshineHoursPerDay:null,annualET0mm:null,annualSnowfallCm:null,frostDaysPerYear:null,summerDesignDryBulbC:null,winterDesignDryBulbC:null,designWindSpeedMs:null,designSnowLoadKPa:null,seismicZone:"",soilDesignCategory:"",windExposure:"",notes:""},source:"WorldClim/CRU TS v4.09؛ نرمال‌های ماهانه 1991-2020، گزارش StatsClimat برای شاهرود؛ آمار باد از WMO CLINO ایستگاه 40739 در دوره 1961-1990",sources:{normals:"https://statsclimat.com/climate/iran-islamic-republic-of/shahrud-135423",wind:"https://data.un.org/Data.aspx?d=CLINO&f=ElementCode%3A18&q=wind",calm:"https://data.un.org/Data.aspx?d=CLINO&f=ElementCode%3A48"},notes:"نرمال سالانه بارش 168.3 mm و جمع اعداد گرد‌شده جدول ماهانه ممکن است به‌علت تجمیع و گردکردن دقیقاً برابر نباشد. آمار باد دوره 1961-1990 است. این داده‌ها جایگزین بارهای طراحی و داده‌های تأییدشده محل پروژه نیستند."};
+ return {city:{name:"شاهرود",province:"سمنان",country:"ایران",lat:36.41819,lon:54.97628,elevation:1347.2,station:"SHAHROUD",wmo:40739},climateClass:"BWk — بیابانی سرد",period:"1991-2020",dataStatus:"نرمال اقلیمی مرجع ثانویه؛ بارهای طراحی آیین‌نامه‌ای جداگانه لازم است",annual:{meanTemp:14.52,precipitationMm:168.3},monthly:rows.map((v,i)=>({month:CLIMATE_MONTHS[i],tmin:v[0],tmean:v[1],tmax:v[2],precip:v[3],humidity:null,wind:null,solar:null,et0:null})),wind:{period:"1961-1990",monthly:steadiness.map((v,i)=>({month:CLIMATE_MONTHS[i],steadiness:v,calm:calm[i]}))},design:{meanRelativeHumidityPct:null,meanWindSpeedMs:null,maxWindGustMs:null,solarRadiationMJm2Day:null,sunshineHoursPerDay:null,annualET0mm:null,annualSnowfallCm:null,frostDaysPerYear:null,summerDesignDryBulbC:null,winterDesignDryBulbC:null,designWindSpeedMs:null,designSnowLoadKPa:null,seismicZone:"",soilDesignCategory:"",windExposure:"",notes:""},source:"WorldClim/CRU TS v4.09؛ نرمال‌های ماهانه 1991-2020، گزارش StatsClimat برای شاهرود؛ آمار باد از WMO CLINO ایستگاه 40739 در دوره 1961-1990",sources:{normals:"https://statsclimat.com/climate/iran-islamic-republic-of/shahrud-135423",wind:"https://data.un.org/Data.aspx?d=CLINO&f=ElementCode%3A18&q=wind",calm:"https://data.un.org/Data.aspx?d=CLINO&f=ElementCode%3A48"},notes:"نرمال سالانه بارش 168.3 mm و جمع اعداد گرد‌شده جدول ماهانه ممکن است به‌علت تجمیع و گردکردن دقیقاً برابر نباشد. آمار باد دوره 1961-1990 است. این نرمال‌ها منبع ثانویه اقلیم عمومی‌اند، نه مقادیر طرح سازه. بار باد و برف باید از مبحث ششم مقررات ملی ساختمان و پیوست‌های مربوط، با تعیین دقیق محل، ارتفاع، شرایط زمین و شکل سقف استخراج شوند؛ طراحی فولاد با مبحث دهم ویرایش 1401 کنترل شود؛ خطر زلزله با استاندارد 2800 و رده خاک پروژه تعیین گردد. استاندارد EN 13031-1:2019 فقط مرجع تکمیلی تخصصی گلخانه است و جایگزین مقررات لازم‌الاجرای ایران نیست. تا ثبت مقادیر مستند، فیلدهای بار طراحی خالی می‌مانند."};
 }
 function emptyClimateProfile(city){
  const base=defaultShahroudClimateProfile();
