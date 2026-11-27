@@ -1012,28 +1012,35 @@ function runColumnBucklingScreen(){
   if(!frameAnalysisLast||!frameAnalysisLast.model||!frameAnalysisLast.output)throw new Error("ابتدا مدل قاب را تولید و تحلیل کنید.");
   const model=frameAnalysisLast.model,out=frameAnalysisLast.output;
   if(model.modelType!=="greenhouse-generated-2D-frame")throw new Error("این غربالگری فقط برای مدل قاب تولیدشده از هندسه گلخانه فعال است.");
-  if(model.generationInputs&&JSON.stringify(model.generationInputs)!==JSON.stringify(greenhouseFrameGenerationInputs()))throw new Error("ورودی‌های مدل تغییر کرده‌اند؛ ابتدا قاب را دوباره تولید و تحلیل کنید.");
+  const currentText=$("frameModel").value;
+  if(!currentText||JSON.stringify(JSON.parse(currentText))!==JSON.stringify(model))throw new Error("متن مدل قاب پس از تحلیل تغییر کرده است؛ ابتدا قاب را دوباره تحلیل کنید.");
+  if(model.generationInputs&&JSON.stringify(model.generationInputs)!==JSON.stringify(greenhouseFrameGenerationInputs()))throw new Error("ورودی‌های هندسه، بارگذاری یا مقاطع تغییر کرده‌اند؛ ابتدا قاب را دوباره تولید و تحلیل کنید.");
   const Kx=Number($("bucklingKx").value),Ky=Number($("bucklingKy").value);
-  if(!(Number.isFinite(Kx)&&Kx>0&&Number.isFinite(Ky)&&Ky>0))throw new Error("ضرایب طول مؤثر Kx و Ky را از تحلیل مهاربندی و شرایط انتهایی وارد کنید.");
+  if(!(Number.isFinite(Kx)&&Kx>0&&Number.isFinite(Ky)&&Ky>0))throw new Error("ضرایب طول مؤثر Kx و Ky باید مثبت و بر اساس شرایط واقعی مهاربندی و انتهایی وارد شوند.");
   const selected=$("frameColumnProfile").value,profile=findSectionProfile(selected);
   if(!profile)throw new Error("مقطع ستون باید از بانک مقاطع انتخاب شده باشد.");
   const A=Number(profile.area),E=Number(profile.E),Ix=Number(profile.Ix),Iy=Number(profile.Iy);
-  if(![A,E,Ix,Iy].every(v=>Number.isFinite(v)&&v>0))throw new Error("برای مقطع ستون، A، E، Ix و Iy مثبت و معتبر لازم است.");
+  if(![A,E,Ix,Iy].every(v=>Number.isFinite(v)&&v>0))throw new Error("برای غربالگری دو‌محوره، A، E، Ix و Iy باید از دیتاشیت معتبر و با واحدهای mm²، MPa و mm⁴ ثبت شده باشند.");
   const columns=model.elements.filter(e=>String(e.id||"").startsWith("ستون-"));
   if(!columns.length)throw new Error("عضو ستون در مدل پیدا نشد.");
+  const mismatched=columns.filter(e=>Math.abs(Number(e.A)-A)>Math.max(1e-8,A*1e-8)||Math.abs(Number(e.E)-E)>Math.max(1e-8,E*1e-8)||Math.abs(Number(e.I)-Ix)>Math.max(1e-8,Ix*1e-8)||!e.section||e.section.profile!==profile.name);
+  if(mismatched.length)throw new Error("خواص مقطع انتخاب‌شده با مدل تحلیل‌شده یکسان نیست؛ مقطع را اعمال کنید، قاب را دوباره بسازید و تحلیل کنید.");
+  const rx=Math.sqrt(Ix/A),ry=Math.sqrt(Iy/A);
   const rows=columns.map(el=>{
    const m=out.members.find(x=>x.id===el.id);if(!m)throw new Error("نتیجه تحلیل برای "+el.id+" موجود نیست.");
    const q=m.local_end_forces_N_Nmm;
-   const Nc=Math.max(0,Number(q[0]),-Number(q[3]));
-   const L=Number(m.length_mm),rx=Number(profile.rx)>0?Number(profile.rx):Math.sqrt(Ix/A),ry=Number(profile.ry)>0?Number(profile.ry):Math.sqrt(Iy/A);
+   if(!Array.isArray(q)||q.length<6||!q.every(Number.isFinite))throw new Error("نیروهای انتهایی عضو "+el.id+" نامعتبر است.");
+   const Nc=Math.max(0,q[0],-q[3]),L=Number(m.length_mm);
+   if(!(Number.isFinite(L)&&L>0))throw new Error("طول عضو "+el.id+" معتبر نیست.");
    const lx=Kx*L/rx,ly=Ky*L/ry;
    const pcrx=Math.PI**2*E*Ix/(Kx*L)**2,pcry=Math.PI**2*E*Iy/(Ky*L)**2,pcr=Math.min(pcrx,pcry);
    return {id:el.id,L,Nc,rx,ry,lx,ly,pcrx,pcry,pcr,ratio:Nc/pcr,axis:pcrx<=pcry?"x":"y"};
   });
-  const html='<div class="result"><p><b>مقطع ستون:</b> '+esc(profile.name)+' · <b>تعداد:</b> '+rows.length+'</p><div class="tablewrap"><table><tr><th>عضو</th><th>L (mm)</th><th>N فشاری (kN)</th><th>KL/r محور x</th><th>KL/r محور y</th><th>Pcr محور x (kN)</th><th>Pcr محور y (kN)</th><th>N/Pcr,min</th></tr>'+rows.map(r=>'<tr><td>'+esc(r.id)+'</td><td>'+fmt(r.L,1)+'</td><td>'+fmt(r.Nc/1000,3)+'</td><td>'+fmt(r.lx,2)+'</td><td>'+fmt(r.ly,2)+'</td><td>'+fmt(r.pcrx/1000,2)+'</td><td>'+fmt(r.pcry/1000,2)+'</td><td>'+fmt(r.ratio,4)+'</td></tr>').join('')+'</table></div><p class="muted">کمترین بار بحرانی محورهای x/y برای نسبت غربالگری گزارش شده است. این نسبت فقط مقایسه نیروی تحلیل‌شده با بار بحرانی الاستیک است و ضریب مقاومت یا نسبت بهره‌برداری آیین‌نامه‌ای نیست.</p></div>';
+  const html='<div class="result"><p><b>مقطع ستون:</b> '+esc(profile.name)+' · <b>تعداد:</b> '+rows.length+' · <b>rₓ:</b> '+fmt(rx,2)+' mm · <b>rᵧ:</b> '+fmt(ry,2)+' mm</p><div class="tablewrap"><table><tr><th>عضو</th><th>L (mm)</th><th>N فشاری (kN)</th><th>KL/r محور x</th><th>KL/r محور y</th><th>Pcr محور x (kN)</th><th>Pcr محور y (kN)</th><th>محور بحرانی اویلر</th><th>N/Pcr,min</th></tr>'+rows.map(r=>'<tr><td>'+esc(r.id)+'</td><td>'+fmt(r.L,1)+'</td><td>'+fmt(r.Nc/1000,3)+'</td><td>'+fmt(r.lx,2)+'</td><td>'+fmt(r.ly,2)+'</td><td>'+fmt(r.pcrx/1000,2)+'</td><td>'+fmt(r.pcry/1000,2)+'</td><td>'+r.axis+'</td><td>'+fmt(r.ratio,4)+'</td></tr>').join('')+'</table></div><p class="muted">شعاع ژیراسیون از رابطه r=√(I/A) و مستقل از مقادیر اختیاری واردشده rx/ry محاسبه شده است. محور x/y مطابق نام‌گذاری دیتاشیت مقطع است؛ جهت‌گیری واقعی مقطع حول عضو باید جداگانه کنترل شود. کمترین بار بحرانی دو محور برای نسبت غربالگری گزارش شده است.</p></div>';
   $("bucklingOutput").innerHTML=html;
-  status("bucklingStatus","غربالگری اویلر محاسبه شد؛ Kها، طول مهارنشده و شرایط واقعی عضو باید توسط مهندس سازه تأیید شوند.");
- }catch(e){$("bucklingOutput").innerHTML="";status("bucklingStatus","خطا: "+e.message,true)}
+  status("bucklingStatus","غربالگری اویلر دو‌محوره انجام شد؛ Kها، طول مهارنشده واقعی، جهت‌گیری مقطع و شرایط انتهایی باید توسط مهندس تأیید شوند. این نسبت مقاومت طراحی آیین‌نامه‌ای نیست.");
+  return {rows,profile:profile.name,rx,ry};
+ }catch(e){$("bucklingOutput").innerHTML="";status("bucklingStatus","خطا: "+e.message,true);return null}
 }
 function runBucklingSelfTest(){
  const E=200000,I=8e7,A=2000,L=3000,K=1;
