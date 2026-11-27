@@ -908,7 +908,7 @@ function evaluateSectionCandidates(){
   if(!baseModel.generationInputs||JSON.stringify(baseModel.generationInputs)!==JSON.stringify(greenhouseFrameGenerationInputs()))throw new Error("هندسه، بارگذاری یا مقاطع پس از تولید مدل تغییر کرده‌اند؛ ابتدا مدل قاب را دوباره بسازید.");
   if(!Array.isArray(baseModel.elements)||!baseModel.elements.some(e=>String(e.id||"").startsWith("ستون-"))||!baseModel.elements.some(e=>String(e.id||"").startsWith("رفتر ")))throw new Error("ابتدا مدل قاب را با دکمه «ساخت مدل قاب از هندسه فعلی» تولید کنید.");
   if(!sectionProfileBank.length)throw new Error("بانک مقاطع خالی است؛ ابتدا دیتاشیت مقاطع معتبر را وارد کنید.");
-  const roles=[{key:"columns",prefix:"ستون-",label:"ستون‌ها"},{key:"rafters",prefix:"رفتر ",label:"رفترها"}];
+  const Kx=Number($("bucklingKx").value),Ky=Number($("bucklingKy").value);\n  if(!(Number.isFinite(Kx)&&Kx>0&&Number.isFinite(Ky)&&Ky>0))throw new Error("برای ادغام غربالگری کمانش ستون در مقایسه مقاطع، ابتدا Kx و Ky را بر اساس مهاربندی و شرایط واقعی وارد کنید؛ مقدار فرضی اعمال نمی‌شود.");\n  const roles=[{key:"columns",prefix:"ستون-",label:"ستون‌ها"},{key:"rafters",prefix:"رفتر ",label:"رفترها"}];
   frameCandidateResults={columns:[],rafters:[]};
   const results=[];
   for(const role of roles){
@@ -934,14 +934,14 @@ function evaluateSectionCandidates(){
      if(Number.isFinite(maxRatio))ranked.push({name:profile.name,mass:Number(profile.mass),ratio:maxRatio,fy:Number(profile.Fy),baseline:profile.name===baselineName});
     }catch(err){/* candidate singularity or invalid data: skip */}
    }
-   ranked.sort((a,b)=>(a.baseline===b.baseline?0:a.baseline?-1:1)||a.ratio-b.ratio||a.mass-b.mass);
+   ranked.sort((a,b)=>(a.baseline===b.baseline?0:a.baseline?-1:1)||(role.key==="columns"?(a.bucklingRatio??Infinity)-(b.bucklingRatio??Infinity):0)||a.ratio-b.ratio||a.mass-b.mass);
    frameCandidateResults[role.key]=ranked;results.push({role,ranked});
   }
-  let html='<h4 style="margin-top:16px">مقایسه آزمایشی مقاطع بانک</h4><div class="notice">برای هر گروه، ابتدا مقطع انتخاب‌شده به‌عنوان «مقطع پیش‌فرض» مبنای تحلیل قرار می‌گیرد و در جدول در ردیف اول مشخص می‌شود؛ سپس مقاطع جایگزین بانک با همان هندسه و بارها تحلیل می‌شوند. مقطع پیش‌فرض صرفاً خط مبنای تحلیل است و رتبه اول یا گزینه منتخب تلقی نمی‌شود. گزینه‌های جایگزین پس از آن بر اساس نسبت تنش الاستیک و سپس جرم واحد طول مرتب می‌شوند. برچسب کمتر از ۱ فقط غربالگری تنش ساده است و به معنی کفایت آیین‌نامه‌ای نیست. جرم فقط شاخص اولیه اقتصادی است و بدون قیمت روز، هزینه ساخت/اتصال و کنترل‌های کامل، بهینه اقتصادی محسوب نمی‌شود. این غربالگری طراحی نهایی یا تأیید ایمنی نیست و اثر کامل کمانش، پایداری، اتصالات، ضوابط آیین‌نامه‌ای و محدودیت‌های اجرایی را لحاظ نمی‌کند. برای محاسبه تنش خمشی از کوچک‌تر Wx/Wy به‌صورت غربالگری محافظه‌کارانه استفاده می‌شود؛ جهت‌گیری واقعی مقطع و محور خمشی باید جداگانه تأیید شود.</div>';
+  let html='<h4 style="margin-top:16px">مقایسه آزمایشی مقاطع بانک</h4><div class="notice">مقطع پیش‌فرض در ردیف مبنای مقایسه حفظ می‌شود. برای ستون‌ها، گزینه‌ها پس از مبنا ابتدا بر اساس نسبت تقاضای فشاری به بار بحرانی الاستیک اویلرِ ضعیف‌ترین محور و سپس نسبت تنش ساده مرتب می‌شوند؛ برای رفترها فقط نسبت تنش ساده و جرم گزارش می‌شود. مقدار N/Pcr کمتر از ۱ صرفاً غربالگری الاستیک اویلر است و مقاومت طراحی ستون نیست. کمانش خمشی-پیچشی، اندرکنش آیین‌نامه‌ای، اثرات مرتبه دوم، طول مهارنشده واقعی، شرایط انتهایی، جهت‌گیری مقطع، اتصالات و مهاربندی کامل نشده‌اند. Kx و Ky ورودی مهندس هستند و نباید حدس زده شوند. جرم شاخص اقتصادی اولیه است، نه بهینه‌سازی هزینه. Wx/Wy کوچک‌تر فقط تقریب محافظه‌کارانه تنش است و محور واقعی باید تأیید شود.</div>';
   for(const item of results){
    html+='<h4>'+item.role.label+'</h4>';
    if(!item.ranked.length){html+='<p class="muted">مقطع قابل ارزیابی یافت نشد. برای هر مقطع باید جرم، Ag، Ix، Iy، E، Fy، Wx و Wy از دیتاشیت معتبر و مثبت باشند.</p>';continue}
-   html+='<div class="tablewrap"><table><tr><th>ترتیب</th><th>نقش</th><th>کد مقطع</th><th>جرم (kg/m)</th><th>Fy (MPa)</th><th>بیشینه σ/Fy</th><th>غربالگری اولیه</th><th>عملیات</th></tr>';
+   html+='<div class="tablewrap"><table><tr><th>ترتیب</th><th>نقش</th><th>کد مقطع</th><th>جرم (kg/m)</th><th>Fy (MPa)</th><th>بیشینه σ/Fy</th>'+(item.role.key==="columns"?'<th>بیشینه N/Pcr,min</th>':'')+'<th>غربالگری اولیه</th><th>عملیات</th></tr>';
    html+=item.ranked.slice(0,10).map((p,i)=>'<tr><td>'+(p.baseline?"مبنای مقایسه":i)+'</td><td>'+(p.baseline?"مقطع پیش‌فرض":"جایگزین")+'</td><td>'+esc(p.name)+'</td><td>'+fmt(p.mass,3)+'</td><td>'+fmt(p.fy,1)+'</td><td>'+fmt(p.ratio,3)+'</td><td>'+(p.ratio<1?"نسبت تنش مقدماتی کمتر از ۱":"نسبت تنش مقدماتی برابر/بیشتر از ۱")+'</td><td><button class="btn-soft" onclick="applyRecommendedProfile(\''+item.role.key+'\','+i+')">انتخاب و بازتحلیل</button></td></tr>').join("");
    html+='</table></div>';
   }
