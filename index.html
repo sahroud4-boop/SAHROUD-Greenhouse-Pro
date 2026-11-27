@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAHROUD Greenhouse Pro v3.55.0</title>
+<title>SAHROUD Greenhouse Pro v3.56.0</title>
 <meta name="description" content="سامانه یکپارچه مقدماتی طراحی، متره و برآورد گلخانه">
 <style>
 .climate-tabs button.active{background:var(--green);color:#fff}.climate-tab[hidden]{display:none!important}.climate-tab{padding-top:12px}
@@ -52,7 +52,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </head>
 <body>
 <header>
- <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.55.0</p></div></div>
+ <div class="brand"><div class="logo">S</div><div><h1>SAHROUD Greenhouse Pro</h1><p>سامانه مقدماتی طراحی هندسی، متره، هیدروپونیک و گزارش مهندسی · نسخه یکپارچه 3.56.0</p></div></div>
  <div class="top-actions">
   <button class="btn-light" onclick="saveProject()">ذخیره پروژه</button>
   <button class="btn-light" onclick="exportBackup()">پشتیبان JSON</button>
@@ -453,7 +453,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
 </main>
-<footer>SAHROUD Greenhouse Pro v3.55.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
+<footer>SAHROUD Greenhouse Pro v3.56.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -1755,9 +1755,9 @@ function shouldRestoreManualFootingCount(record,automaticCount){
  const saved=record?.input?.fndFootingCount;
  return saved!==undefined&&saved!==null&&String(saved).trim()!==""&&Number.isFinite(Number(saved))&&Number(saved)!==Number(automaticCount);
 }
-function newModel(){return {schemaVersion:"3.55.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:climateProfile?.city?.name||"شاهرود",country:climateProfile?.city?.country||"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,climateProfile:cloneClimateProfile(climateProfile),hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
+function newModel(){return {schemaVersion:"3.56.0",id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),meta:{name:"",client:"",city:climateProfile?.city?.name||"شاهرود",country:climateProfile?.city?.country||"ایران",type:"چنددهانه",crop:""},geometry:{},climate:null,climateProfile:cloneClimateProfile(climateProfile),hydroponics:{},materials:{profiles:[],covering:[],equipment:[]},pricing:{},results:{},notes:""}}
 function collectModel(){
- const p=activeProject||newModel();p.schemaVersion="3.55.0";p.climateProfile=cloneClimateProfile(climateProfile);p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
+ const p=activeProject||newModel();p.schemaVersion="3.56.0";p.climateProfile=cloneClimateProfile(climateProfile);p.meta={name:$("metaName").value||$("project").value,client:$("metaClient").value,city:$("metaCity").value,country:$("metaCountry").value,type:$("metaType").value,crop:$("metaCrop").value};
  p.notes=$("metaNotes").value;p.geometry={...geomResult,bracingBays:getSelectedBracingBays()};p.hydroponics={input:hydroInput(),last:hydroResult};calculateSupplementaryTakeoff();calculateFoundationTakeoff();p.results={...(p.results||{}),bracingBays:getSelectedBracingBays(),equipmentTakeoff:{input:equipmentInputs(),result:equipmentTakeoffLast},fabTakeoff:{input:fabInputs(),result:fabTakeoffLast},executionCosts:{input:executionCostInputs()},accessoryTakeoff:{input:accessoryTakeoffInputs(),result:accessoryTakeoffLast},foundationTakeoff:{manualFootingCount:$("fndFootingCount")?.dataset.manual==="1",input:foundationTakeoffInputs(),result:foundationTakeoffLast},structural:structuralLast,beam:beamLast,frameModel:$("frameModel").value,frameAnalysis:frameAnalysisLast,longTrussModel:$("longTrussModel").value,longTrussInput:{profile:$("longTrussProfile").value,groupProfiles:{columns:$("longTrussColumnProfile").value,rafters:$("longTrussRafterProfile").value,longitudinal:$("longTrussLongProfile").value,braces:$("longTrussBraceProfile").value,ties:$("longTrussTieProfile").value},area:num("longTrussA"),E:num("longTrussE"),Fy:num("longTrussFy"),force:num("longTrussForce")},longTrussAnalysis:longTrussAnalysisLast};return p;
 }
 function applyModel(p){
@@ -1792,7 +1792,7 @@ async function saveProject(){
 async function renderProjects(){const el=$("projectList");if(!el)return;const all=(await DB.all()||[]).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));if(!all.length){el.textContent="هنوز پروژه‌ای ذخیره نشده است.";return}el.innerHTML=all.map(p=>`<div class="projectitem"><div><b>${esc(p.meta?.name||"بدون نام")}</b><small>${esc(p.meta?.city||"شهر نامشخص")} · ${esc(p.meta?.type||"")}</small></div><div class="toolbar"><button class="btn-soft" onclick="loadProject('${esc(p.id)}')">بازکردن</button><button class="btn-red" onclick="deleteProject('${esc(p.id)}')">حذف</button></div></div>`).join("")}
 async function loadProject(id){const p=await DB.get(id);if(p){applyModel(p);status("projectStatus","پروژه بارگذاری شد.")}}
 async function deleteProject(id){if(!confirm("پروژه حذف شود؟"))return;await DB.del(id);if(activeProject?.id===id)activeProject=null;renderProjects()}
-async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.55.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
+async function exportBackup(){const projects=await DB.all();download("SAHROUD_Backup.json",JSON.stringify({application:"SAHROUD Greenhouse Pro",schemaVersion:"3.56.0",exportedAt:new Date().toISOString(),projects},null,2),"application/json")}
 async function importBackup(ev){const f=ev.target.files?.[0];if(!f)return;try{const d=JSON.parse(await f.text()),arr=Array.isArray(d)?d:d.projects;if(!Array.isArray(arr))throw Error("ساختار فایل نامعتبر است");for(const p of arr)if(p?.id&&p.meta)await DB.put(p);await renderProjects();status("projectStatus","بازیابی فایل انجام شد.")}catch(e){status("projectStatus",e.message,true)}ev.target.value=""}
 
 /* Ventilation equipment takeoff: quantities and prices entered by the user */
