@@ -913,7 +913,7 @@ function evaluateSectionCandidates(){
    const members=baseModel.elements.filter(e=>String(e.id||"").startsWith(role.prefix));
    const baselineName=$(role.key==="columns"?"frameColumnProfile":"frameRafterProfile")?.value||"";
    if(!baselineName)throw new Error("ابتدا مقطع پیش‌فرض "+role.label+" را از بانک مقاطع انتخاب کنید تا تحلیل پایه با همان مقطع انجام شود.");
-   const candidates=sectionProfileBank.filter(p=>Number(p.area)>0&&Number(p.Ix)>0&&Number(p.E)>0&&Number(p.Fy)>0&&[Number(p.Wx),Number(p.Wy)].some(v=>Number.isFinite(v)&&v>0));
+   const candidates=sectionProfileBank.filter(p=>Number(p.mass)>0&&Number(p.area)>0&&Number(p.Ix)>0&&Number(p.E)>0&&Number(p.Fy)>0&&[Number(p.Wx),Number(p.Wy)].some(v=>Number.isFinite(v)&&v>0));
    if(!candidates.some(p=>p.name===baselineName))throw new Error("مقطع پیش‌فرض "+role.label+" در بانک معتبر نیست یا خواص کامل ندارد.");
    const ranked=[];
    for(const profile of candidates){
