@@ -83,28 +83,6 @@ console.log("PASS: linear load scaling and signed load reversal");
 console.log("PASS: uniform member load equilibrium and fixed-end moment");
 console.log("All 4 frame-solver regression checks passed.");
 
-function extractFunction(source, name) {
-  const marker = new RegExp("function\\\\s+" + name + "\\\\s*\\\\(");
-  const found = marker.exec(source);
-  assert.ok(found, "missing function: " + name);
-  const start = found.index, open = source.indexOf("{", found.index);
-  let depth = 0, quote = null, escaped = false, lineComment = false, blockComment = false, template = false;
-  for (let i = open; i < source.length; i++) {
-    const c = source[i], n = source[i + 1];
-    if (lineComment) { if (c === "\\n") lineComment = false; continue; }
-    if (blockComment) { if (c === "*" && n === "/") { blockComment = false; i++; } continue; }
-    if (quote) { if (escaped) { escaped = false; continue; } if (c === "\\\\") { escaped = true; continue; } if (c === quote) quote = null; continue; }
-    if (template) { if (escaped) { escaped = false; continue; } if (c === "\\\\") { escaped = true; continue; } if (c === "`") template = false; continue; }
-    if (c === "/" && n === "/") { lineComment = true; i++; continue; }
-    if (c === "/" && n === "*") { blockComment = true; i++; continue; }
-    if (c === "'" || c === '"') { quote = c; continue; }
-    if (c === "`") { template = true; continue; }
-    if (c === "{") depth++;
-    if (c === "}" && --depth === 0) return source.slice(start, i + 1);
-  }
-  throw new Error("unterminated function: " + name);
-}
-
 const comboSource = scriptMatch[1];
 const comboNames = ["frameTopologySignature", "runFrameCombinations"];
 const comboCode = comboNames.map(name => extractFunction(comboSource, name)).join("\\n") + `
