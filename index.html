@@ -228,7 +228,12 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
    <div><label>مدول مقطع Wx (mm³)</label><input id="profileWx" type="number" min="0" step="any"></div>
    <div><label>مدول مقطع Wy (mm³)</label><input id="profileWy" type="number" min="0" step="any"></div>
    <div><label>محور خمشی مدل قاب دوبعدی</label><select id="profileBendingAxis"><option value="">انتخاب نشده — کنترل مقطع غیرفعال</option><option value="x">محور X (Ix و Wx)</option><option value="y">محور Y (Iy و Wy)</option></select></div>
-   <div><label>سطح مؤثر برش Av (mm²، اختیاری از دیتاشیت)</label><input id="profileAv" type="number" min="0" step="any"></div>
+   <div><label>سطح مؤثر برش Av (mm²، فقط مقدار مستند دیتاشیت)</label><input id="profileAv" type="number" min="0" step="any"></div>
+   <div><label>شکل مقطع</label><select id="profileShape"><option value="">نامشخص / فقط خواص دیتاشیت</option><option value="i">I یا H نوردشده / ساخته‌شده</option><option value="channel">ناودانی</option><option value="rhs">قوطی مستطیلی</option><option value="shs">قوطی مربعی</option><option value="chs">لوله دایره‌ای</option><option value="angle">نبشی</option><option value="tee">سپری</option><option value="other">سایر</option></select></div>
+   <div><label>ارتفاع کلی d (mm)</label><input id="profileDepth" type="number" min="0" step="any"></div>
+   <div><label>عرض بال / ضلع bf (mm)</label><input id="profileFlangeWidth" type="number" min="0" step="any"></div>
+   <div><label>ضخامت جان tw (mm)</label><input id="profileWebThickness" type="number" min="0" step="any"></div>
+   <div><label>ضخامت بال tf (mm)</label><input id="profileFlangeThickness" type="number" min="0" step="any"></div>
    <div><label>شعاع ژیراسیون rx (mm)</label><input id="profileRx" type="number" min="0" step="any"></div>
    <div><label>شعاع ژیراسیون ry (mm)</label><input id="profileRy" type="number" min="0" step="any"></div>
    <div><label>منبع / شماره دیتاشیت</label><input id="profileSource" placeholder="عنوان، ناشر، شماره صفحه"></div>
@@ -240,7 +245,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <div class="card"><h3>مقاطع ثبت‌شده</h3><div class="tablewrap"><table><thead><tr><th>مقطع</th><th>استاندارد</th><th>گرید</th><th>جرم (kg/m)</th><th>Fy (MPa)</th><th>E (MPa)</th><th>Ag</th><th>Ix</th><th>Iy</th><th>منبع</th><th>عملیات</th></tr></thead><tbody id="profileBankRows"></tbody></table></div><p class="muted" id="profileBankSummary">بانک خالی است.</p></div>
  <div class="card"><h3>اتصال مقطع به گروه اعضا</h3><p>با واردکردن کد دقیق یک مقطع ثبت‌شده در فیلد مقطع اعضا در صفحه «هندسه و متره»، جرم واحد طول از بانک خوانده می‌شود. مقادیر دستی همچنان قابل استفاده‌اند.</p>
  <div class="toolbar"><button class="btn-soft" onclick="applyProfileBankToMembers()">تطبیق مقاطع واردشده با بانک</button><button class="btn-soft" onclick="showPage('geometry')">بازگشت به هندسه و متره</button></div>
- <div class="notice">نسخه فعلی هنوز انتخاب خودکار مهندسی انجام نمی‌دهد. پارامترهای Ix/Iy و سایر خواص صرفاً ذخیره می‌شوند تا در مرحله تحلیل و کنترل مقطع مصرف شوند.</div></div>
+ <div class="notice">ابعاد هندسی d، bf، tw و tf برای آماده‌سازی کنترل‌های آتی ذخیره می‌شوند؛ در این نسخه از آن‌ها ظرفیت برشی/خمشی یا طبقه‌بندی مقطع محاسبه نمی‌شود. Av فقط وقتی معتبر تلقی می‌شود که مستقیماً از دیتاشیت یا مرجع مستند وارد شده باشد. برای مقاطع قوطی، ناودانی، نبشی و شکل‌های پیچیده، این چهار بُعد به‌تنهایی هندسه کامل را تعریف نمی‌کنند.</div></div>
 </section>
 
 <!-- PROJECTS -->
@@ -495,7 +500,7 @@ function profileField(id){const e=$(id);if(!e||e.value.trim()==="")return null;c
 function addSectionProfile(){
  const name=$("profileName").value.trim(),mass=profileField("profileMass");
  if(!name||mass===null||mass<=0){status("profileStatus","نام مقطع و جرم واحد طول مثبت الزامی است.",true);return}
- const item={id:"sp-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6),name,standard:$("profileStandard").value.trim(),grade:$("profileGrade").value.trim(),mass,area:profileField("profileArea"),Fy:profileField("profileFy"),E:profileField("profileE"),Ix:profileField("profileIx"),Iy:profileField("profileIy"),Wx:profileField("profileWx"),Wy:profileField("profileWy"),bendingAxis:$("profileBendingAxis").value||null,Av:profileField("profileAv"),rx:profileField("profileRx"),ry:profileField("profileRy"),source:$("profileSource").value.trim(),notes:$("profileNotes").value.trim(),updatedAt:new Date().toISOString()};
+ const item={id:"sp-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6),name,standard:$("profileStandard").value.trim(),grade:$("profileGrade").value.trim(),mass,area:profileField("profileArea"),Fy:profileField("profileFy"),E:profileField("profileE"),Ix:profileField("profileIx"),Iy:profileField("profileIy"),Wx:profileField("profileWx"),Wy:profileField("profileWy"),bendingAxis:$("profileBendingAxis").value||null,Av:profileField("profileAv"),shape:$("profileShape").value||null,depth:profileField("profileDepth"),flangeWidth:profileField("profileFlangeWidth"),webThickness:profileField("profileWebThickness"),flangeThickness:profileField("profileFlangeThickness"),rx:profileField("profileRx"),ry:profileField("profileRy"),source:$("profileSource").value.trim(),notes:$("profileNotes").value.trim(),updatedAt:new Date().toISOString()};
  const duplicate=sectionProfileBank.findIndex(p=>p.name.toLowerCase()===name.toLowerCase());
  if(duplicate>=0){if(!confirm("این کد مقطع وجود دارد. جایگزین شود؟"))return;sectionProfileBank[duplicate]=item}else sectionProfileBank.push(item);
  persistSectionProfileBank();status("profileStatus","مقطع ثبت شد. برای اتصال به اعضا، کد آن را در فیلد مقطع وارد کنید.");
@@ -506,7 +511,7 @@ function renderSectionProfileBank(){
  $("profileBankSummary").textContent="تعداد مقاطع ثبت‌شده: "+fmt(sectionProfileBank.length,0)+" | بانک فقط شامل داده‌های واردشده توسط کاربر است.";renderFrameProfileOptions();
 }
 function deleteSectionProfile(id){if(!confirm("این مقطع از بانک محلی حذف شود؟"))return;sectionProfileBank=sectionProfileBank.filter(p=>p.id!==id);persistSectionProfileBank()}
-function exportSectionProfiles(){download("SAHROUD_Profile_Bank.json",JSON.stringify({schemaVersion:"1.0",exportedAt:new Date().toISOString(),profiles:sectionProfileBank},null,2),"application/json")}
+function exportSectionProfiles(){download("SAHROUD_Profile_Bank.json",JSON.stringify({schemaVersion:"1.1",exportedAt:new Date().toISOString(),profiles:sectionProfileBank},null,2),"application/json")}
 async function importSectionProfiles(event){
  const file=event.target.files?.[0];if(!file)return;
  try{const parsed=JSON.parse(await file.text()),items=Array.isArray(parsed)?parsed:parsed.profiles;if(!Array.isArray(items))throw new Error("ساختار فایل معتبر نیست");
