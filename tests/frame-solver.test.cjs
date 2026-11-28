@@ -109,6 +109,7 @@ function runCases(g, gf, sCase, sf) {
   ui.cmbFactorG.value = String(gf ?? 1);
   ui.cmbModelS.value = sCase ? JSON.stringify(sCase) : "";
   ui.cmbFactorS.value = String(sf ?? 1);
+  ui.cmbModelW = ui.cmbModelW || { value: "" };
   ui.cmbModelW.value = "";
   ui.cmbFactorW.value = "1";
   combo.runFrameCombinations();
