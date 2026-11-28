@@ -41,12 +41,21 @@ function extractFunction(source, name) {
   throw new Error("unterminated function: " + name);
 }
 
-const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D"];
+const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress"];
 const code = names.map(name => extractFunction(scriptMatch[1], name)).join("\n") +
-  "\nglobalThis.api = { analyzeFrame2D };";
+  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress };";
 const context = vm.createContext({});
 vm.runInContext(code, context, { timeout: 5000 });
 const analyze = context.api.analyzeFrame2D;
+const stressScreen = context.api.frameElasticExtremeFiberStress;
+const stressResult = stressScreen({ local_end_forces_N_Nmm: [100000, 0, 0, 0, 0, 8000000] }, 1000, 100000, 250);
+assert.equal(stressResult.criticalEnd, "i", "critical elastic stress is selected at the same physical end");
+assert.ok(Math.abs(stressResult.stressAbs - 100) < 1e-12, "same-end axial and bending stress is evaluated consistently");
+assert.ok(Math.abs(stressResult.ratio - 0.4) < 1e-12, "elastic stress-to-yield ratio");
+assert.throws(() => stressScreen({ local_end_forces_N_Nmm: [1, 2] }, 1000, 100000, 250),
+  /نیروهای انتهایی/, "incomplete member end forces are rejected");
+console.log("PASS: same-end elastic extreme-fiber stress screening and input validation");
+
 
 const base = {
   nodes: [{ x: 0, y: 0 }, { x: 3000, y: 0 }],
