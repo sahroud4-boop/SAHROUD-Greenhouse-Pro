@@ -41,13 +41,22 @@ function extractFunction(source, name) {
   throw new Error("unterminated function: " + name);
 }
 
-const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress"];
+const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress", "frameAxialForceScreen"];
 const code = names.map(name => extractFunction(scriptMatch[1], name)).join("\n") +
-  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress };";
+  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress, frameAxialForceScreen };";
 const context = vm.createContext({});
 vm.runInContext(code, context, { timeout: 5000 });
 const analyze = context.api.analyzeFrame2D;
 const stressScreen = context.api.frameElasticExtremeFiberStress;
+const axialScreen = context.api.frameAxialForceScreen;
+const axialForces = axialScreen({ force_diagram_local: [
+  { x_mm: 0, N_N: -120000 }, { x_mm: 1500, N_N: 50000 }, { x_mm: 3000, N_N: 180000 }
+] });
+assert.equal(axialForces.maxTension_N, 180000, "maximum tension is reported independently");
+assert.equal(axialForces.tensionAt_mm, 3000, "maximum tension station is retained");
+assert.equal(axialForces.maxCompression_N, 120000, "maximum compression magnitude is reported independently");
+assert.equal(axialForces.compressionAt_mm, 0, "maximum compression station is retained");
+assert.throws(() => axialScreen({ force_diagram_local: [] }), /نمودار نیروی محوری/, "empty axial force diagram is rejected");
 const stressResult = stressScreen({ local_end_forces_N_Nmm: [100000, 0, 0, 0, 0, 8000000] }, 1000, 100000, 250);
 assert.equal(stressResult.criticalEnd, "i", "critical elastic stress is selected at the same physical end");
 assert.ok(Math.abs(stressResult.stressAbs - 100) < 1e-12, "same-end axial and bending stress is evaluated consistently");
