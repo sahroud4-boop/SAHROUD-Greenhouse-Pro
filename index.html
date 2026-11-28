@@ -473,101 +473,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
 </main>
 <footer>SAHROUD Greenhouse Pro v3.58.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
-/* Linear load-combination postprocessor: each case is solved independently, then signed responses are superposed. */
-let frameCombinationLast=null;
-function pasteCurrentFrameToCombo(){const v=$("frameModel")?.value||"";if(!v.trim()){status("cmbStatus","ابتدا در بخش محاسبات سازه یک مدل قاب بسازید یا وارد کنید.",true);return}$("cmbModelG").value=v;status("cmbStatus","مدل فعلی در حالت G کپی شد؛ بارهای S و W را در مدل‌های مستقل وارد کنید.")}
-function clearFrameCombinations(){["cmbModelG","cmbModelS","cmbModelW"].forEach(id=>$(id).value="");$("cmbOutput").innerHTML="";frameCombinationLast=null;status("cmbStatus","ورودی‌های ترکیبات پاک شدند.")}
-function frameTopologySignature(m){return JSON.stringify({nodes:m.nodes,elements:m.elements.map(e=>({i:e.i,j:e.j,A:e.A,E:e.E,I:e.I,section:e.section||null})),restraints:m.restraints});}
-function runFrameCombinations(){
- try{
-  const specs=[["G","cmbModelG","cmbFactorG"],["S","cmbModelS","cmbFactorS"],["W","cmbModelW","cmbFactorW"]];
-  const cases=[];let signature=null;
-  for(const [name,mid,fid] of specs){
-   const raw=$(mid).value.trim(),factor=Number($(fid).value);
-   if(!Number.isFinite(factor))throw new Error("ضریب "+name+" باید عددی و متناهی باشد.");
-   if(!raw||factor===0)continue;
-   const model=JSON.parse(raw),sig=frameTopologySignature(model);
-   if(signature===null)signature=sig;else if(signature!==sig)throw new Error("هندسه، ترتیب اعضا، خواص مقاطع یا تکیه‌گاه‌های حالت‌ها یکسان نیستند.");
-   const output=analyzeFrame2D(model);
-   if(!output.equilibrium.passed)throw new Error("حالت "+name+" کنترل تعادل را پاس نکرده است.");
-   cases.push({name,factor,model,output});
-  }
-  if(!cases.length)throw new Error("حداقل یک مدل با ضریب غیرصفر وارد کنید.");
-  const base=cases[0].output;
-  for(const c of cases){
-   for(const key of ["displacements","reactions","members"])if(c.output[key].length!==base[key].length)throw new Error("تعداد خروجی‌های "+key+" در حالت‌ها یکسان نیست.");
-   for(let i=0;i<base.displacements.length;i++)if(c.output.displacements[i].node!==base.displacements[i].node||c.output.displacements[i].dof!==base.displacements[i].dof)throw new Error("ترتیب درجات آزادی بین حالت‌ها یکسان نیست.");
-   for(let i=0;i<base.reactions.length;i++)if(c.output.reactions[i].node!==base.reactions[i].node||c.output.reactions[i].dof!==base.reactions[i].dof)throw new Error("ترتیب واکنش‌ها بین حالت‌ها یکسان نیست.");
-   for(let i=0;i<base.members.length;i++)if(String(c.output.members[i].id)!==String(base.members[i].id)||Math.abs(c.output.members[i].length_mm-base.members[i].length_mm)>1e-8)throw new Error("ترتیب یا طول اعضا بین حالت‌ها یکسان نیست.");
-  }
-  const combineArray=key=>base[key].map((b,i)=>({...b,value:cases.reduce((sum,c)=>sum+c.factor*Number(c.output[key][i].value),0)}));
-  const displacements=combineArray("displacements"),reactions=combineArray("reactions");
-  const members=base.members.map((m,i)=>{
-   const rows=cases.map(c=>({case:c.name,factor:c.factor,member:c.output.members[i]}));
-   const stations=[0,m.length_mm];
-   rows.forEach(r=>(r.member.force_diagram_local||[]).forEach(p=>stations.push(p.x_mm)));
-   // For the combined uniform transverse load, M extrema occur where combined V(x)=0.
-   let combinedV0=0,combinedQy=0;
-   rows.forEach(r=>{
-    const q=r.member.local_end_forces_N_Nmm,load=r.member.uniform_load_local_N_per_mm||{qx:0,qy:0};
-    if(!Array.isArray(q)||q.length<3)throw new Error("نیروهای انتهایی عضو "+m.id+" در حالت "+r.case+" ناقص است.");
-    combinedV0+=r.factor*(-q[1]);
-    combinedQy+=r.factor*(-Number(load.qy||0));
-   });
-   if(Math.abs(combinedQy)>1e-14){
-    const xCritical=-combinedV0/combinedQy;
-    if(Number.isFinite(xCritical)&&xCritical>1e-8&&xCritical<m.length_mm-1e-8)stations.push(xCritical);
-   }
-   const xs=[...new Set(stations.filter(Number.isFinite).map(x=>Math.max(0,Math.min(m.length_mm,x))).map(x=>Number(x.toFixed(8))))].sort((a,b)=>a-b);
-   const diagram=xs.map(x=>{
-    const response={x_mm:x,N_N:0,V_N:0,M_Nmm:0};
-    rows.forEach(r=>{
-     const q=r.member.local_end_forces_N_Nmm,load=r.member.uniform_load_local_N_per_mm||{qx:0,qy:0};
-     if(!Array.isArray(q)||q.length<3)throw new Error("نیروهای انتهایی عضو "+m.id+" در حالت "+r.case+" ناقص است.");
-     response.N_N+=r.factor*(-q[0]-Number(load.qx||0)*x);
-     response.V_N+=r.factor*(-q[1]-Number(load.qy||0)*x);
-     response.M_Nmm+=r.factor*(-q[2]-q[1]*x-Number(load.qy||0)*x*x/2);
-    });
-    return response;
-   });
-   const peak=key=>Math.max(...diagram.map(p=>Math.abs(p[key])));
-   const curves=rows.map(r=>r.member.deflection_curve_local||[]);
-   if(curves.some(curve=>!Array.isArray(curve)||curve.length<2))throw new Error("منحنی تغییرشکل عضو "+m.id+" در یکی از حالت‌ها موجود یا کامل نیست.");
-   const deflection=curves[0].map((p,k)=>{
-    const x=Number(p.x_mm),point={x_mm:x,axial_mm:0,transverse_mm:0};
-    if(!Number.isFinite(x))throw new Error("ایستگاه منحنی تغییرشکل عضو "+m.id+" نامعتبر است.");
-    rows.forEach((r,j)=>{
-     const other=curves[j][k];
-     if(!other||Math.abs(Number(other.x_mm)-x)>1e-6||!Number.isFinite(Number(other.axial_mm))||!Number.isFinite(Number(other.transverse_mm)))throw new Error("شبکه ایستگاه منحنی تغییرشکل در حالت‌های عضو "+m.id+" یکسان نیست.");
-     point.axial_mm+=r.factor*Number(other.axial_mm);
-     point.transverse_mm+=r.factor*Number(other.transverse_mm);
-    });
-    return point;
-   });
-   const criticalDeflection=deflection.reduce((best,p)=>Math.abs(p.transverse_mm)>Math.abs(best.transverse_mm)?p:best,deflection[0]);
-   const vals=rows.map(r=>({case:r.case,factor:r.factor,Nmax_N:Math.abs(r.factor)*r.member.max_internal.N_N,Vmax_N:Math.abs(r.factor)*r.member.max_internal.V_N,Mmax_Nmm:Math.abs(r.factor)*r.member.max_internal.M_Nmm}));
-   return {id:m.id,rows:vals,force_diagram_local:diagram,envelope:{N:peak("N_N"),V:peak("V_N"),M:peak("M_Nmm")},deflection_curve_local:deflection,max_transverse_deflection:{value_mm:criticalDeflection.transverse_mm,x_mm:criticalDeflection.x_mm}};
-  });
-  const maxDisp=Math.max(0,...displacements.filter(x=>x.dof!=="rz_rad").map(x=>Math.abs(x.value)));
-  const criticalMemberDeflection=members.reduce((best,m)=>Math.abs(m.max_transverse_deflection.value_mm)>Math.abs(best.value_mm)?{member:m.id,...m.max_transverse_deflection}:best,{member:"—",value_mm:0,x_mm:0});
-  frameCombinationLast={runAt:new Date().toISOString(),method:"linear_elastic_superposition",cases:cases.map(c=>({name:c.name,factor:c.factor,equilibrium:c.output.equilibrium})),displacements,reactions,members,maxDisp,criticalMemberDeflection};
-  $("cmbOutput").innerHTML='<h4>خلاصه ترکیب خطی</h4><div class="stats"><div class="stat"><small>حالت‌های فعال</small><strong>'+cases.length+'</strong></div><div class="stat"><small>بیشینه جابه‌جایی انتقالی گره‌ای</small><strong>'+fmt(maxDisp,4)+' mm</strong></div><div class="stat"><small>بیشینه خیز موضعی ترکیبی</small><strong>'+fmt(Math.abs(criticalMemberDeflection.value_mm),4)+' mm</strong></div><div class="stat"><small>اعضای ترکیب‌شده</small><strong>'+members.length+'</strong></div><div class="stat"><small>تعادل حالت‌ها</small><strong>موفق</strong></div></div><h4>پوش پاسخ ترکیب‌شده اعضا</h4><div class="tablewrap"><table><thead><tr><th>عضو</th><th>بیشینه |N| (N)</th><th>بیشینه |V| (N)</th><th>بیشینه |M| (N·mm)</th><th>نقاط بحرانی محاسبه‌شده</th></tr></thead><tbody>'+members.map(m=>'<tr><td>'+esc(String(m.id))+'</td><td>'+fmt(m.envelope.N,2)+'</td><td>'+fmt(m.envelope.V,2)+'</td><td>'+fmt(m.envelope.M,2)+'</td><td>'+m.force_diagram_local.length+'</td></tr>').join('')+'</tbody></table></div><h4>خیز موضعی ترکیبی اعضا</h4><div class="tablewrap"><table><tr><th>عضو</th><th>خیز علامت‌دار (mm)</th><th>قدر مطلق (mm)</th><th>ایستگاه x (mm)</th></tr>'+members.map(m=>'<tr><td>'+esc(String(m.id))+'</td><td>'+fmt(m.max_transverse_deflection.value_mm,4)+'</td><td>'+fmt(Math.abs(m.max_transverse_deflection.value_mm),4)+'</td><td>'+fmt(m.max_transverse_deflection.x_mm,1)+'</td></tr>').join('')+'</table></div><h4>جابه‌جایی گره‌ها</h4><div class="tablewrap"><table><tr><th>گره</th><th>درجه آزادی</th><th>مقدار ترکیب‌شده</th></tr>'+displacements.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+fmt(x.value,6)+'</td></tr>').join('')+'</table></div><p class="muted">پوش از نمودار نیروهای داخلی ترکیب‌شده در ایستگاه‌های مشترک به‌دست آمده است؛ کنترل ظرفیت، کمانش، حدود تغییرمکان یا انطباق آیین‌نامه‌ای انجام نمی‌شود. برای بار گسترده یکنواخت، علاوه بر ایستگاه‌های هر حالت، نقطه صفرشدن برشِ ترکیبی نیز برای یافتن اکسترمم لنگر افزوده می‌شود؛ بارهای متمرکز یا تغییرات بار قطعه‌ای نیازمند ایستگاه‌بندی و مدل بارگذاری متناظر هستند.</p>';
-  status("cmbStatus","ترکیب خطی "+cases.length+" حالت مستقل انجام شد؛ نمودارهای نیرو و منحنی‌های تغییرشکل موضعی ابتدا با علامت ترکیب شدند.");
- }catch(e){frameCombinationLast=null;$("cmbOutput").innerHTML="";status("cmbStatus","خطا: "+e.message,true)}
-}
-function exportFrameCombinations(){
- if(!frameCombinationLast){status("cmbStatus","ابتدا تحلیل ترکیبات را اجرا کنید.",true);return}
- const rows=[["عضو","نوع ردیف","ایستگاه x (mm)","N (N)","V (N)","M (N.mm)"]];
- frameCombinationLast.members.forEach(m=>{
-  m.force_diagram_local.forEach(p=>rows.push([m.id,"Combined station",p.x_mm,p.N_N,p.V_N,p.M_Nmm]));
-  rows.push([m.id,"Envelope","",m.envelope.N,m.envelope.V,m.envelope.M]);
- });
- const csv="\ufeff"+rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");
- download("SAHROUD_Frame_Load_Combinations.csv",csv,"text/csv;charset=utf-8");
-}
-
-</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id), num=id=>{const e=$(id);if(!e||e.value.trim()==="")return null;const v=Number(e.value);return Number.isFinite(v)?v:null};
@@ -2298,6 +2204,101 @@ document.querySelectorAll("#geometry input,#geometry select").forEach(e=>e.addEv
 window.addEventListener("resize",()=>{if(geomResult.width)drawModel(geomResult);drawLongTrussView()});
  renderEquipmentRows();calculateEquipmentTakeoff();
 (async function init(){try{loadSectionProfileBank();renderFrameProfileOptions();await DB.open();const all=await DB.all();if(all?.length)applyModel(all.sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""))[0]);else {const localClimate=readLocalClimateProfile();if(localClimate)climateProfile=cloneClimateProfile(localClimate);renderClimateProfile();calculateGeometry();calculateSupplementaryTakeoff()}await renderProjects()}catch(e){console.error(e);status("projectStatus","خطا در راه‌اندازی ذخیره‌سازی مرورگر: "+e.message,true)}})();
+
+
+/* Load-combination controls and signed-response postprocessor (kept in the executable app script). */
+/* Linear load-combination postprocessor: each case is solved independently, then signed responses are superposed. */
+let frameCombinationLast=null;
+function pasteCurrentFrameToCombo(){const v=$("frameModel")?.value||"";if(!v.trim()){status("cmbStatus","ابتدا در بخش محاسبات سازه یک مدل قاب بسازید یا وارد کنید.",true);return}$("cmbModelG").value=v;status("cmbStatus","مدل فعلی در حالت G کپی شد؛ بارهای S و W را در مدل‌های مستقل وارد کنید.")}
+function clearFrameCombinations(){["cmbModelG","cmbModelS","cmbModelW"].forEach(id=>$(id).value="");$("cmbOutput").innerHTML="";frameCombinationLast=null;status("cmbStatus","ورودی‌های ترکیبات پاک شدند.")}
+function frameTopologySignature(m){return JSON.stringify({nodes:m.nodes,elements:m.elements.map(e=>({i:e.i,j:e.j,A:e.A,E:e.E,I:e.I,section:e.section||null})),restraints:m.restraints});}
+function runFrameCombinations(){
+ try{
+  const specs=[["G","cmbModelG","cmbFactorG"],["S","cmbModelS","cmbFactorS"],["W","cmbModelW","cmbFactorW"]];
+  const cases=[];let signature=null;
+  for(const [name,mid,fid] of specs){
+   const raw=$(mid).value.trim(),factor=Number($(fid).value);
+   if(!Number.isFinite(factor))throw new Error("ضریب "+name+" باید عددی و متناهی باشد.");
+   if(!raw||factor===0)continue;
+   const model=JSON.parse(raw),sig=frameTopologySignature(model);
+   if(signature===null)signature=sig;else if(signature!==sig)throw new Error("هندسه، ترتیب اعضا، خواص مقاطع یا تکیه‌گاه‌های حالت‌ها یکسان نیستند.");
+   const output=analyzeFrame2D(model);
+   if(!output.equilibrium.passed)throw new Error("حالت "+name+" کنترل تعادل را پاس نکرده است.");
+   cases.push({name,factor,model,output});
+  }
+  if(!cases.length)throw new Error("حداقل یک مدل با ضریب غیرصفر وارد کنید.");
+  const base=cases[0].output;
+  for(const c of cases){
+   for(const key of ["displacements","reactions","members"])if(c.output[key].length!==base[key].length)throw new Error("تعداد خروجی‌های "+key+" در حالت‌ها یکسان نیست.");
+   for(let i=0;i<base.displacements.length;i++)if(c.output.displacements[i].node!==base.displacements[i].node||c.output.displacements[i].dof!==base.displacements[i].dof)throw new Error("ترتیب درجات آزادی بین حالت‌ها یکسان نیست.");
+   for(let i=0;i<base.reactions.length;i++)if(c.output.reactions[i].node!==base.reactions[i].node||c.output.reactions[i].dof!==base.reactions[i].dof)throw new Error("ترتیب واکنش‌ها بین حالت‌ها یکسان نیست.");
+   for(let i=0;i<base.members.length;i++)if(String(c.output.members[i].id)!==String(base.members[i].id)||Math.abs(c.output.members[i].length_mm-base.members[i].length_mm)>1e-8)throw new Error("ترتیب یا طول اعضا بین حالت‌ها یکسان نیست.");
+  }
+  const combineArray=key=>base[key].map((b,i)=>({...b,value:cases.reduce((sum,c)=>sum+c.factor*Number(c.output[key][i].value),0)}));
+  const displacements=combineArray("displacements"),reactions=combineArray("reactions");
+  const members=base.members.map((m,i)=>{
+   const rows=cases.map(c=>({case:c.name,factor:c.factor,member:c.output.members[i]}));
+   const stations=[0,m.length_mm];
+   rows.forEach(r=>(r.member.force_diagram_local||[]).forEach(p=>stations.push(p.x_mm)));
+   // For the combined uniform transverse load, M extrema occur where combined V(x)=0.
+   let combinedV0=0,combinedQy=0;
+   rows.forEach(r=>{
+    const q=r.member.local_end_forces_N_Nmm,load=r.member.uniform_load_local_N_per_mm||{qx:0,qy:0};
+    if(!Array.isArray(q)||q.length<3)throw new Error("نیروهای انتهایی عضو "+m.id+" در حالت "+r.case+" ناقص است.");
+    combinedV0+=r.factor*(-q[1]);
+    combinedQy+=r.factor*(-Number(load.qy||0));
+   });
+   if(Math.abs(combinedQy)>1e-14){
+    const xCritical=-combinedV0/combinedQy;
+    if(Number.isFinite(xCritical)&&xCritical>1e-8&&xCritical<m.length_mm-1e-8)stations.push(xCritical);
+   }
+   const xs=[...new Set(stations.filter(Number.isFinite).map(x=>Math.max(0,Math.min(m.length_mm,x))).map(x=>Number(x.toFixed(8))))].sort((a,b)=>a-b);
+   const diagram=xs.map(x=>{
+    const response={x_mm:x,N_N:0,V_N:0,M_Nmm:0};
+    rows.forEach(r=>{
+     const q=r.member.local_end_forces_N_Nmm,load=r.member.uniform_load_local_N_per_mm||{qx:0,qy:0};
+     if(!Array.isArray(q)||q.length<3)throw new Error("نیروهای انتهایی عضو "+m.id+" در حالت "+r.case+" ناقص است.");
+     response.N_N+=r.factor*(-q[0]-Number(load.qx||0)*x);
+     response.V_N+=r.factor*(-q[1]-Number(load.qy||0)*x);
+     response.M_Nmm+=r.factor*(-q[2]-q[1]*x-Number(load.qy||0)*x*x/2);
+    });
+    return response;
+   });
+   const peak=key=>Math.max(...diagram.map(p=>Math.abs(p[key])));
+   const curves=rows.map(r=>r.member.deflection_curve_local||[]);
+   if(curves.some(curve=>!Array.isArray(curve)||curve.length<2))throw new Error("منحنی تغییرشکل عضو "+m.id+" در یکی از حالت‌ها موجود یا کامل نیست.");
+   const deflection=curves[0].map((p,k)=>{
+    const x=Number(p.x_mm),point={x_mm:x,axial_mm:0,transverse_mm:0};
+    if(!Number.isFinite(x))throw new Error("ایستگاه منحنی تغییرشکل عضو "+m.id+" نامعتبر است.");
+    rows.forEach((r,j)=>{
+     const other=curves[j][k];
+     if(!other||Math.abs(Number(other.x_mm)-x)>1e-6||!Number.isFinite(Number(other.axial_mm))||!Number.isFinite(Number(other.transverse_mm)))throw new Error("شبکه ایستگاه منحنی تغییرشکل در حالت‌های عضو "+m.id+" یکسان نیست.");
+     point.axial_mm+=r.factor*Number(other.axial_mm);
+     point.transverse_mm+=r.factor*Number(other.transverse_mm);
+    });
+    return point;
+   });
+   const criticalDeflection=deflection.reduce((best,p)=>Math.abs(p.transverse_mm)>Math.abs(best.transverse_mm)?p:best,deflection[0]);
+   const vals=rows.map(r=>({case:r.case,factor:r.factor,Nmax_N:Math.abs(r.factor)*r.member.max_internal.N_N,Vmax_N:Math.abs(r.factor)*r.member.max_internal.V_N,Mmax_Nmm:Math.abs(r.factor)*r.member.max_internal.M_Nmm}));
+   return {id:m.id,rows:vals,force_diagram_local:diagram,envelope:{N:peak("N_N"),V:peak("V_N"),M:peak("M_Nmm")},deflection_curve_local:deflection,max_transverse_deflection:{value_mm:criticalDeflection.transverse_mm,x_mm:criticalDeflection.x_mm}};
+  });
+  const maxDisp=Math.max(0,...displacements.filter(x=>x.dof!=="rz_rad").map(x=>Math.abs(x.value)));
+  const criticalMemberDeflection=members.reduce((best,m)=>Math.abs(m.max_transverse_deflection.value_mm)>Math.abs(best.value_mm)?{member:m.id,...m.max_transverse_deflection}:best,{member:"—",value_mm:0,x_mm:0});
+  frameCombinationLast={runAt:new Date().toISOString(),method:"linear_elastic_superposition",cases:cases.map(c=>({name:c.name,factor:c.factor,equilibrium:c.output.equilibrium})),displacements,reactions,members,maxDisp,criticalMemberDeflection};
+  $("cmbOutput").innerHTML='<h4>خلاصه ترکیب خطی</h4><div class="stats"><div class="stat"><small>حالت‌های فعال</small><strong>'+cases.length+'</strong></div><div class="stat"><small>بیشینه جابه‌جایی انتقالی گره‌ای</small><strong>'+fmt(maxDisp,4)+' mm</strong></div><div class="stat"><small>بیشینه خیز موضعی ترکیبی</small><strong>'+fmt(Math.abs(criticalMemberDeflection.value_mm),4)+' mm</strong></div><div class="stat"><small>اعضای ترکیب‌شده</small><strong>'+members.length+'</strong></div><div class="stat"><small>تعادل حالت‌ها</small><strong>موفق</strong></div></div><h4>پوش پاسخ ترکیب‌شده اعضا</h4><div class="tablewrap"><table><thead><tr><th>عضو</th><th>بیشینه |N| (N)</th><th>بیشینه |V| (N)</th><th>بیشینه |M| (N·mm)</th><th>نقاط بحرانی محاسبه‌شده</th></tr></thead><tbody>'+members.map(m=>'<tr><td>'+esc(String(m.id))+'</td><td>'+fmt(m.envelope.N,2)+'</td><td>'+fmt(m.envelope.V,2)+'</td><td>'+fmt(m.envelope.M,2)+'</td><td>'+m.force_diagram_local.length+'</td></tr>').join('')+'</tbody></table></div><h4>خیز موضعی ترکیبی اعضا</h4><div class="tablewrap"><table><tr><th>عضو</th><th>خیز علامت‌دار (mm)</th><th>قدر مطلق (mm)</th><th>ایستگاه x (mm)</th></tr>'+members.map(m=>'<tr><td>'+esc(String(m.id))+'</td><td>'+fmt(m.max_transverse_deflection.value_mm,4)+'</td><td>'+fmt(Math.abs(m.max_transverse_deflection.value_mm),4)+'</td><td>'+fmt(m.max_transverse_deflection.x_mm,1)+'</td></tr>').join('')+'</table></div><h4>جابه‌جایی گره‌ها</h4><div class="tablewrap"><table><tr><th>گره</th><th>درجه آزادی</th><th>مقدار ترکیب‌شده</th></tr>'+displacements.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+fmt(x.value,6)+'</td></tr>').join('')+'</table></div><p class="muted">پوش از نمودار نیروهای داخلی ترکیب‌شده در ایستگاه‌های مشترک به‌دست آمده است؛ کنترل ظرفیت، کمانش، حدود تغییرمکان یا انطباق آیین‌نامه‌ای انجام نمی‌شود. برای بار گسترده یکنواخت، علاوه بر ایستگاه‌های هر حالت، نقطه صفرشدن برشِ ترکیبی نیز برای یافتن اکسترمم لنگر افزوده می‌شود؛ بارهای متمرکز یا تغییرات بار قطعه‌ای نیازمند ایستگاه‌بندی و مدل بارگذاری متناظر هستند.</p>';
+  status("cmbStatus","ترکیب خطی "+cases.length+" حالت مستقل انجام شد؛ نمودارهای نیرو و منحنی‌های تغییرشکل موضعی ابتدا با علامت ترکیب شدند.");
+ }catch(e){frameCombinationLast=null;$("cmbOutput").innerHTML="";status("cmbStatus","خطا: "+e.message,true)}
+}
+function exportFrameCombinations(){
+ if(!frameCombinationLast){status("cmbStatus","ابتدا تحلیل ترکیبات را اجرا کنید.",true);return}
+ const rows=[["عضو","نوع ردیف","ایستگاه x (mm)","N (N)","V (N)","M (N.mm)"]];
+ frameCombinationLast.members.forEach(m=>{
+  m.force_diagram_local.forEach(p=>rows.push([m.id,"Combined station",p.x_mm,p.N_N,p.V_N,p.M_Nmm]));
+  rows.push([m.id,"Envelope","",m.envelope.N,m.envelope.V,m.envelope.M]);
+ });
+ const csv="\ufeff"+rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");
+ download("SAHROUD_Frame_Load_Combinations.csv",csv,"text/csv;charset=utf-8");
+}
 </script>
 </body>
 </html>
