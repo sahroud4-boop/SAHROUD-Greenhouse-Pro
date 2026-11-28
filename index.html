@@ -532,11 +532,26 @@ function runFrameCombinations(){
     return response;
    });
    const peak=key=>Math.max(...diagram.map(p=>Math.abs(p[key])));
-   const vals=rows.map(r=>({case:r.case,factor:r.factor,Nmax_N:r.factor*r.member.max_internal.N_N,Vmax_N:r.factor*r.member.max_internal.V_N,Mmax_Nmm:r.factor*r.member.max_internal.M_Nmm}));
-   return {id:m.id,rows:vals,force_diagram_local:diagram,envelope:{N:peak("N_N"),V:peak("V_N"),M:peak("M_Nmm")}};
+   const curves=rows.map(r=>r.member.deflection_curve_local||[]);
+   if(curves.some(curve=>!Array.isArray(curve)||curve.length<2))throw new Error("منحنی تغییرشکل عضو "+m.id+" در یکی از حالت‌ها موجود یا کامل نیست.");
+   const deflection=curves[0].map((p,k)=>{
+    const x=Number(p.x_mm),point={x_mm:x,axial_mm:0,transverse_mm:0};
+    if(!Number.isFinite(x))throw new Error("ایستگاه منحنی تغییرشکل عضو "+m.id+" نامعتبر است.");
+    rows.forEach((r,j)=>{
+     const other=curves[j][k];
+     if(!other||Math.abs(Number(other.x_mm)-x)>1e-6||!Number.isFinite(Number(other.axial_mm))||!Number.isFinite(Number(other.transverse_mm)))throw new Error("شبکه ایستگاه منحنی تغییرشکل در حالت‌های عضو "+m.id+" یکسان نیست.");
+     point.axial_mm+=r.factor*Number(other.axial_mm);
+     point.transverse_mm+=r.factor*Number(other.transverse_mm);
+    });
+    return point;
+   });
+   const criticalDeflection=deflection.reduce((best,p)=>Math.abs(p.transverse_mm)>Math.abs(best.transverse_mm)?p:best,deflection[0]);
+   const vals=rows.map(r=>({case:r.case,factor:r.factor,Nmax_N:Math.abs(r.factor)*r.member.max_internal.N_N,Vmax_N:Math.abs(r.factor)*r.member.max_internal.V_N,Mmax_Nmm:Math.abs(r.factor)*r.member.max_internal.M_Nmm}));
+   return {id:m.id,rows:vals,force_diagram_local:diagram,envelope:{N:peak("N_N"),V:peak("V_N"),M:peak("M_Nmm")},deflection_curve_local:deflection,max_transverse_deflection:{value_mm:criticalDeflection.transverse_mm,x_mm:criticalDeflection.x_mm}};
   });
   const maxDisp=Math.max(0,...displacements.filter(x=>x.dof!=="rz_rad").map(x=>Math.abs(x.value)));
-  frameCombinationLast={runAt:new Date().toISOString(),method:"linear_elastic_superposition",cases:cases.map(c=>({name:c.name,factor:c.factor,equilibrium:c.output.equilibrium})),displacements,reactions,members,maxDisp};
+  const criticalMemberDeflection=members.reduce((best,m)=>Math.abs(m.max_transverse_deflection.value_mm)>Math.abs(best.value_mm)?{member:m.id,...m.max_transverse_deflection}:best,{member:"—",value_mm:0,x_mm:0});
+  frameCombinationLast={runAt:new Date().toISOString(),method:"linear_elastic_superposition",cases:cases.map(c=>({name:c.name,factor:c.factor,equilibrium:c.output.equilibrium})),displacements,reactions,members,maxDisp,criticalMemberDeflection};
   $("cmbOutput").innerHTML='<h4>خلاصه ترکیب خطی</h4><div class="stats"><div class="stat"><small>حالت‌های فعال</small><strong>'+cases.length+'</strong></div><div class="stat"><small>بیشینه جابه‌جایی انتقالی</small><strong>'+fmt(maxDisp,4)+' mm</strong></div><div class="stat"><small>اعضای ترکیب‌شده</small><strong>'+members.length+'</strong></div><div class="stat"><small>تعادل حالت‌ها</small><strong>موفق</strong></div></div><h4>پوش پاسخ ترکیب‌شده اعضا</h4><div class="tablewrap"><table><thead><tr><th>عضو</th><th>بیشینه |N| (N)</th><th>بیشینه |V| (N)</th><th>بیشینه |M| (N·mm)</th><th>نقاط بحرانی محاسبه‌شده</th></tr></thead><tbody>'+members.map(m=>'<tr><td>'+esc(String(m.id))+'</td><td>'+fmt(m.envelope.N,2)+'</td><td>'+fmt(m.envelope.V,2)+'</td><td>'+fmt(m.envelope.M,2)+'</td><td>'+m.force_diagram_local.length+'</td></tr>').join('')+'</tbody></table></div><h4>جابه‌جایی گره‌ها</h4><div class="tablewrap"><table><tr><th>گره</th><th>درجه آزادی</th><th>مقدار ترکیب‌شده</th></tr>'+displacements.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+fmt(x.value,6)+'</td></tr>').join('')+'</table></div><p class="muted">پوش از نمودار نیروهای داخلی ترکیب‌شده در ایستگاه‌های مشترک به‌دست آمده است؛ کنترل ظرفیت، کمانش، حدود تغییرمکان یا انطباق آیین‌نامه‌ای انجام نمی‌شود. برای بار گسترده یکنواخت، علاوه بر ایستگاه‌های هر حالت، نقطه صفرشدن برشِ ترکیبی نیز برای یافتن اکسترمم لنگر افزوده می‌شود؛ بارهای متمرکز یا تغییرات بار قطعه‌ای نیازمند ایستگاه‌بندی و مدل بارگذاری متناظر هستند.</p>';
   status("cmbStatus","ترکیب خطی "+cases.length+" حالت مستقل انجام شد؛ نمودارهای نیرو ابتدا ترکیب و سپس پوش‌گیری شدند.");
  }catch(e){frameCombinationLast=null;$("cmbOutput").innerHTML="";status("cmbStatus","خطا: "+e.message,true)}
