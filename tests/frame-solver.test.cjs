@@ -229,3 +229,51 @@ for (const component of ["fx", "fy", "mz"]) {
     "cancelled combined support resultant " + component);
 }
 console.log("PASS: independent global force and moment equilibrium of signed load combinations");
+
+
+// Regression coverage: signed local member-deflection superposition and combined shear-zero station.
+const combinedCurve = mixed.members[0].deflection_curve_local;
+const uniformCurve = directUniform.members[0].deflection_curve_local;
+const pointCurve = directPoint.members[0].deflection_curve_local;
+assert.equal(combinedCurve.length, uniformCurve.length, "combined deflection curve keeps the reference station count");
+assert.equal(combinedCurve.length, pointCurve.length, "all load cases must share deflection stations");
+for (let k = 0; k < combinedCurve.length; k++) {
+  const c = combinedCurve[k], u = uniformCurve[k], p = pointCurve[k];
+  near(c.x_mm, u.x_mm, 1e-8, "uniform deflection station " + k);
+  near(c.x_mm, p.x_mm, 1e-8, "point-load deflection station " + k);
+  near(c.axial_mm, 1.25 * u.axial_mm - 0.4 * p.axial_mm, 1e-10,
+    "signed combined axial member displacement at " + c.x_mm);
+  near(c.transverse_mm, 1.25 * u.transverse_mm - 0.4 * p.transverse_mm, 1e-10,
+    "signed combined transverse member displacement at " + c.x_mm);
+}
+const independentlyCritical = combinedCurve.reduce((best, p) =>
+  Math.abs(p.transverse_mm) > Math.abs(best.transverse_mm) ? p : best, combinedCurve[0]);
+near(mixed.members[0].max_transverse_deflection.value_mm,
+  independentlyCritical.transverse_mm, 1e-10, "combined critical deflection retains its signed value");
+near(mixed.members[0].max_transverse_deflection.x_mm,
+  independentlyCritical.x_mm, 1e-8, "combined critical deflection station");
+assert.ok(Math.abs(independentlyCritical.transverse_mm) > 1e-6,
+  "mixed load case must produce a non-zero combined local deflection");
+
+const mixedMember = mixed.members[0];
+const mixedRows = [{ factor: 1.25, member: directUniform.members[0] },
+  { factor: -0.4, member: directPoint.members[0] }];
+const combinedV0 = mixedRows.reduce((sum, row) =>
+  sum + row.factor * row.member.local_end_forces_N_Nmm[1], 0);
+const combinedQy = mixedRows.reduce((sum, row) =>
+  sum + row.factor * row.member.uniform_load_local_N_per_mm.qy, 0);
+assert.ok(Math.abs(combinedQy) > 1e-12, "asymmetric test must have a non-zero combined uniform load");
+const combinedShearZero = -combinedV0 / combinedQy;
+assert.ok(combinedShearZero > 0 && combinedShearZero < mixedMember.length_mm,
+  "combined shear-zero station must lie inside the member");
+assert.ok(mixedMember.force_diagram_local.some(p =>
+  Math.abs(p.x_mm - combinedShearZero) < 1e-7),
+  "combined shear-zero station must be inserted into the force diagram");
+const atShearZero = mixedMember.force_diagram_local.find(p =>
+  Math.abs(p.x_mm - combinedShearZero) < 1e-7);
+const maxSampledMoment = Math.max(...mixedMember.force_diagram_local.map(p => Math.abs(p.M_Nmm)));
+near(Math.abs(atShearZero.M_Nmm), maxSampledMoment, 1e-5,
+  "combined shear-zero station captures the maximum absolute moment for this uniform-load case");
+
+console.log("PASS: signed axial/transverse local deflection superposition and recomputed critical deflection");
+console.log("PASS: asymmetric combined shear-zero station and moment extremum");
