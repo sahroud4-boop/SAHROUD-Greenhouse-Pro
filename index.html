@@ -65,6 +65,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  <button data-page="climate">بانک اقلیمی</button>
  <button data-page="hydro">هیدروپونیک</button>
  <button data-page="structure">محاسبات سازه</button>
+ <button data-page="combinations">ترکیبات بار و پوش نیرو</button>
  <button data-page="profiles">بانک مقاطع</button>
  <button data-page="fabrication">ساخت و نصب</button>
  <button data-page="equipment">تجهیزات تهویه</button>
@@ -452,10 +453,52 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
  </div>
  <div class="card" id="reportBody"><h3>گزارش پروژه</h3><p class="muted">اطلاعات پس از ذخیره پروژه و اجرای محاسبات در این قسمت نمایش داده می‌شود.</p></div>
 </section>
+
+<section id="combinations" class="page">
+ <div class="pagehead"><div><h2>ترکیبات بار و پوش پاسخ قاب</h2><p>ترکیب خطی نتایج چند تحلیل مستقل با توپولوژی، خواص اعضا و شرایط تکیه‌گاهی یکسان</p></div></div>
+ <div class="card">
+  <div class="notice">این ابزار فقط برای تحلیل خطی و الاستیک با اصل برهم‌نهی معتبر است. هر حالت باید مدل کامل و مستقل قاب 2D را داشته باشد؛ بارهای هر حالت را در مدل همان حالت وارد کنید. ضرایب این صفحه نمونه/قابل‌ورود هستند و به‌معنای تأیید آیین‌نامه‌ای نیستند.</div>
+  <h3>مدل‌های بار مستقل</h3>
+  <div class="g3">
+   <div><label>ضریب حالت دائمی G</label><input id="cmbFactorG" type="number" step=".01" value="1.0"><label>مدل کامل بار دائمی (JSON)</label><textarea id="cmbModelG" rows="9" placeholder="JSON مدل کامل قاب شامل nodes/elements/restraints/loads/elementLoads"></textarea></div>
+   <div><label>ضریب حالت برف S</label><input id="cmbFactorS" type="number" step=".01" value="1.0"><label>مدل کامل بار برف (JSON)</label><textarea id="cmbModelS" rows="9" placeholder="همان هندسه و مقاطع؛ فقط بارهای برف"></textarea></div>
+   <div><label>ضریب حالت باد W</label><input id="cmbFactorW" type="number" step=".01" value="1.0"><label>مدل کامل بار باد (JSON)</label><textarea id="cmbModelW" rows="9" placeholder="همان هندسه و مقاطع؛ فقط بارهای باد"></textarea></div>
+  </div>
+  <div class="toolbar"><button onclick="pasteCurrentFrameToCombo()">کپی مدل فعلی در حالت G</button><button class="btn-soft" onclick="runFrameCombinations()">تحلیل و استخراج پوش</button><button class="btn-soft" onclick="exportFrameCombinations()">خروجی CSV نتایج</button><button class="btn-soft" onclick="clearFrameCombinations()">پاک‌کردن</button></div>
+  <div class="status" id="cmbStatus"></div><div id="cmbOutput"></div>
+ </div>
+ <div class="card"><h3>راهنمای ورود مدل‌ها</h3><p class="muted">برای هر حالت، یک مدل کامل از نوعی که در بخش «محاسبات سازه» تولید یا وارد می‌کنید قرار دهید. گره‌ها، اعضا، ترتیب اعضا، مقاطع، خواص E/A/I و تکیه‌گاه‌ها باید دقیقاً یکسان باشند. فقط بارهای اعمالی بین حالت‌ها تفاوت کنند. اگر یک حالت بار ندارید، ضریب آن را صفر بگذارید. از واردکردن مدل‌های دارای هندسه یا شبکه متفاوت خودداری کنید.</p></div>
+</section>
+
 </main>
 <footer>SAHROUD Greenhouse Pro v3.58.0 · فایل HTML یکپارچه · ابزار مقدماتی، نیازمند کنترل و تأیید مهندس ذی‌صلاح</footer>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+/* Linear load-combination postprocessor: each case is solved independently, then signed responses are superposed. */
+let frameCombinationLast=null;
+function pasteCurrentFrameToCombo(){const v=$("frameModel")?.value||"";if(!v.trim()){status("cmbStatus","ابتدا در بخش محاسبات سازه یک مدل قاب بسازید یا وارد کنید.",true);return}$("cmbModelG").value=v;status("cmbStatus","مدل فعلی در حالت G کپی شد؛ بارهای S و W را در مدل‌های مستقل وارد کنید.")}
+function clearFrameCombinations(){["cmbModelG","cmbModelS","cmbModelW"].forEach(id=>$(id).value="");$("cmbOutput").innerHTML="";frameCombinationLast=null;status("cmbStatus","ورودی‌های ترکیبات پاک شدند.")}
+function frameTopologySignature(m){return JSON.stringify({nodes:m.nodes,elements:m.elements.map(e=>({i:e.i,j:e.j,A:e.A,E:e.E,I:e.I,section:e.section||null})),restraints:m.restraints});}
+function runFrameCombinations(){
+ try{
+  const specs=[["G","cmbModelG","cmbFactorG"],["S","cmbModelS","cmbFactorS"],["W","cmbModelW","cmbFactorW"]];
+  const cases=[];let signature=null;
+  for(const [name,mid,fid] of specs){const raw=$(mid).value.trim(),factor=Number($(fid).value);if(!Number.isFinite(factor))throw new Error("ضریب "+name+" باید عددی باشد.");if(!raw||factor===0)continue;const model=JSON.parse(raw);const sig=frameTopologySignature(model);if(signature===null)signature=sig;else if(signature!==sig)throw new Error("توپولوژی، خواص اعضا یا تکیه‌گاه‌های حالت‌های بار یکسان نیستند.");const output=analyzeFrame2D(model);if(!output.equilibrium.passed)throw new Error("حالت "+name+" تعادل را پاس نکرده است؛ ترکیب متوقف شد.");cases.push({name,factor,model,output});}
+  if(!cases.length)throw new Error("حداقل یک مدل با ضریب غیرصفر وارد کنید.");
+  const base=cases[0].output, nD=base.displacements.length,nR=base.reactions.length,nM=base.members.length;
+  for(const c of cases){if(c.output.displacements.length!==nD||c.output.reactions.length!==nR||c.output.members.length!==nM)throw new Error("تعداد خروجی‌های مدل‌ها یکسان نیست.");}
+  const combineArray=(key)=>Array.from({length:base[key].length},(_,i)=>{const b=base[key][i];let value=0;for(const c of cases)value+=c.factor*Number(c.output[key][i].value);return {...b,value}});
+  const displacements=combineArray("displacements"),reactions=combineArray("reactions");
+  const members=base.members.map((m,i)=>{const rows=cases.map(c=>({case:c.name,factor:c.factor,member:c.output.members[i]}));const vals=rows.map(r=>({case:r.case,N:r.factor*r.member.max_internal.N_N,V:r.factor*r.member.max_internal.V_N,M:r.factor*r.member.max_internal.M_Nmm}));return {id:m.id,rows:vals,envelope:{N:Math.max(...vals.map(x=>Math.abs(x.N))),V:Math.max(...vals.map(x=>Math.abs(x.V))),M:Math.max(...vals.map(x=>Math.abs(x.M)))}}});
+  const maxDisp=Math.max(0,...displacements.filter(x=>x.dof!=="rz_rad").map(x=>Math.abs(x.value)));
+  frameCombinationLast={runAt:new Date().toISOString(),cases:cases.map(c=>({name:c.name,factor:c.factor,equilibrium:c.output.equilibrium})),displacements,reactions,members,maxDisp};
+  $("cmbOutput").innerHTML='<h4>خلاصه ترکیب خطی</h4><div class="stats"><div class="stat"><small>تعداد حالت‌های فعال</small><strong>'+cases.length+'</strong></div><div class="stat"><small>بیشینه جابه‌جایی انتقالی</small><strong>'+fmt(maxDisp,4)+' mm</strong></div><div class="stat"><small>تعداد اعضای ترکیب‌شده</small><strong>'+members.length+'</strong></div><div class="stat"><small>کنترل تعادل حالت‌ها</small><strong>موفق</strong></div></div><h4>پوش نیروهای داخلی اعضا (قدر مطلق پاسخ ترکیب‌شده)</h4><div class="tablewrap"><table><thead><tr><th>عضو</th><th>بیشینه |N| (N)</th><th>بیشینه |V| (N)</th><th>بیشینه |M| (N·mm)</th><th>پاسخ هر حالت</th></tr></thead><tbody>'+members.map(m=>'<tr><td>'+esc(String(m.id))+'</td><td>'+fmt(m.envelope.N,2)+'</td><td>'+fmt(m.envelope.V,2)+'</td><td>'+fmt(m.envelope.M,2)+'</td><td>'+m.rows.map(x=>esc(x.case)+': N='+fmt(x.N,1)+', V='+fmt(x.V,1)+', M='+fmt(x.M,1)).join('<br>')+'</td></tr>').join('')+'</tbody></table></div><h4>جابه‌جایی گره‌ها در ترکیب</h4><div class="tablewrap"><table><tr><th>گره</th><th>درجه آزادی</th><th>مقدار ترکیب‌شده</th></tr>'+displacements.map(x=>'<tr><td>'+x.node+'</td><td>'+x.dof+'</td><td>'+fmt(x.value,6)+'</td></tr>').join('')+'</table></div><p class="muted">پوش جدول، بیشینه قدرمطلق پاسخ‌های ترکیب‌شده در حالت‌های واردشده را نشان می‌دهد. این ابزار کنترل مقاومت، کمانش، تغییرشکل مجاز یا انطباق آیین‌نامه‌ای انجام نمی‌دهد.</p>';
+  status("cmbStatus","تحلیل "+cases.length+" حالت مستقل و ترکیب خطی با موفقیت انجام شد.");
+ }catch(e){frameCombinationLast=null;$("cmbOutput").innerHTML="";status("cmbStatus","خطا: "+e.message,true)}
+}
+function exportFrameCombinations(){if(!frameCombinationLast){status("cmbStatus","ابتدا تحلیل ترکیبات را اجرا کنید.",true);return}const rows=[["عضو","حالت","N (N)","V (N)","M (N.mm)"],...frameCombinationLast.members.flatMap(m=>m.rows.map(x=>[m.id,x.case,x.N,x.V,x.M])),[],["پوش اعضا","","N max (N)","V max (N)","M max (N.mm)"],...frameCombinationLast.members.map(m=>[m.id,"Envelope",m.envelope.N,m.envelope.V,m.envelope.M])];const csv="\ufeff"+rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");download("SAHROUD_Frame_Load_Combinations.csv",csv,"text/csv;charset=utf-8");}
+
+</script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id), num=id=>{const e=$(id);if(!e||e.value.trim()==="")return null;const v=Number(e.value);return Number.isFinite(v)?v:null};
