@@ -41,9 +41,9 @@ function extractFunction(source, name) {
   throw new Error("unterminated function: " + name);
 }
 
-const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress", "frameAxialForceScreen", "frameSectionDemandScreen", "frameSectionPropertiesForAxis"];
+const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress", "frameAxialForceScreen", "frameSectionDemandScreen", "frameSectionPropertiesForAxis", "frameEulerBucklingForAxis"];
 const code = names.map(name => extractFunction(scriptMatch[1], name)).join("\n") +
-  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress, frameAxialForceScreen, frameSectionDemandScreen, frameSectionPropertiesForAxis };";
+  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress, frameAxialForceScreen, frameSectionDemandScreen, frameSectionPropertiesForAxis, frameEulerBucklingForAxis };";
 const context = vm.createContext({});
 vm.runInContext(code, context, { timeout: 5000 });
 const analyze = context.api.analyzeFrame2D;
@@ -51,6 +51,7 @@ const stressScreen = context.api.frameElasticExtremeFiberStress;
 const axialScreen = context.api.frameAxialForceScreen;
 const sectionDemandScreen = context.api.frameSectionDemandScreen;
 const sectionPropertiesForAxis = context.api.frameSectionPropertiesForAxis;
+const eulerBucklingForAxis = context.api.frameEulerBucklingForAxis;
 const sectionProfile = { name: "TEST-I", area: 1200, E: 200000, Fy: 250, Ix: 8e6, Iy: 2e6, Wx: 4e5, Wy: 1e5, Av: 600 };
 const xAxisProperties = sectionPropertiesForAxis(sectionProfile, "x");
 const yAxisProperties = sectionPropertiesForAxis(sectionProfile, "y");
@@ -59,6 +60,19 @@ assert.equal(xAxisProperties.W, 4e5, "X bending axis must use Wx, never the smal
 assert.equal(yAxisProperties.I, 2e6, "Y bending axis must use Iy");
 assert.equal(yAxisProperties.W, 1e5, "Y bending axis must use Wy");
 assert.equal(sectionPropertiesForAxis(sectionProfile, null), null, "an unspecified bending axis must disable section property mapping");
+
+const eulerX = eulerBucklingForAxis(sectionProfile, "x", 2, 1, 3000);
+const eulerY = eulerBucklingForAxis(sectionProfile, "y", 2, 1, 3000);
+near(eulerX.I, sectionProfile.Ix, 1e-9, "X-axis Euler screen uses Ix");
+near(eulerX.K, 2, 1e-12, "X-axis Euler screen uses Kx");
+near(eulerY.I, sectionProfile.Iy, 1e-9, "Y-axis Euler screen uses Iy");
+near(eulerY.K, 1, 1e-12, "Y-axis Euler screen uses Ky");
+near(eulerX.pcr, Math.PI ** 2 * sectionProfile.E * sectionProfile.Ix / (2 * 3000) ** 2, 1e-9,
+  "X-axis Euler critical load formula");
+near(eulerY.pcr, Math.PI ** 2 * sectionProfile.E * sectionProfile.Iy / (1 * 3000) ** 2, 1e-9,
+  "Y-axis Euler critical load formula");
+assert.throws(() => eulerBucklingForAxis(sectionProfile, null, 2, 1, 3000), /محور خمشی/,
+  "Euler screening requires an explicit selected bending axis");
 
 const demand = sectionDemandScreen({
   length_mm: 3000,
