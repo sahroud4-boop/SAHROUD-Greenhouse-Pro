@@ -529,6 +529,13 @@ function frameSectionPropertiesForAxis(profile,axis){
  const I=Number(axis==="x"?profile.Ix:profile.Iy),W=Number(axis==="x"?profile.Wx:profile.Wy);
  return {A:Number(profile.area),E:Number(profile.E),I,W:Number.isFinite(W)&&W>0?W:null,Av:Number(profile.Av)>0?Number(profile.Av):null,Fy:Number(profile.Fy),profile:profile.name,bendingAxis:axis};
 }
+function frameEulerBucklingForAxis(profile,axis,Kx,Ky,length){
+ if(!profile||!["x","y"].includes(axis))throw new Error("محور خمشی X یا Y برای غربالگری اویلر باید صریحاً مشخص شود.");
+ const A=Number(profile.area),E=Number(profile.E),I=Number(axis==="x"?profile.Ix:profile.Iy),K=Number(axis==="x"?Kx:Ky),L=Number(length);
+ if(![A,E,I,K,L].every(v=>Number.isFinite(v)&&v>0))throw new Error("A، E، ممان اینرسی محور انتخاب‌شده، K و طول عضو باید مثبت و معتبر باشند.");
+ const r=Math.sqrt(I/A),pcr=Math.PI**2*E*I/(K*L)**2;
+ return {axis,I,K,L,r,pcr,slenderness:K*L/r};
+}
 function applyFrameProfile(role){
  const id=role==="columns"?"frameColumnProfile":"frameRafterProfile",p=findSectionProfile($(id)?.value);
  if(!p)return;
@@ -1005,7 +1012,7 @@ function evaluateSectionCandidates(){
    if(!candidates.some(p=>p.name===baselineName))throw new Error("مشخصات مقطع پایه "+role.label+" برای محور "+axis.toUpperCase()+" ناقص است؛ Ag، I و W همان محور، E، Fy و جرم واحد طول لازم‌اند.");
    const expectedProps=frameSectionPropertiesForAxis(baseline,axis);
    const expected={A:expectedProps.A,E:expectedProps.E,I:expectedProps.I};
-   const mismatch=members.some(el=>Math.abs(Number(el.A)-expected.A)>Math.max(1e-8,expected.A*1e-8)||Math.abs(Number(el.E)-expected.E)>Math.max(1e-8,expected.E*1e-8)||Math.abs(Number(el.I)-expected.I)>Math.max(1e-8,expected.I*1e-8)||!el.section||el.section.profile!==baseline.name);
+   const mismatch=members.some(el=>Math.abs(Number(el.A)-expected.A)>Math.max(1e-8,expected.A*1e-8)||Math.abs(Number(el.E)-expected.E)>Math.max(1e-8,expected.E*1e-8)||Math.abs(Number(el.I)-expected.I)>Math.max(1e-8,expected.I*1e-8)||!el.section||el.section.profile!==baseline.name||el.section.bendingAxis!==axis);
    if(mismatch)throw new Error("مقطع انتخاب‌شده برای "+role.label+" با خواص مدل تولیدشده یکسان نیست؛ مقطع را اعمال و قاب را دوباره تولید کنید.");
    const ranked=[];
    for(const profile of candidates){
@@ -1020,8 +1027,7 @@ function evaluateSectionCandidates(){
      const maxRatio=criticalStress.ratio;
      let bucklingRatio=null;
      if(role.key==="columns"){
-      const rx=Math.sqrt(Number(profile.Ix)/Number(profile.area)),ry=Math.sqrt(Number(profile.Iy)/Number(profile.area));
-      bucklingRatio=Math.max(...target.map(m=>{const q=m.local_end_forces_N_Nmm,L=Number(m.length_mm);if(!Array.isArray(q)||q.length<6||!q.every(Number.isFinite)||!(Number.isFinite(L)&&L>0))throw new Error("داده نیرو یا طول ستون برای غربالگری کمانش معتبر نیست.");const Nc=frameAxialForceScreen(m).maxCompression_N,pcrx=Math.PI**2*Number(profile.E)*Number(profile.Ix)/(Kx*L)**2,pcry=Math.PI**2*Number(profile.E)*Number(profile.Iy)/(Ky*L)**2;return Nc/Math.min(pcrx,pcry);}));
+      bucklingRatio=Math.max(...target.map(m=>{const q=m.local_end_forces_N_Nmm,L=Number(m.length_mm);if(!Array.isArray(q)||q.length<6||!q.every(Number.isFinite)||!(Number.isFinite(L)&&L>0))throw new Error("داده نیرو یا طول ستون برای غربالگری کمانش معتبر نیست.");const Nc=frameAxialForceScreen(m).maxCompression_N,euler=frameEulerBucklingForAxis(profile,axis,Kx,Ky,L);return Nc/euler.pcr;}));
      }
      if(Number.isFinite(maxRatio)&&(bucklingRatio===null||Number.isFinite(bucklingRatio)))ranked.push({name:profile.name,mass:Number(profile.mass),ratio:maxRatio,stressMPa:criticalStress.stressAbs,criticalMember:criticalStress.member,criticalEnd:criticalStress.criticalEnd,axialRatio:criticalStress.axialRatio,axialStressMPa:criticalStress.axialStressAbs,axialCriticalEnd:criticalStress.axialCriticalEnd,bucklingRatio,fy:Number(profile.Fy),baseline:profile.name===baselineName});
     }catch(err){/* candidate singularity or invalid data: skip */}
@@ -1029,7 +1035,7 @@ function evaluateSectionCandidates(){
    ranked.sort((a,b)=>(a.baseline===b.baseline?0:a.baseline?-1:1)||(role.key==="columns"?(a.bucklingRatio??Infinity)-(b.bucklingRatio??Infinity):0)||a.ratio-b.ratio||a.mass-b.mass);
    frameCandidateResults[role.key]=ranked;results.push({role,ranked});
   }
-  let html='<h4 style="margin-top:16px">مقایسه آزمایشی مقاطع بانک</h4><div class="notice">مقطع پیش‌فرض در ردیف مبنای مقایسه حفظ می‌شود. شاخص تنش، بیشینه تنش الاستیک الیاف کناری در دو انتهای عضو از ترکیب هم‌مکان |N|/A + |M|/W است؛ بیشینه نیروی محوری و لنگر از دو انتهای متفاوت با هم جمع نمی‌شوند. محور خمشی از انتخاب صریح X یا Y مقطع مبنا گرفته می‌شود و برای تمام گزینه‌ها فقط I و W همان محور مصرف می‌شود؛ مقاطع فاقد خواص معتبر آن محور کنار گذاشته می‌شوند. این شاخص فقط غربالگری تسلیم الاستیک است و مقاومت طراحی آیین‌نامه‌ای نیست. برای ستون‌ها، گزینه‌ها پس از مبنا ابتدا بر اساس نسبت تقاضای فشاری به بار بحرانی الاستیک اویلرِ ضعیف‌ترین محور و سپس نسبت تنش مرتب می‌شوند؛ برای رفترها نسبت تنش و جرم گزارش می‌شود. مقدار N/Pcr کمتر از ۱ صرفاً غربالگری الاستیک اویلر است و مقاومت طراحی ستون نیست. کمانش خمشی-پیچشی، اندرکنش آیین‌نامه‌ای، اثرات مرتبه دوم، طول مهارنشده واقعی، شرایط انتهایی، جهت‌گیری مقطع، اتصالات و مهاربندی کامل نشده‌اند. Kx و Ky ورودی مهندس هستند و نباید حدس زده شوند. جرم شاخص اقتصادی اولیه است، نه بهینه‌سازی هزینه. محور خمشی انتخاب‌شده باید با جهت‌گیری واقعی مقطع در مدل سازگار باشد.</div>';
+  let html='<h4 style="margin-top:16px">مقایسه آزمایشی مقاطع بانک</h4><div class="notice">مقطع پیش‌فرض در ردیف مبنای مقایسه حفظ می‌شود. شاخص تنش، بیشینه تنش الاستیک الیاف کناری در دو انتهای عضو از ترکیب هم‌مکان |N|/A + |M|/W است؛ بیشینه نیروی محوری و لنگر از دو انتهای متفاوت با هم جمع نمی‌شوند. محور خمشی از انتخاب صریح X یا Y مقطع مبنا گرفته می‌شود و برای تمام گزینه‌ها فقط I و W همان محور مصرف می‌شود؛ مقاطع فاقد خواص معتبر آن محور کنار گذاشته می‌شوند. این شاخص فقط غربالگری تسلیم الاستیک است و مقاومت طراحی آیین‌نامه‌ای نیست. برای ستون‌ها، گزینه‌ها پس از مبنا ابتدا بر اساس نسبت تقاضای فشاری به بار بحرانی الاستیک اویلر در همان محور خمشی انتخاب‌شده برای مدل دوبعدی (با K متناظر همان محور) و سپس نسبت تنش مرتب می‌شوند؛ این غربالگری تک‌محوره جایگزین بررسی کامل پایداری دو‌محوره نیست؛ برای رفترها نسبت تنش و جرم گزارش می‌شود. مقدار N/Pcr کمتر از ۱ صرفاً غربالگری الاستیک اویلر است و مقاومت طراحی ستون نیست. کمانش خمشی-پیچشی، اندرکنش آیین‌نامه‌ای، اثرات مرتبه دوم، طول مهارنشده واقعی، شرایط انتهایی، جهت‌گیری مقطع، اتصالات و مهاربندی کامل نشده‌اند. Kx و Ky ورودی مهندس هستند و نباید حدس زده شوند. جرم شاخص اقتصادی اولیه است، نه بهینه‌سازی هزینه. محور خمشی انتخاب‌شده باید با جهت‌گیری واقعی مقطع در مدل سازگار باشد.</div>';
   for(const item of results){
    html+='<h4>'+item.role.label+'</h4>';
    if(!item.ranked.length){html+='<p class="muted">مقطع قابل ارزیابی یافت نشد. برای هر مقطع باید جرم، Ag، Ix، Iy، E، Fy، Wx و Wy از دیتاشیت معتبر و مثبت باشند.</p>';continue}
