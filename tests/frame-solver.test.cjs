@@ -76,6 +76,7 @@ const distributed = analyze({
 assert.equal(distributed.equilibrium.passed, true, "uniform member-load equilibrium");
 assert.ok(Math.abs(distributed.equilibrium.support.fy - 3000) < 1e-7, "uniform load resultant reaction");
 const maxM = Math.max(...distributed.members[0].force_diagram_local.map(p => Math.abs(p.M_Nmm)));
+console.log("DIAGNOSTIC uniform-load maxM =", maxM, "diagram =", JSON.stringify(distributed.members[0].force_diagram_local));
 assert.ok(Math.abs(maxM - 4500000) < 1e-5, "uniform-load fixed-end moment");
 
 console.log("PASS: cantilever closed-form deflection and reaction");
