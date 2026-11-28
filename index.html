@@ -601,7 +601,7 @@ function analyzeFrame2D(model){
   const ug=ed.dofs.map(i=>u[i]),ul=matVec(ed.T,ug),q=matVec(ed.kl,ul).map((v,i)=>v-ed.fe[i]);
   const L=ed.L,qx=ed.qx,qy=ed.qy,stations=[0,L];
   if(Math.abs(qy)>1e-12){const x=-q[1]/qy;if(x>1e-9&&x<L-1e-9)stations.push(x)}
-  const forceDiagram=stations.sort((a,b)=>a-b).map(x=>({x_mm:x,N_N:-q[0]-qx*x,V_N:-q[1]-qy*x,M_Nmm:-q[2]-q[1]*x-qy*x*x/2}));
+  const forceDiagram=stations.sort((a,b)=>a-b).map(x=>({x_mm:x,N_N:-q[0]-qx*x,V_N:q[1]+qy*x,M_Nmm:-q[2]+q[1]*x+qy*x*x/2}));
   const maxAbs=key=>Math.max(...forceDiagram.map(p=>Math.abs(p[key])));
   const EI=Number(model.elements[elementData.indexOf(ed)].E)*Number(model.elements[elementData.indexOf(ed)].I);
   const deflectionCurve=Array.from({length:41},(_,i)=>{
@@ -2245,8 +2245,8 @@ function runFrameCombinations(){
    rows.forEach(r=>{
     const q=r.member.local_end_forces_N_Nmm,load=r.member.uniform_load_local_N_per_mm||{qx:0,qy:0};
     if(!Array.isArray(q)||q.length<3)throw new Error("نیروهای انتهایی عضو "+m.id+" در حالت "+r.case+" ناقص است.");
-    combinedV0+=r.factor*(-q[1]);
-    combinedQy+=r.factor*(-Number(load.qy||0));
+    combinedV0+=r.factor*q[1];
+    combinedQy+=r.factor*Number(load.qy||0);
    });
    if(Math.abs(combinedQy)>1e-14){
     const xCritical=-combinedV0/combinedQy;
@@ -2259,8 +2259,8 @@ function runFrameCombinations(){
      const q=r.member.local_end_forces_N_Nmm,load=r.member.uniform_load_local_N_per_mm||{qx:0,qy:0};
      if(!Array.isArray(q)||q.length<3)throw new Error("نیروهای انتهایی عضو "+m.id+" در حالت "+r.case+" ناقص است.");
      response.N_N+=r.factor*(-q[0]-Number(load.qx||0)*x);
-     response.V_N+=r.factor*(-q[1]-Number(load.qy||0)*x);
-     response.M_Nmm+=r.factor*(-q[2]-q[1]*x-Number(load.qy||0)*x*x/2);
+     response.V_N+=r.factor*(q[1]+Number(load.qy||0)*x);
+     response.M_Nmm+=r.factor*(-q[2]+q[1]*x+Number(load.qy||0)*x*x/2);
     });
     return response;
    });
