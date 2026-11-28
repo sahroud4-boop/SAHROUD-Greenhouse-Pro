@@ -41,9 +41,9 @@ function extractFunction(source, name) {
   throw new Error("unterminated function: " + name);
 }
 
-const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress", "frameAxialForceScreen", "frameSectionDemandScreen", "frameSectionPropertiesForAxis", "frameEulerBucklingForAxis"];
+const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress", "frameAxialForceScreen", "frameSectionDemandScreen", "frameSectionPropertiesForAxis", "frameEulerBucklingForAxis", "frameEulerBucklingMinimum"];
 const code = names.map(name => extractFunction(scriptMatch[1], name)).join("\n") +
-  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress, frameAxialForceScreen, frameSectionDemandScreen, frameSectionPropertiesForAxis, frameEulerBucklingForAxis };";
+  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress, frameAxialForceScreen, frameSectionDemandScreen, frameSectionPropertiesForAxis, frameEulerBucklingForAxis, frameEulerBucklingMinimum };";
 const context = vm.createContext({});
 vm.runInContext(code, context, { timeout: 5000 });
 const analyze = context.api.analyzeFrame2D;
@@ -52,6 +52,7 @@ const axialScreen = context.api.frameAxialForceScreen;
 const sectionDemandScreen = context.api.frameSectionDemandScreen;
 const sectionPropertiesForAxis = context.api.frameSectionPropertiesForAxis;
 const eulerBucklingForAxis = context.api.frameEulerBucklingForAxis;
+const eulerBucklingMinimum = context.api.frameEulerBucklingMinimum;
 const sectionProfile = { name: "TEST-I", area: 1200, E: 200000, Fy: 250, Ix: 8e6, Iy: 2e6, Wx: 4e5, Wy: 1e5, Av: 600 };
 const xAxisProperties = sectionPropertiesForAxis(sectionProfile, "x");
 const yAxisProperties = sectionPropertiesForAxis(sectionProfile, "y");
@@ -73,6 +74,13 @@ near(eulerY.pcr, Math.PI ** 2 * sectionProfile.E * sectionProfile.Iy / (1 * 3000
   "Y-axis Euler critical load formula");
 assert.throws(() => eulerBucklingForAxis(sectionProfile, null, 2, 1, 3000), /محور خمشی/,
   "Euler screening requires an explicit selected bending axis");
+const eulerMinimum = eulerBucklingMinimum(sectionProfile, 2, 1, 3000);
+near(eulerMinimum.x.pcr, eulerX.pcr, 1e-9, "two-axis Euler minimum retains X-axis result");
+near(eulerMinimum.y.pcr, eulerY.pcr, 1e-9, "two-axis Euler minimum retains Y-axis result");
+near(eulerMinimum.minimum, Math.min(eulerX.pcr, eulerY.pcr), 1e-9,
+  "column candidate screening uses the lower of both Euler axis loads");
+assert.equal(eulerMinimum.axis, "x", "weaker Euler axis is identified");
+
 
 const demand = sectionDemandScreen({
   length_mm: 3000,
