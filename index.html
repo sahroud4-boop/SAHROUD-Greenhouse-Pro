@@ -497,10 +497,30 @@ let sectionProfileBank=[];
 function loadSectionProfileBank(){try{const raw=localStorage.getItem(PROFILE_BANK_KEY);const parsed=raw?JSON.parse(raw):[];sectionProfileBank=Array.isArray(parsed)?parsed.filter(p=>p&&typeof p.name==="string"&&p.name.trim()):[]}catch(e){sectionProfileBank=[];status("profileStatus","خواندن بانک محلی ناموفق بود: "+e.message,true)}renderSectionProfileBank()}
 function persistSectionProfileBank(){localStorage.setItem(PROFILE_BANK_KEY,JSON.stringify(sectionProfileBank));renderSectionProfileBank()}
 function profileField(id){const e=$(id);if(!e||e.value.trim()==="")return null;const v=Number(e.value);return Number.isFinite(v)&&v>=0?v:null}
+function validateSectionProfileData(p){
+ if(!p||typeof p.name!=="string"||!p.name.trim())return "نام یا کد مقطع الزامی است.";
+ if(!(Number.isFinite(Number(p.mass))&&Number(p.mass)>0))return "جرم واحد طول باید عددی مثبت باشد.";
+ const shapes=["i","channel","rhs","shs","chs","angle","tee","other"];
+ if(p.shape!=null&&p.shape!==""&&!shapes.includes(p.shape))return "نوع شکل مقطع در فایل ورودی ناشناخته است.";
+ if(p.bendingAxis!=null&&p.bendingAxis!==""&&!["x","y"].includes(p.bendingAxis))return "محور خمشی باید X یا Y باشد.";
+ const numeric=["area","Fy","E","Ix","Iy","Wx","Wy","Av","depth","flangeWidth","webThickness","flangeThickness","rx","ry"];
+ for(const key of numeric){
+  if(p[key]===null||p[key]===undefined||p[key]==="")continue;
+  const value=Number(p[key]);
+  if(!Number.isFinite(value)||value<=0)return "فیلد "+key+" در صورت ورود باید عددی مثبت باشد.";
+ }
+ if(["i","channel","tee"].includes(p.shape)){
+  const d=Number(p.depth),bf=Number(p.flangeWidth),tw=Number(p.webThickness),tf=Number(p.flangeThickness);
+  if([d,bf,tw,tf].some(v=>!(Number.isFinite(v)&&v>0)))return "برای مقطع انتخاب‌شده، d و bf و tw و tf باید همگی از دیتاشیت وارد شوند.";
+  if(2*tf>=d||tw>=bf)return "ابعاد واردشده برای جان و بال با یکدیگر سازگار نیستند؛ دیتاشیت را بررسی کنید.";
+ }
+ return "";
+}
 function addSectionProfile(){
  const name=$("profileName").value.trim(),mass=profileField("profileMass");
  if(!name||mass===null||mass<=0){status("profileStatus","نام مقطع و جرم واحد طول مثبت الزامی است.",true);return}
  const item={id:"sp-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6),name,standard:$("profileStandard").value.trim(),grade:$("profileGrade").value.trim(),mass,area:profileField("profileArea"),Fy:profileField("profileFy"),E:profileField("profileE"),Ix:profileField("profileIx"),Iy:profileField("profileIy"),Wx:profileField("profileWx"),Wy:profileField("profileWy"),bendingAxis:$("profileBendingAxis").value||null,Av:profileField("profileAv"),shape:$("profileShape").value||null,depth:profileField("profileDepth"),flangeWidth:profileField("profileFlangeWidth"),webThickness:profileField("profileWebThickness"),flangeThickness:profileField("profileFlangeThickness"),rx:profileField("profileRx"),ry:profileField("profileRy"),source:$("profileSource").value.trim(),notes:$("profileNotes").value.trim(),updatedAt:new Date().toISOString()};
+ const validation=validateSectionProfileData(item);if(validation){status("profileStatus",validation,true);return}
  const duplicate=sectionProfileBank.findIndex(p=>p.name.toLowerCase()===name.toLowerCase());
  if(duplicate>=0){if(!confirm("این کد مقطع وجود دارد. جایگزین شود؟"))return;sectionProfileBank[duplicate]=item}else sectionProfileBank.push(item);
  persistSectionProfileBank();status("profileStatus","مقطع ثبت شد. برای اتصال به اعضا، کد آن را در فیلد مقطع وارد کنید.");
@@ -515,10 +535,11 @@ function exportSectionProfiles(){download("SAHROUD_Profile_Bank.json",JSON.strin
 async function importSectionProfiles(event){
  const file=event.target.files?.[0];if(!file)return;
  try{const parsed=JSON.parse(await file.text()),items=Array.isArray(parsed)?parsed:parsed.profiles;if(!Array.isArray(items))throw new Error("ساختار فایل معتبر نیست");
- const valid=items.filter(p=>p&&typeof p.name==="string"&&p.name.trim()&&Number.isFinite(Number(p.mass))&&Number(p.mass)>0);
- if(!valid.length)throw new Error("فایل شامل مقاطع معتبر با جرم مثبت نیست");
- for(const p of valid){const i=sectionProfileBank.findIndex(x=>x.name.toLowerCase()===p.name.toLowerCase());const clean={...p,id:p.id||"sp-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6)};if(i>=0)sectionProfileBank[i]=clean;else sectionProfileBank.push(clean)}
- persistSectionProfileBank();status("profileStatus",valid.length+" مقطع وارد/به‌روزرسانی شد.")
+ const valid=[],invalid=[];
+ for(const p of items){const error=validateSectionProfileData(p);if(error){invalid.push((p&&p.name)||"بدون نام: "+error);continue}valid.push(p)}
+ if(!valid.length)throw new Error("هیچ مقطع معتبری در فایل وجود ندارد؛ جرم و داده‌های هندسی را بررسی کنید.");
+ for(const p of valid){const i=sectionProfileBank.findIndex(x=>x.name.toLowerCase()===p.name.trim().toLowerCase());const clean={...p,name:p.name.trim(),id:p.id||"sp-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6)};if(i>=0)sectionProfileBank[i]=clean;else sectionProfileBank.push(clean)}
+ persistSectionProfileBank();status("profileStatus",valid.length+" مقطع وارد/به‌روزرسانی شد؛ "+invalid.length+" رکورد نامعتبر کنار گذاشته شد."+(invalid.length?" نمونه: "+String(invalid[0]).slice(0,80):""));
  }catch(e){status("profileStatus","خطا در ورود بانک: "+e.message,true)}finally{event.target.value=""}
 }
 function findSectionProfile(name){return sectionProfileBank.find(p=>p.name.trim().toLowerCase()===String(name||"").trim().toLowerCase())}
