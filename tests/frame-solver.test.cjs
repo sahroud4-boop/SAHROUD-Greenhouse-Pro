@@ -41,14 +41,34 @@ function extractFunction(source, name) {
   throw new Error("unterminated function: " + name);
 }
 
-const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress", "frameAxialForceScreen"];
+const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress", "frameAxialForceScreen", "frameSectionDemandScreen"];
 const code = names.map(name => extractFunction(scriptMatch[1], name)).join("\n") +
-  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress, frameAxialForceScreen };";
+  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress, frameAxialForceScreen, frameSectionDemandScreen };";
 const context = vm.createContext({});
 vm.runInContext(code, context, { timeout: 5000 });
 const analyze = context.api.analyzeFrame2D;
 const stressScreen = context.api.frameElasticExtremeFiberStress;
 const axialScreen = context.api.frameAxialForceScreen;
+const sectionDemandScreen = context.api.frameSectionDemandScreen;
+const demand = sectionDemandScreen({
+  length_mm: 3000,
+  local_end_forces_N_Nmm: [-100000, 15000, 0, -100000, -15000, 0],
+  uniform_load_local_N_per_mm: { qx: 0, qy: -10 }
+}, { A: 1000, W: 100000, Fy: 250, Av: 1000 });
+assert.ok(Math.abs(demand.maxM_Nmm - 11250000) < 1e-6, "maximum moment is found at the internal zero-shear station");
+assert.ok(Math.abs(demand.MAt_mm - 1500) < 1e-9, "maximum moment location is retained");
+assert.ok(Math.abs(demand.maxNormalStress_MPa - 212.5) < 1e-9, "normal stress combines axial and bending demand at the same station");
+assert.ok(Math.abs(demand.normalAt_mm - 1500) < 1e-9, "critical normal stress location is retained");
+assert.ok(Math.abs(demand.maxShearStress_MPa - 15) < 1e-9, "shear stress uses the section shear area");
+assert.equal(demand.shearAt_mm, 0, "critical shear location is retained");
+assert.ok(demand.interactionRatio < 1, "von Mises interaction is evaluated at common stations");
+const noAv = sectionDemandScreen({
+  length_mm: 1000, local_end_forces_N_Nmm: [0, 1000, 0, 0, -1000, 0],
+  uniform_load_local_N_per_mm: { qx: 0, qy: -2 }
+}, { A: 1000, W: 10000, Fy: 250 });
+assert.equal(noAv.maxShearStress_MPa, null, "shear stress is withheld when Av is not supplied");
+assert.equal(noAv.interactionRatio, null, "von Mises interaction is withheld when Av is not supplied");
+assert.throws(() => sectionDemandScreen({ length_mm: 0 }, { A: 1, W: 1, Fy: 1 }), /طول و نیروهای انتهایی/, "invalid member geometry is rejected");
 const axialForces = axialScreen({ force_diagram_local: [
   { x_mm: 0, N_N: -120000 }, { x_mm: 1500, N_N: 50000 }, { x_mm: 3000, N_N: 180000 }
 ] });
