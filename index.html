@@ -949,7 +949,6 @@ function frameSectionDemandScreen(member,section,sampleCount=201){
  // On each interval |N|/A+|M|/W is smooth; include its stationary point.
  for(let i=0;i<breaks.length-1;i++){
   const lo=breaks[i],hi=breaks[i+1],mid=(lo+hi)/2,sN=Math.sign(N(mid))||1,sM=Math.sign(M(mid))||1;
-  const slope=-sN*qx/A+sM*qy*0; // keep force and moment derivatives explicit below
   const c0=-sN*qx/A+sM*q[1]/W,c1=sM*qy/W;
   if(Math.abs(c1)>1e-14){const x=-c0/c1;if(x>lo+1e-10&&x<hi-1e-10)roots.push(x)}
  }
