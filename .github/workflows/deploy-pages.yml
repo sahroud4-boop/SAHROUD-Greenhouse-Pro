@@ -38,6 +38,9 @@ jobs:
           PY
           node --check /tmp/sahroud-inline.js
 
+      - name: Run frame solver numerical regression tests
+        run: node tests/frame-solver.test.cjs
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
