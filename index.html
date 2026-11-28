@@ -995,21 +995,27 @@ function evaluateSectionCandidates(){
    const members=baseModel.elements.filter(e=>String(e.id||"").startsWith(role.prefix));
    const baselineName=$(role.key==="columns"?"frameColumnProfile":"frameRafterProfile")?.value||"";
    if(!baselineName)throw new Error("ابتدا مقطع پیش‌فرض "+role.label+" را از بانک مقاطع انتخاب کنید تا تحلیل پایه با همان مقطع انجام شود.");
-   const candidates=sectionProfileBank.filter(p=>[p.mass,p.area,p.Ix,p.Iy,p.E,p.Fy,p.Wx,p.Wy].every(v=>Number.isFinite(Number(v))&&Number(v)>0));
-   const baseline=candidates.find(p=>p.name===baselineName);
-   if(!baseline)throw new Error("مقطع پیش‌فرض "+role.label+" در بانک معتبر نیست؛ Ag، Ix، Iy، Wx، Wy، E، Fy و جرم واحد طول باید مثبت باشند.");
-   const expected={A:Number(baseline.area),E:Number(baseline.E),I:Number(baseline.Ix)};
+   const baseline=sectionProfileBank.find(p=>p.name===baselineName);
+   if(!baseline||!["x","y"].includes(baseline.bendingAxis))throw new Error("برای مقطع پایه "+role.label+" ابتدا محور خمشی X یا Y را صریحاً انتخاب کنید.");
+   const axis=baseline.bendingAxis;
+   const candidates=sectionProfileBank.filter(p=>{
+    const props=frameSectionPropertiesForAxis(p,axis);
+    return props&&[p.mass,props.A,props.I,props.W,props.E,props.Fy].every(v=>Number.isFinite(Number(v))&&Number(v)>0);
+   });
+   if(!candidates.some(p=>p.name===baselineName))throw new Error("مشخصات مقطع پایه "+role.label+" برای محور "+axis.toUpperCase()+" ناقص است؛ Ag، I و W همان محور، E، Fy و جرم واحد طول لازم‌اند.");
+   const expectedProps=frameSectionPropertiesForAxis(baseline,axis);
+   const expected={A:expectedProps.A,E:expectedProps.E,I:expectedProps.I};
    const mismatch=members.some(el=>Math.abs(Number(el.A)-expected.A)>Math.max(1e-8,expected.A*1e-8)||Math.abs(Number(el.E)-expected.E)>Math.max(1e-8,expected.E*1e-8)||Math.abs(Number(el.I)-expected.I)>Math.max(1e-8,expected.I*1e-8)||!el.section||el.section.profile!==baseline.name);
    if(mismatch)throw new Error("مقطع انتخاب‌شده برای "+role.label+" با خواص مدل تولیدشده یکسان نیست؛ مقطع را اعمال و قاب را دوباره تولید کنید.");
    const ranked=[];
    for(const profile of candidates){
-    const W=Math.min(...[Number(profile.Wx),Number(profile.Wy)].filter(v=>Number.isFinite(v)&&v>0));
+    const props=frameSectionPropertiesForAxis(profile,axis);
     const testModel=JSON.parse(JSON.stringify(baseModel));
-    testModel.elements=testModel.elements.map(el=>String(el.id||"").startsWith(role.prefix)?{...el,A:Number(profile.area),E:Number(profile.E),I:Number(profile.Ix),section:{A:Number(profile.area),W,Fy:Number(profile.Fy),profile:profile.name}}:el);
+    testModel.elements=testModel.elements.map(el=>String(el.id||"").startsWith(role.prefix)?{...el,A:props.A,E:props.E,I:props.I,section:{A:props.A,W:props.W,Fy:props.Fy,profile:profile.name,bendingAxis:axis}}:el);
     try{
      const out=analyzeFrame2D(testModel),target=out.members.filter(m=>String(m.id).startsWith(role.prefix));
      if(target.length!==members.length)continue;
-     const stressChecks=target.map(m=>({member:m.id,...frameElasticExtremeFiberStress(m,Number(profile.area),W,Number(profile.Fy))}));
+     const stressChecks=target.map(m=>({member:m.id,...frameElasticExtremeFiberStress(m,props.A,props.W,props.Fy)}));
      const criticalStress=stressChecks.reduce((best,row)=>row.ratio>best.ratio?row:best,stressChecks[0]);
      const maxRatio=criticalStress.ratio;
      let bucklingRatio=null;
