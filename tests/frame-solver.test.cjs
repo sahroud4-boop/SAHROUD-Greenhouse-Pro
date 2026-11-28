@@ -41,15 +41,25 @@ function extractFunction(source, name) {
   throw new Error("unterminated function: " + name);
 }
 
-const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress", "frameAxialForceScreen", "frameSectionDemandScreen"];
+const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress", "frameAxialForceScreen", "frameSectionDemandScreen", "frameSectionPropertiesForAxis"];
 const code = names.map(name => extractFunction(scriptMatch[1], name)).join("\n") +
-  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress, frameAxialForceScreen, frameSectionDemandScreen };";
+  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress, frameAxialForceScreen, frameSectionDemandScreen, frameSectionPropertiesForAxis };";
 const context = vm.createContext({});
 vm.runInContext(code, context, { timeout: 5000 });
 const analyze = context.api.analyzeFrame2D;
 const stressScreen = context.api.frameElasticExtremeFiberStress;
 const axialScreen = context.api.frameAxialForceScreen;
 const sectionDemandScreen = context.api.frameSectionDemandScreen;
+const sectionPropertiesForAxis = context.api.frameSectionPropertiesForAxis;
+const sectionProfile = { name: "TEST-I", area: 1200, E: 200000, Fy: 250, Ix: 8e6, Iy: 2e6, Wx: 4e5, Wy: 1e5, Av: 600 };
+const xAxisProperties = sectionPropertiesForAxis(sectionProfile, "x");
+const yAxisProperties = sectionPropertiesForAxis(sectionProfile, "y");
+assert.equal(xAxisProperties.I, 8e6, "X bending axis must use Ix");
+assert.equal(xAxisProperties.W, 4e5, "X bending axis must use Wx, never the smaller arbitrary modulus");
+assert.equal(yAxisProperties.I, 2e6, "Y bending axis must use Iy");
+assert.equal(yAxisProperties.W, 1e5, "Y bending axis must use Wy");
+assert.equal(sectionPropertiesForAxis(sectionProfile, null), null, "an unspecified bending axis must disable section property mapping");
+
 const demand = sectionDemandScreen({
   length_mm: 3000,
   local_end_forces_N_Nmm: [-100000, 15000, 0, -100000, -15000, 0],
