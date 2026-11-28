@@ -926,7 +926,9 @@ function frameElasticExtremeFiberStress(member,A,W,Fy){
  const ends=[{label:"i",N:q[0],M:q[2]},{label:"j",N:q[3],M:q[5]}];
  const rows=ends.map(e=>({end:e.label,N:e.N,M:e.M,stressAbs:Math.abs(e.N)/A+Math.abs(e.M)/W}));
  const critical=rows.reduce((best,row)=>row.stressAbs>best.stressAbs?row:best,rows[0]);
- return {criticalEnd:critical.end,stressAbs:critical.stressAbs,ratio:critical.stressAbs/Fy,ends:rows};
+ const axialRows=ends.map(e=>({end:e.label,axialStressAbs:Math.abs(e.N)/A}));
+ const axialCritical=axialRows.reduce((best,row)=>row.axialStressAbs>best.axialStressAbs?row:best,axialRows[0]);
+ return {criticalEnd:critical.end,stressAbs:critical.stressAbs,ratio:critical.stressAbs/Fy,ends:rows,axialCriticalEnd:axialCritical.end,axialStressAbs:axialCritical.axialStressAbs,axialRatio:axialCritical.axialStressAbs/Fy,axialEnds:axialRows};
 }
 function evaluateSectionCandidates(){
  try{
@@ -966,7 +968,7 @@ function evaluateSectionCandidates(){
       const rx=Math.sqrt(Number(profile.Ix)/Number(profile.area)),ry=Math.sqrt(Number(profile.Iy)/Number(profile.area));
       bucklingRatio=Math.max(...target.map(m=>{const q=m.local_end_forces_N_Nmm,L=Number(m.length_mm);if(!Array.isArray(q)||q.length<6||!q.every(Number.isFinite)||!(Number.isFinite(L)&&L>0))throw new Error("داده نیرو یا طول ستون برای غربالگری کمانش معتبر نیست.");const Nc=Math.max(0,q[0],-q[3]),pcrx=Math.PI**2*Number(profile.E)*Number(profile.Ix)/(Kx*L)**2,pcry=Math.PI**2*Number(profile.E)*Number(profile.Iy)/(Ky*L)**2;return Nc/Math.min(pcrx,pcry);}));
      }
-     if(Number.isFinite(maxRatio)&&(bucklingRatio===null||Number.isFinite(bucklingRatio)))ranked.push({name:profile.name,mass:Number(profile.mass),ratio:maxRatio,stressMPa:criticalStress.stressAbs,criticalMember:criticalStress.member,criticalEnd:criticalStress.criticalEnd,bucklingRatio,fy:Number(profile.Fy),baseline:profile.name===baselineName});
+     if(Number.isFinite(maxRatio)&&(bucklingRatio===null||Number.isFinite(bucklingRatio)))ranked.push({name:profile.name,mass:Number(profile.mass),ratio:maxRatio,stressMPa:criticalStress.stressAbs,criticalMember:criticalStress.member,criticalEnd:criticalStress.criticalEnd,axialRatio:criticalStress.axialRatio,axialStressMPa:criticalStress.axialStressAbs,axialCriticalEnd:criticalStress.axialCriticalEnd,bucklingRatio,fy:Number(profile.Fy),baseline:profile.name===baselineName});
     }catch(err){/* candidate singularity or invalid data: skip */}
    }
    ranked.sort((a,b)=>(a.baseline===b.baseline?0:a.baseline?-1:1)||(role.key==="columns"?(a.bucklingRatio??Infinity)-(b.bucklingRatio??Infinity):0)||a.ratio-b.ratio||a.mass-b.mass);
@@ -976,8 +978,8 @@ function evaluateSectionCandidates(){
   for(const item of results){
    html+='<h4>'+item.role.label+'</h4>';
    if(!item.ranked.length){html+='<p class="muted">مقطع قابل ارزیابی یافت نشد. برای هر مقطع باید جرم، Ag، Ix، Iy، E، Fy، Wx و Wy از دیتاشیت معتبر و مثبت باشند.</p>';continue}
-   html+='<div class="tablewrap"><table><tr><th>ترتیب</th><th>نقش</th><th>کد مقطع</th><th>جرم (kg/m)</th><th>Fy (MPa)</th><th>بیشینه |σ|/Fy در یک انتها</th>'+(item.role.key==="columns"?'<th>بیشینه N/Pcr,min</th>':'')+'<th>غربالگری اولیه</th><th>عملیات</th></tr>';
-   html+=item.ranked.slice(0,10).map((p,i)=>'<tr><td>'+(p.baseline?"مبنای مقایسه":i)+'</td><td>'+(p.baseline?"مقطع پیش‌فرض":"جایگزین")+'</td><td>'+esc(p.name)+'</td><td>'+fmt(p.mass,3)+'</td><td>'+fmt(p.fy,1)+'</td><td>'+fmt(p.ratio,3)+'</td>'+(item.role.key==="columns"?'<td>'+fmt(p.bucklingRatio,4)+'</td>':'')+'<td>'+(p.ratio<1?"تنش مقدماتی < ۱":"تنش مقدماتی ≥ ۱")+(item.role.key==="columns"?(p.bucklingRatio<1?"؛ اویلر < ۱":"؛ اویلر ≥ ۱"):"")+'</td><td><button class="btn-soft" onclick="applyRecommendedProfile(\''+item.role.key+'\','+i+')">انتخاب و بازتحلیل</button></td></tr>').join("");
+   html+='<div class="tablewrap"><table><tr><th>ترتیب</th><th>نقش</th><th>کد مقطع</th><th>جرم (kg/m)</th><th>Fy (MPa)</th><th>بیشینه |σ|/Fy در یک انتها</th><th>نسبت تنش محوری |N|/(A·Fy)</th>'+(item.role.key==="columns"?'<th>بیشینه N/Pcr,min</th>':'')+'<th>غربالگری اولیه</th><th>عملیات</th></tr>';
+   html+=item.ranked.slice(0,10).map((p,i)=>'<tr><td>'+(p.baseline?"مبنای مقایسه":i)+'</td><td>'+(p.baseline?"مقطع پیش‌فرض":"جایگزین")+'</td><td>'+esc(p.name)+'</td><td>'+fmt(p.mass,3)+'</td><td>'+fmt(p.fy,1)+'</td><td>'+fmt(p.ratio,3)+'</td><td>'+fmt(p.axialRatio,3)+'</td>'+(item.role.key==="columns"?'<td>'+fmt(p.bucklingRatio,4)+'</td>':'')+'<td>'+(p.ratio<1?"تنش مقدماتی < ۱":"تنش مقدماتی ≥ ۱")+(item.role.key==="columns"?(p.bucklingRatio<1?"؛ اویلر < ۱":"؛ اویلر ≥ ۱"):"")+'</td><td><button class="btn-soft" onclick="applyRecommendedProfile(\''+item.role.key+'\','+i+')">انتخاب و بازتحلیل</button></td></tr>').join("");
    html+='</table></div>';
   }
   $("frameOutput").innerHTML+=html;
