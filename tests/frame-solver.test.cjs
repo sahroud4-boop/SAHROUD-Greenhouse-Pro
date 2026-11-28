@@ -56,6 +56,11 @@ assert.equal(axialForces.maxTension_N, 180000, "maximum tension is reported inde
 assert.equal(axialForces.tensionAt_mm, 3000, "maximum tension station is retained");
 assert.equal(axialForces.maxCompression_N, 120000, "maximum compression magnitude is reported independently");
 assert.equal(axialForces.compressionAt_mm, 0, "maximum compression station is retained");
+const interiorCompression = axialScreen({ force_diagram_local: [
+  { x_mm: 0, N_N: 10000 }, { x_mm: 1250, N_N: -95000 }, { x_mm: 3000, N_N: -20000 }
+] });
+assert.equal(interiorCompression.maxCompression_N, 95000, "internal axial force station governs compression demand");
+assert.equal(interiorCompression.compressionAt_mm, 1250, "internal compression location is retained");
 assert.throws(() => axialScreen({ force_diagram_local: [] }), /نمودار نیروی محوری/, "empty axial force diagram is rejected");
 const stressResult = stressScreen({ local_end_forces_N_Nmm: [100000, 0, 0, 0, 0, 8000000] }, 1000, 100000, 250);
 assert.equal(stressResult.criticalEnd, "i", "critical elastic stress is selected at the same physical end");
