@@ -919,6 +919,15 @@ function loadFrameExample(){
  status("frameStatus","نمونه تیر طره‌ای با بار گسترده یکنواخت محلی qy=-10 N/mm بارگذاری شد.");
 }
 let frameCandidateResults={columns:[],rafters:[]};
+function frameElasticExtremeFiberStress(member,A,W,Fy){
+ const q=member&&member.local_end_forces_N_Nmm;
+ if(!Array.isArray(q)||q.length<6||!q.every(Number.isFinite))throw new Error("نیروهای انتهایی عضو برای غربالگری تنش نامعتبر است.");
+ if(![A,W,Fy].every(v=>Number.isFinite(Number(v))&&Number(v)>0))throw new Error("A، W و Fy باید مثبت و معتبر باشند.");
+ const ends=[{label:"i",N:q[0],M:q[2]},{label:"j",N:q[3],M:q[5]}];
+ const rows=ends.map(e=>({end:e.label,N:e.N,M:e.M,stressAbs:Math.abs(e.N)/A+Math.abs(e.M)/W}));
+ const critical=rows.reduce((best,row)=>row.stressAbs>best.stressAbs?row:best,rows[0]);
+ return {criticalEnd:critical.end,stressAbs:critical.stressAbs,ratio:critical.stressAbs/Fy,ends:rows};
+}
 function evaluateSectionCandidates(){
  try{
   const baseModel=JSON.parse($("frameModel").value);
@@ -949,24 +958,25 @@ function evaluateSectionCandidates(){
     try{
      const out=analyzeFrame2D(testModel),target=out.members.filter(m=>String(m.id).startsWith(role.prefix));
      if(target.length!==members.length)continue;
-     const ratios=target.map(m=>{const q=m.local_end_forces_N_Nmm,N=Math.max(Math.abs(q[0]),Math.abs(q[3])),M=Math.max(Math.abs(q[2]),Math.abs(q[5]));return (N/Number(profile.area)+M/W)/Number(profile.Fy)});
-     const maxRatio=Math.max(...ratios);
+     const stressChecks=target.map(m=>({member:m.id,...frameElasticExtremeFiberStress(m,Number(profile.area),W,Number(profile.Fy))}));
+     const criticalStress=stressChecks.reduce((best,row)=>row.ratio>best.ratio?row:best,stressChecks[0]);
+     const maxRatio=criticalStress.ratio;
      let bucklingRatio=null;
      if(role.key==="columns"){
       const rx=Math.sqrt(Number(profile.Ix)/Number(profile.area)),ry=Math.sqrt(Number(profile.Iy)/Number(profile.area));
       bucklingRatio=Math.max(...target.map(m=>{const q=m.local_end_forces_N_Nmm,L=Number(m.length_mm);if(!Array.isArray(q)||q.length<6||!q.every(Number.isFinite)||!(Number.isFinite(L)&&L>0))throw new Error("داده نیرو یا طول ستون برای غربالگری کمانش معتبر نیست.");const Nc=Math.max(0,q[0],-q[3]),pcrx=Math.PI**2*Number(profile.E)*Number(profile.Ix)/(Kx*L)**2,pcry=Math.PI**2*Number(profile.E)*Number(profile.Iy)/(Ky*L)**2;return Nc/Math.min(pcrx,pcry);}));
      }
-     if(Number.isFinite(maxRatio)&&(bucklingRatio===null||Number.isFinite(bucklingRatio)))ranked.push({name:profile.name,mass:Number(profile.mass),ratio:maxRatio,bucklingRatio,fy:Number(profile.Fy),baseline:profile.name===baselineName});
+     if(Number.isFinite(maxRatio)&&(bucklingRatio===null||Number.isFinite(bucklingRatio)))ranked.push({name:profile.name,mass:Number(profile.mass),ratio:maxRatio,stressMPa:criticalStress.stressAbs,criticalMember:criticalStress.member,criticalEnd:criticalStress.criticalEnd,bucklingRatio,fy:Number(profile.Fy),baseline:profile.name===baselineName});
     }catch(err){/* candidate singularity or invalid data: skip */}
    }
    ranked.sort((a,b)=>(a.baseline===b.baseline?0:a.baseline?-1:1)||(role.key==="columns"?(a.bucklingRatio??Infinity)-(b.bucklingRatio??Infinity):0)||a.ratio-b.ratio||a.mass-b.mass);
    frameCandidateResults[role.key]=ranked;results.push({role,ranked});
   }
-  let html='<h4 style="margin-top:16px">مقایسه آزمایشی مقاطع بانک</h4><div class="notice">مقطع پیش‌فرض در ردیف مبنای مقایسه حفظ می‌شود. برای ستون‌ها، گزینه‌ها پس از مبنا ابتدا بر اساس نسبت تقاضای فشاری به بار بحرانی الاستیک اویلرِ ضعیف‌ترین محور و سپس نسبت تنش ساده مرتب می‌شوند؛ برای رفترها فقط نسبت تنش ساده و جرم گزارش می‌شود. مقدار N/Pcr کمتر از ۱ صرفاً غربالگری الاستیک اویلر است و مقاومت طراحی ستون نیست. کمانش خمشی-پیچشی، اندرکنش آیین‌نامه‌ای، اثرات مرتبه دوم، طول مهارنشده واقعی، شرایط انتهایی، جهت‌گیری مقطع، اتصالات و مهاربندی کامل نشده‌اند. Kx و Ky ورودی مهندس هستند و نباید حدس زده شوند. جرم شاخص اقتصادی اولیه است، نه بهینه‌سازی هزینه. Wx/Wy کوچک‌تر فقط تقریب محافظه‌کارانه تنش است و محور واقعی باید تأیید شود.</div>';
+  let html='<h4 style="margin-top:16px">مقایسه آزمایشی مقاطع بانک</h4><div class="notice">مقطع پیش‌فرض در ردیف مبنای مقایسه حفظ می‌شود. شاخص تنش، بیشینه تنش الاستیک الیاف کناری در هر انتهای عضو از ترکیب هم‌مکان |N|/A + |M|/W است؛ بیشینه نیروی محوری و لنگر از دو انتهای متفاوت با هم جمع نمی‌شوند. W کوچک‌تر بین Wx و Wy به‌عنوان تقریب محافظه‌کارانه استفاده می‌شود و جهت‌گیری واقعی باید تأیید شود. این شاخص فقط غربالگری تسلیم الاستیک است و مقاومت طراحی آیین‌نامه‌ای نیست. برای ستون‌ها، گزینه‌ها پس از مبنا ابتدا بر اساس نسبت تقاضای فشاری به بار بحرانی الاستیک اویلرِ ضعیف‌ترین محور و سپس نسبت تنش مرتب می‌شوند؛ برای رفترها نسبت تنش و جرم گزارش می‌شود. مقدار N/Pcr کمتر از ۱ صرفاً غربالگری الاستیک اویلر است و مقاومت طراحی ستون نیست. کمانش خمشی-پیچشی، اندرکنش آیین‌نامه‌ای، اثرات مرتبه دوم، طول مهارنشده واقعی، شرایط انتهایی، جهت‌گیری مقطع، اتصالات و مهاربندی کامل نشده‌اند. Kx و Ky ورودی مهندس هستند و نباید حدس زده شوند. جرم شاخص اقتصادی اولیه است، نه بهینه‌سازی هزینه. Wx/Wy کوچک‌تر فقط تقریب محافظه‌کارانه تنش است و محور واقعی باید تأیید شود.</div>';
   for(const item of results){
    html+='<h4>'+item.role.label+'</h4>';
    if(!item.ranked.length){html+='<p class="muted">مقطع قابل ارزیابی یافت نشد. برای هر مقطع باید جرم، Ag، Ix، Iy، E، Fy، Wx و Wy از دیتاشیت معتبر و مثبت باشند.</p>';continue}
-   html+='<div class="tablewrap"><table><tr><th>ترتیب</th><th>نقش</th><th>کد مقطع</th><th>جرم (kg/m)</th><th>Fy (MPa)</th><th>بیشینه σ/Fy</th>'+(item.role.key==="columns"?'<th>بیشینه N/Pcr,min</th>':'')+'<th>غربالگری اولیه</th><th>عملیات</th></tr>';
+   html+='<div class="tablewrap"><table><tr><th>ترتیب</th><th>نقش</th><th>کد مقطع</th><th>جرم (kg/m)</th><th>Fy (MPa)</th><th>بیشینه |σ|/Fy در یک انتها</th>'+(item.role.key==="columns"?'<th>بیشینه N/Pcr,min</th>':'')+'<th>غربالگری اولیه</th><th>عملیات</th></tr>';
    html+=item.ranked.slice(0,10).map((p,i)=>'<tr><td>'+(p.baseline?"مبنای مقایسه":i)+'</td><td>'+(p.baseline?"مقطع پیش‌فرض":"جایگزین")+'</td><td>'+esc(p.name)+'</td><td>'+fmt(p.mass,3)+'</td><td>'+fmt(p.fy,1)+'</td><td>'+fmt(p.ratio,3)+'</td>'+(item.role.key==="columns"?'<td>'+fmt(p.bucklingRatio,4)+'</td>':'')+'<td>'+(p.ratio<1?"تنش مقدماتی < ۱":"تنش مقدماتی ≥ ۱")+(item.role.key==="columns"?(p.bucklingRatio<1?"؛ اویلر < ۱":"؛ اویلر ≥ ۱"):"")+'</td><td><button class="btn-soft" onclick="applyRecommendedProfile(\''+item.role.key+'\','+i+')">انتخاب و بازتحلیل</button></td></tr>').join("");
    html+='</table></div>';
   }
