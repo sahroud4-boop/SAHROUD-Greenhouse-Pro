@@ -41,9 +41,9 @@ function extractFunction(source, name) {
   throw new Error("unterminated function: " + name);
 }
 
-const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress", "frameAxialForceScreen", "frameSectionDemandScreen", "frameSectionPropertiesForAxis", "frameEulerBucklingForAxis", "frameEulerBucklingMinimum", "validateSectionProfileData"];
+const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress", "frameAxialForceScreen", "frameSectionDemandScreen", "frameSectionPropertiesForAxis", "frameEulerBucklingForAxis", "frameEulerBucklingMinimum", "validateSectionProfileData", "calculateIdealizedISection"];
 const code = names.map(name => extractFunction(scriptMatch[1], name)).join("\n") +
-  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress, frameAxialForceScreen, frameSectionDemandScreen, frameSectionPropertiesForAxis, frameEulerBucklingForAxis, frameEulerBucklingMinimum, validateSectionProfileData };";
+  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress, frameAxialForceScreen, frameSectionDemandScreen, frameSectionPropertiesForAxis, frameEulerBucklingForAxis, frameEulerBucklingMinimum, validateSectionProfileData, calculateIdealizedISection };";
 const context = vm.createContext({});
 vm.runInContext(code, context, { timeout: 5000 });
 const analyze = context.api.analyzeFrame2D;
@@ -386,3 +386,27 @@ assert.equal(validateProfile({name:"LEGACY",mass:7,area:900}),
 assert.match(validateProfile({name:" ",mass:7}), /نام یا کد/,
   "blank profile names must be rejected");
 console.log("PASS: section-profile bank validation, geometry consistency, and legacy import compatibility");
+
+
+// Regression coverage: idealized sharp-corner symmetric I-section gross geometry.
+const idealizedI = context.api.calculateIdealizedISection;
+const idealI = idealizedI(300, 150, 8, 12);
+assert.equal(idealI.error, undefined, "valid symmetric I geometry must calculate");
+near(idealI.area, 5808, 1e-10, "idealized I gross area");
+near(idealI.Ix, (150*Math.pow(300,3)-142*Math.pow(276,3))/12, 1e-6,
+  "idealized I strong-axis second moment");
+near(idealI.Iy, (2*12*Math.pow(150,3)+276*Math.pow(8,3))/12, 1e-6,
+  "idealized I weak-axis second moment");
+near(idealI.Wx, idealI.Ix/150, 1e-8, "idealized I strong-axis elastic modulus");
+near(idealI.Wy, idealI.Iy/75, 1e-8, "idealized I weak-axis elastic modulus");
+near(idealI.rx, Math.sqrt(idealI.Ix/idealI.area), 1e-10, "idealized I x radius of gyration");
+near(idealI.ry, Math.sqrt(idealI.Iy/idealI.area), 1e-10, "idealized I y radius of gyration");
+assert.match(idealI.assumption, /گوشه‌های تیز/,
+  "idealized result must disclose sharp-corner geometry assumptions");
+assert.ok(idealizedI(24, 150, 8, 12).error,
+  "overlapping flange thicknesses must be rejected");
+assert.ok(idealizedI(300, 150, 160, 12).error,
+  "web thicker than flange width must be rejected");
+assert.ok(idealizedI("x", 150, 8, 12).error,
+  "non-numeric geometry must be rejected");
+console.log("PASS: idealized sharp-corner I-section geometric properties and invalid-dimension rejection");
