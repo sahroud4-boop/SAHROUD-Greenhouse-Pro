@@ -213,3 +213,19 @@ assertCombinedVector(zeroPlusActive.reactions, pointOnly.reactions, 1,
   pointOnly.reactions, 0, x => x.node + ":" + x.dof, "zero-factor reaction");
 
 console.log("PASS: combined displacement/reaction scaling and cancellation, zero factors, and mixed nodal/distributed signed superposition");
+
+assert.ok(mixed.equilibrium && mixed.equilibrium.passed,
+  "mixed load-case combination must independently pass global equilibrium");
+for (const component of ["fx", "fy", "mz"]) {
+  near(mixed.equilibrium.residual[component], 0, 1e-7,
+    "mixed combined global equilibrium residual " + component);
+}
+assert.ok(cancelled.equilibrium && cancelled.equilibrium.passed,
+  "equal and opposite cases must retain equilibrium after cancellation");
+for (const component of ["fx", "fy", "mz"]) {
+  near(cancelled.equilibrium.applied[component], 0, 1e-9,
+    "cancelled combined applied resultant " + component);
+  near(cancelled.equilibrium.support[component], 0, 1e-8,
+    "cancelled combined support resultant " + component);
+}
+console.log("PASS: independent global force and moment equilibrium of signed load combinations");
