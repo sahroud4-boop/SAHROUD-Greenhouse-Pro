@@ -85,7 +85,7 @@ console.log("All 4 frame-solver regression checks passed.");
 
 const comboSource = scriptMatch[1];
 const comboNames = ["frameTopologySignature", "runFrameCombinations"];
-const comboCode = comboNames.map(name => extractFunction(comboSource, name)).join("\\n") + `
+const comboCode = comboNames.map(name => extractFunction(comboSource, name)).join("\n") + `
 let frameCombinationLast = null;
 const ui = Object.create(null);
 function $(id) { return ui[id] || (ui[id] = { value: "", innerHTML: "" }); }
@@ -94,7 +94,7 @@ function fmt(v) { return String(v); }
 function esc(v) { return String(v); }
 globalThis.comboApi = { runFrameCombinations, getLast: () => frameCombinationLast, ui };
 `;
-vm.runInContext(code + "\\n" + comboCode, context, { timeout: 5000 });
+vm.runInContext(code + "\n" + comboCode, context, { timeout: 5000 });
 const combo = context.comboApi;
 const beam = {
   nodes: [{ x: 0, y: 0 }, { x: 3000, y: 0 }],
