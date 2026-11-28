@@ -141,3 +141,75 @@ assert.ok(String(combo.ui.cmbStatus.textContent).includes("خطا"), "mismatched
 console.log("PASS: load-combination identity, doubling, signed cancellation, critical station and topology rejection");
 console.log("All frame solver and load-combination regression checks passed.");
 
+
+// Regression coverage: combined nodal responses, reactions, zero factors and mixed load types.
+function near(actual, expected, tolerance, label) {
+  assert.ok(Math.abs(actual - expected) <= tolerance,
+    label + ": expected " + expected + ", received " + actual);
+}
+function keyedValues(rows, key) {
+  return new Map(rows.map(row => [key(row), row.value]));
+}
+function assertCombinedVector(actual, a, af, b, bf, key, label) {
+  const av = keyedValues(a, key), bv = keyedValues(b, key);
+  for (const row of actual) {
+    const id = key(row);
+    near(row.value, af * (av.get(id) || 0) + bf * (bv.get(id) || 0), 1e-8, label + " " + id);
+  }
+}
+const doubledDisplacements = keyedValues(doubledCombo.displacements, x => x.node + ":" + x.dof);
+for (const row of single.displacements) {
+  near(doubledDisplacements.get(row.node + ":" + row.dof), 2 * row.value, 1e-8,
+    "doubling factor doubles displacement " + row.node + ":" + row.dof);
+}
+const doubledReactions = keyedValues(doubledCombo.reactions, x => x.node + ":" + x.dof);
+for (const row of single.reactions) {
+  near(doubledReactions.get(row.node + ":" + row.dof), 2 * row.value, 1e-7,
+    "doubling factor doubles reaction " + row.node + ":" + row.dof);
+}
+for (const row of cancelled.displacements) near(row.value, 0, 1e-9, "cancelled displacement");
+for (const row of cancelled.reactions) near(row.value, 0, 1e-8, "cancelled reaction");
+const zeroFactor = runCases(beam, 0, null, 1);
+assert.equal(zeroFactor, null, "zero-factor-only input must not create an active load case");
+assert.ok(String(combo.ui.cmbStatus.textContent).includes("حداقل یک مدل"),
+  "zero-factor-only input must explain that no active case remains");
+
+// A cantilever allows a true nodal point load and a distinct uniform member load
+// to be superposed on exactly the same topology and support conditions.
+const mixedBase = {
+  nodes: [{ x: 0, y: 0 }, { x: 3000, y: 0 }],
+  elements: [{ id: "MIX-1", i: 0, j: 1, A: 2000, E: 200000, I: 80000000 }],
+  restraints: [{ node: 0, dofs: [true, true, true] }],
+  loads: [], elementLoads: []
+};
+const uniformCase = { ...mixedBase, elementLoads: [{ element: 0, qx: 0, qy: -0.8 }] };
+const pointCase = { ...mixedBase, loads: [{ node: 1, fx: 0, fy: -700, mz: 0 }] };
+const mixed = runCases(uniformCase, 1.25, pointCase, -0.4);
+assert.ok(mixed, "different load types with signed factors must combine");
+const directUniform = analyze(uniformCase), directPoint = analyze(pointCase);
+assertCombinedVector(mixed.displacements, directUniform.displacements, 1.25,
+  directPoint.displacements, -0.4, x => x.node + ":" + x.dof, "mixed displacement");
+assertCombinedVector(mixed.reactions, directUniform.reactions, 1.25,
+  directPoint.reactions, -0.4, x => x.node + ":" + x.dof, "mixed reaction");
+const uniformMember = directUniform.members[0], pointMember = directPoint.members[0];
+for (const p of mixed.members[0].force_diagram_local) {
+  const q = uniformMember.local_end_forces_N_Nmm, uq = uniformMember.uniform_load_local_N_per_mm;
+  const r = pointMember.local_end_forces_N_Nmm, rq = pointMember.uniform_load_local_N_per_mm;
+  const x = p.x_mm;
+  const expectedN = 1.25 * (-q[0] - uq.qx * x) - 0.4 * (-r[0] - rq.qx * x);
+  const expectedV = 1.25 * (q[1] + uq.qy * x) - 0.4 * (r[1] + rq.qy * x);
+  const expectedM = 1.25 * (-q[2] + q[1] * x + uq.qy * x * x / 2) -
+    0.4 * (-r[2] + r[1] * x + rq.qy * x * x / 2);
+  near(p.N_N, expectedN, 1e-7, "mixed axial force at " + x);
+  near(p.V_N, expectedV, 1e-7, "mixed shear at " + x);
+  near(p.M_Nmm, expectedM, 1e-6, "mixed moment at " + x);
+}
+const zeroPlusActive = runCases(uniformCase, 0, pointCase, 1);
+assert.ok(zeroPlusActive, "a zero factor must be ignored when another case is active");
+const pointOnly = analyze(pointCase);
+assertCombinedVector(zeroPlusActive.displacements, pointOnly.displacements, 1,
+  pointOnly.displacements, 0, x => x.node + ":" + x.dof, "zero-factor displacement");
+assertCombinedVector(zeroPlusActive.reactions, pointOnly.reactions, 1,
+  pointOnly.reactions, 0, x => x.node + ":" + x.dof, "zero-factor reaction");
+
+console.log("PASS: combined displacement/reaction scaling and cancellation, zero factors, and mixed nodal/distributed signed superposition");
