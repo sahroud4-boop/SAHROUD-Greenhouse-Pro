@@ -52,6 +52,12 @@ const stressResult = stressScreen({ local_end_forces_N_Nmm: [100000, 0, 0, 0, 0,
 assert.equal(stressResult.criticalEnd, "i", "critical elastic stress is selected at the same physical end");
 assert.ok(Math.abs(stressResult.stressAbs - 100) < 1e-12, "same-end axial and bending stress is evaluated consistently");
 assert.ok(Math.abs(stressResult.ratio - 0.4) < 1e-12, "elastic stress-to-yield ratio");
+assert.equal(stressResult.axialCriticalEnd, "i", "axial-only screening identifies its critical member end");
+assert.ok(Math.abs(stressResult.axialStressAbs - 100) < 1e-12, "axial-only elastic stress");
+assert.ok(Math.abs(stressResult.axialRatio - 0.4) < 1e-12, "axial-only stress-to-yield ratio");
+const oppositeEndAxial = stressScreen({ local_end_forces_N_Nmm: [100000,0,0,200000,0,0] }, 1000, 100000, 250);
+assert.equal(oppositeEndAxial.axialCriticalEnd, "j", "axial-only critical end is selected independently");
+assert.ok(Math.abs(oppositeEndAxial.axialRatio - 0.8) < 1e-12, "axial-only maximum is taken across both member ends");
 assert.throws(() => stressScreen({ local_end_forces_N_Nmm: [1, 2] }, 1000, 100000, 250),
   /نیروهای انتهایی/, "incomplete member end forces are rejected");
 console.log("PASS: same-end elastic extreme-fiber stress screening and input validation");
