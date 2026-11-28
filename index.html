@@ -879,8 +879,8 @@ function generateGreenhouseFrame(){
   const roofLeft=num("autoRoofLeft"),roofRight=num("autoRoofRight"),roofWindLeft=num("autoRoofWindLeft"),roofWindRight=num("autoRoofWindRight"),sideWindLeft=num("autoSideWindLeft"),sideWindRight=num("autoSideWindRight");
   if(!(p.bays>0&&p.bayWidth>0&&p.height>0&&p.ridge>0))throw new Error("ابتدا هندسه معتبر گلخانه را محاسبه کنید؛ افزایش ارتفاع تاج باید مثبت باشد.");
   if(!(A>0&&E>0&&I>0))throw new Error("برای تحلیل، A و I باید از مشخصات مقطع معتبر وارد شوند و E نیز مثبت باشد.");
-   if(colProfile&&!(colSection.A>0&&colSection.E>0&&colSection.I>0&&colSection.Fy>0))throw new Error("مشخصات مقطع ستون ناقص است؛ Ag، ممان اینرسی محور انتخابی، E و Fy را در بانک تکمیل کنید.");
-   if(rafProfile&&!(rafSection.A>0&&rafSection.E>0&&rafSection.I>0&&rafSection.Fy>0))throw new Error("مشخصات مقطع رفتر ناقص است؛ Ag، Ix، E و Fy را در بانک تکمیل کنید.");
+   if(colProfile&&!(colSection&&colSection.A>0&&colSection.E>0&&colSection.I>0&&colSection.Fy>0))throw new Error("مقطع ستون: محور خمشی X یا Y را در بانک انتخاب کنید و Ag، ممان اینرسی همان محور، E و Fy معتبر را ثبت کنید.");
+   if(rafProfile&&!(rafSection&&rafSection.A>0&&rafSection.E>0&&rafSection.I>0&&rafSection.Fy>0))throw new Error("مقطع رفتر: محور خمشی X یا Y را در بانک انتخاب کنید و Ag، ممان اینرسی همان محور، E و Fy معتبر را ثبت کنید.");
   if([roofLeft,roofRight,roofWindLeft,roofWindRight,sideWindLeft,sideWindRight].some(v=>v===null||!Number.isFinite(v)))throw new Error("تمام بارهای سطحی باید عددی باشند.");
   const nodes=[],elements=[],restraints=[],elementLoads=[],base=[],eave=[];
   for(let j=0;j<=p.bays;j++){
