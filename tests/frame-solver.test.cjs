@@ -62,6 +62,15 @@ assert.ok(Math.abs(demand.normalAt_mm - 1500) < 1e-9, "critical normal stress lo
 assert.ok(Math.abs(demand.maxShearStress_MPa - 15) < 1e-9, "shear stress uses the section shear area");
 assert.equal(demand.shearAt_mm, 0, "critical shear location is retained");
 assert.ok(demand.interactionRatio < 1, "von Mises interaction is evaluated at common stations");
+const offGridCritical = sectionDemandScreen({
+  length_mm: 3000,
+  local_end_forces_N_Nmm: [0, 1375, 0, 0, -1625, 0],
+  uniform_load_local_N_per_mm: { qx: 0, qy: -1 }
+}, { A: 1000, W: 100000, Fy: 250, Av: 1000 });
+assert.ok(Math.abs(offGridCritical.MAt_mm - 1375) < 1e-9, "analytical zero-shear station is retained even when it falls between uniform samples");
+assert.ok(Math.abs(offGridCritical.maxM_Nmm - 945312.5) < 1e-6, "moment maximum is evaluated exactly at the off-grid station");
+assert.ok(Math.abs(offGridCritical.normalAt_mm - 1375) < 1e-9, "normal stress maximum uses analytical stationary candidate");
+
 const noAv = sectionDemandScreen({
   length_mm: 1000, local_end_forces_N_Nmm: [0, 1000, 0, 0, -1000, 0],
   uniform_load_local_N_per_mm: { qx: 0, qy: -2 }
