@@ -227,6 +227,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
    <div><label>ممان اینرسی Iy (mm⁴)</label><input id="profileIy" type="number" min="0" step="any"></div>
    <div><label>مدول مقطع Wx (mm³)</label><input id="profileWx" type="number" min="0" step="any"></div>
    <div><label>مدول مقطع Wy (mm³)</label><input id="profileWy" type="number" min="0" step="any"></div>
+   <div><label>محور خمشی مدل قاب دوبعدی</label><select id="profileBendingAxis"><option value="">انتخاب نشده — کنترل مقطع غیرفعال</option><option value="x">محور X (Ix و Wx)</option><option value="y">محور Y (Iy و Wy)</option></select></div>
    <div><label>سطح مؤثر برش Av (mm²، اختیاری از دیتاشیت)</label><input id="profileAv" type="number" min="0" step="any"></div>
    <div><label>شعاع ژیراسیون rx (mm)</label><input id="profileRx" type="number" min="0" step="any"></div>
    <div><label>شعاع ژیراسیون ry (mm)</label><input id="profileRy" type="number" min="0" step="any"></div>
@@ -494,7 +495,7 @@ function profileField(id){const e=$(id);if(!e||e.value.trim()==="")return null;c
 function addSectionProfile(){
  const name=$("profileName").value.trim(),mass=profileField("profileMass");
  if(!name||mass===null||mass<=0){status("profileStatus","نام مقطع و جرم واحد طول مثبت الزامی است.",true);return}
- const item={id:"sp-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6),name,standard:$("profileStandard").value.trim(),grade:$("profileGrade").value.trim(),mass,area:profileField("profileArea"),Fy:profileField("profileFy"),E:profileField("profileE"),Ix:profileField("profileIx"),Iy:profileField("profileIy"),Wx:profileField("profileWx"),Wy:profileField("profileWy"),Av:profileField("profileAv"),rx:profileField("profileRx"),ry:profileField("profileRy"),source:$("profileSource").value.trim(),notes:$("profileNotes").value.trim(),updatedAt:new Date().toISOString()};
+ const item={id:"sp-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6),name,standard:$("profileStandard").value.trim(),grade:$("profileGrade").value.trim(),mass,area:profileField("profileArea"),Fy:profileField("profileFy"),E:profileField("profileE"),Ix:profileField("profileIx"),Iy:profileField("profileIy"),Wx:profileField("profileWx"),Wy:profileField("profileWy"),bendingAxis:$("profileBendingAxis").value||null,Av:profileField("profileAv"),rx:profileField("profileRx"),ry:profileField("profileRy"),source:$("profileSource").value.trim(),notes:$("profileNotes").value.trim(),updatedAt:new Date().toISOString()};
  const duplicate=sectionProfileBank.findIndex(p=>p.name.toLowerCase()===name.toLowerCase());
  if(duplicate>=0){if(!confirm("این کد مقطع وجود دارد. جایگزین شود؟"))return;sectionProfileBank[duplicate]=item}else sectionProfileBank.push(item);
  persistSectionProfileBank();status("profileStatus","مقطع ثبت شد. برای اتصال به اعضا، کد آن را در فیلد مقطع وارد کنید.");
@@ -523,12 +524,18 @@ function renderFrameProfileOptions(){
   if(sectionProfileBank.some(p=>p.name===current))el.value=current;
  }
 }
+function frameSectionPropertiesForAxis(profile,axis){
+ if(!profile||!["x","y"].includes(axis))return null;
+ const I=Number(axis==="x"?profile.Ix:profile.Iy),W=Number(axis==="x"?profile.Wx:profile.Wy);
+ return {A:Number(profile.area),E:Number(profile.E),I,W:Number.isFinite(W)&&W>0?W:null,Av:Number(profile.Av)>0?Number(profile.Av):null,Fy:Number(profile.Fy),profile:profile.name,bendingAxis:axis};
+}
 function applyFrameProfile(role){
  const id=role==="columns"?"frameColumnProfile":"frameRafterProfile",p=findSectionProfile($(id)?.value);
  if(!p)return;
- if(!(Number(p.area)>0&&Number(p.Ix)>0&&Number(p.E)>0&&Number(p.Fy)>0)){status("autoFrameStatus","برای استفاده تحلیلی از این مقطع، Ag، Ix، E و Fy مثبت و معتبر باید در بانک ثبت شده باشند.",true);return}
- $("autoFrameA").value=p.area;$("autoFrameE").value=p.E;$("autoFrameI").value=p.Ix;
- status("autoFrameStatus","مشخصات A، E و Ix مقطع "+p.name+" برای ورودی قاب درج شد. کنترل تنش فقط در صورت وجود W معتبر انجام می‌شود.");
+ const selected=frameSectionPropertiesForAxis(p,p.bendingAxis);
+ if(!(selected&&selected.A>0&&selected.I>0&&selected.E>0&&selected.Fy>0)){status("autoFrameStatus","برای این مقطع، محور خمشی X یا Y را در بانک مشخص کنید و Ag، ممان اینرسی متناظر، E و Fy معتبر وارد کنید.",true);return}
+ $("autoFrameA").value=selected.A;$("autoFrameE").value=selected.E;$("autoFrameI").value=selected.I;
+ status("autoFrameStatus","خواص محور "+selected.bendingAxis+" مقطع "+p.name+" به مدل دوبعدی اعمال شد؛ W متناظر فقط با همین محور مصرف می‌شود.");
 }
 function applyProfileBankToMembers(){
  const keys=["columns","rafters","eaves","ridges","purlins"];let count=0;
@@ -855,8 +862,8 @@ function greenhouseFrameGenerationInputs(){
   loads:{roofLeft:num("autoRoofLeft"),roofRight:num("autoRoofRight"),roofWindLeft:num("autoRoofWindLeft"),roofWindRight:num("autoRoofWindRight"),sideWindLeft:num("autoSideWindLeft"),sideWindRight:num("autoSideWindRight")},
   sections:{
    columnProfile:$("frameColumnProfile")?.value||"",rafterProfile:$("frameRafterProfile")?.value||"",
-   columnData:(()=>{const p=findSectionProfile($("frameColumnProfile")?.value);return p?{area:p.area,E:p.E,Ix:p.Ix,Wx:p.Wx,Wy:p.Wy,Fy:p.Fy}:null})(),
-   rafterData:(()=>{const p=findSectionProfile($("frameRafterProfile")?.value);return p?{area:p.area,E:p.E,Ix:p.Ix,Wx:p.Wx,Wy:p.Wy,Fy:p.Fy}:null})(),
+   columnData:(()=>{const p=findSectionProfile($("frameColumnProfile")?.value);return p?{area:p.area,E:p.E,Ix:p.Ix,Iy:p.Iy,Wx:p.Wx,Wy:p.Wy,Fy:p.Fy,bendingAxis:p.bendingAxis}:null})(),
+   rafterData:(()=>{const p=findSectionProfile($("frameRafterProfile")?.value);return p?{area:p.area,E:p.E,Ix:p.Ix,Iy:p.Iy,Wx:p.Wx,Wy:p.Wy,Fy:p.Fy,bendingAxis:p.bendingAxis}:null})(),
    manualA:num("autoFrameA"),manualE:num("autoFrameE"),manualI:num("autoFrameI")
   }
  };
@@ -866,13 +873,13 @@ function generateGreenhouseFrame(){
   if(!calculateGeometry())throw new Error("ابتدا تمام ورودی‌های هندسی را اصلاح و محاسبه کنید.");
   const p=geometryParams(),manualA=num("autoFrameA"),manualE=num("autoFrameE"),manualI=num("autoFrameI");
    const colProfile=findSectionProfile($("frameColumnProfile")?.value),rafProfile=findSectionProfile($("frameRafterProfile")?.value);
-   const sectionFor=profile=>profile?{A:Number(profile.area),E:Number(profile.E),I:Number(profile.Ix),W:[Number(profile.Wx),Number(profile.Wy)].filter(v=>Number.isFinite(v)&&v>0).sort((a,b)=>a-b)[0]||null,Av:Number(profile.Av)||null,Fy:Number(profile.Fy),profile:profile.name}:null;
+   const sectionFor=profile=>profile?frameSectionPropertiesForAxis(profile,profile.bendingAxis):null;
    const colSection=sectionFor(colProfile),rafSection=sectionFor(rafProfile);
    const A=colSection?.A||manualA,E=colSection?.E||manualE,I=colSection?.I||manualI;
   const roofLeft=num("autoRoofLeft"),roofRight=num("autoRoofRight"),roofWindLeft=num("autoRoofWindLeft"),roofWindRight=num("autoRoofWindRight"),sideWindLeft=num("autoSideWindLeft"),sideWindRight=num("autoSideWindRight");
   if(!(p.bays>0&&p.bayWidth>0&&p.height>0&&p.ridge>0))throw new Error("ابتدا هندسه معتبر گلخانه را محاسبه کنید؛ افزایش ارتفاع تاج باید مثبت باشد.");
   if(!(A>0&&E>0&&I>0))throw new Error("برای تحلیل، A و I باید از مشخصات مقطع معتبر وارد شوند و E نیز مثبت باشد.");
-   if(colProfile&&!(colSection.A>0&&colSection.E>0&&colSection.I>0&&colSection.Fy>0))throw new Error("مشخصات مقطع ستون ناقص است؛ Ag، Ix، E و Fy را در بانک تکمیل کنید.");
+   if(colProfile&&!(colSection.A>0&&colSection.E>0&&colSection.I>0&&colSection.Fy>0))throw new Error("مشخصات مقطع ستون ناقص است؛ Ag، ممان اینرسی محور انتخابی، E و Fy را در بانک تکمیل کنید.");
    if(rafProfile&&!(rafSection.A>0&&rafSection.E>0&&rafSection.I>0&&rafSection.Fy>0))throw new Error("مشخصات مقطع رفتر ناقص است؛ Ag، Ix، E و Fy را در بانک تکمیل کنید.");
   if([roofLeft,roofRight,roofWindLeft,roofWindRight,sideWindLeft,sideWindRight].some(v=>v===null||!Number.isFinite(v)))throw new Error("تمام بارهای سطحی باید عددی باشند.");
   const nodes=[],elements=[],restraints=[],elementLoads=[],base=[],eave=[];
