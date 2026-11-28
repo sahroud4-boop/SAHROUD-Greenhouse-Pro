@@ -536,6 +536,11 @@ function frameEulerBucklingForAxis(profile,axis,Kx,Ky,length){
  const r=Math.sqrt(I/A),pcr=Math.PI**2*E*I/(K*L)**2;
  return {axis,I,K,L,r,pcr,slenderness:K*L/r};
 }
+function frameEulerBucklingMinimum(profile,Kx,Ky,length){
+ const x=frameEulerBucklingForAxis(profile,"x",Kx,Ky,length);
+ const y=frameEulerBucklingForAxis(profile,"y",Kx,Ky,length);
+ return {x,y,minimum:Math.min(x.pcr,y.pcr),axis:x.pcr<=y.pcr?"x":"y"};
+}
 function applyFrameProfile(role){
  const id=role==="columns"?"frameColumnProfile":"frameRafterProfile",p=findSectionProfile($(id)?.value);
  if(!p)return;
@@ -1027,7 +1032,7 @@ function evaluateSectionCandidates(){
      const maxRatio=criticalStress.ratio;
      let bucklingRatio=null;
      if(role.key==="columns"){
-      bucklingRatio=Math.max(...target.map(m=>{const q=m.local_end_forces_N_Nmm,L=Number(m.length_mm);if(!Array.isArray(q)||q.length<6||!q.every(Number.isFinite)||!(Number.isFinite(L)&&L>0))throw new Error("داده نیرو یا طول ستون برای غربالگری کمانش معتبر نیست.");const Nc=frameAxialForceScreen(m).maxCompression_N;if(!(Number(profile.Ix)>0&&Number(profile.Iy)>0))throw new Error("برای غربالگری دو‌محوره ستون، Ix و Iy معتبر از دیتاشیت لازم است.");const ex=frameEulerBucklingForAxis(profile,"x",Kx,Ky,L),ey=frameEulerBucklingForAxis(profile,"y",Kx,Ky,L),pcr=Math.min(ex.pcr,ey.pcr);return Nc/pcr;}));
+      bucklingRatio=Math.max(...target.map(m=>{const q=m.local_end_forces_N_Nmm,L=Number(m.length_mm);if(!Array.isArray(q)||q.length<6||!q.every(Number.isFinite)||!(Number.isFinite(L)&&L>0))throw new Error("داده نیرو یا طول ستون برای غربالگری کمانش معتبر نیست.");const Nc=frameAxialForceScreen(m).maxCompression_N;if(!(Number(profile.Ix)>0&&Number(profile.Iy)>0))throw new Error("برای غربالگری دو‌محوره ستون، Ix و Iy معتبر از دیتاشیت لازم است.");const euler=frameEulerBucklingMinimum(profile,Kx,Ky,L);return Nc/euler.minimum;}));
      }
      if(Number.isFinite(maxRatio)&&(bucklingRatio===null||Number.isFinite(bucklingRatio)))ranked.push({name:profile.name,mass:Number(profile.mass),ratio:maxRatio,stressMPa:criticalStress.stressAbs,criticalMember:criticalStress.member,criticalEnd:criticalStress.criticalEnd,axialRatio:criticalStress.axialRatio,axialStressMPa:criticalStress.axialStressAbs,axialCriticalEnd:criticalStress.axialCriticalEnd,bucklingRatio,fy:Number(profile.Fy),baseline:profile.name===baselineName});
     }catch(err){/* candidate singularity or invalid data: skip */}
