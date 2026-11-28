@@ -92,7 +92,7 @@ function $(id) { return ui[id] || (ui[id] = { value: "", innerHTML: "" }); }
 function status(id, message) { $(id).textContent = message; }
 function fmt(v) { return String(v); }
 function esc(v) { return String(v); }
-globalThis.comboApi = { runFrameCombinations, getLast: () => frameCombinationLast, ui };
+globalThis.comboApi = { runFrameCombinations, getLast: () => frameCombinationLast, ui, get: $ };
 `;
 vm.runInContext(code + "\n" + comboCode, context, { timeout: 5000 });
 const combo = context.comboApi;
@@ -104,14 +104,13 @@ const beam = {
   elementLoads: [{ element: 0, qx: 0, qy: -1 }]
 };
 function runCases(g, gf, sCase, sf) {
-  const ui = combo.ui;
-  ui.cmbModelG.value = g ? JSON.stringify(g) : "";
-  ui.cmbFactorG.value = String(gf ?? 1);
-  ui.cmbModelS.value = sCase ? JSON.stringify(sCase) : "";
-  ui.cmbFactorS.value = String(sf ?? 1);
-  ui.cmbModelW = ui.cmbModelW || { value: "" };
-  ui.cmbModelW.value = "";
-  ui.cmbFactorW.value = "1";
+  const ui = combo.ui, get = combo.get;
+  get("cmbModelG").value = g ? JSON.stringify(g) : "";
+  get("cmbFactorG").value = String(gf ?? 1);
+  get("cmbModelS").value = sCase ? JSON.stringify(sCase) : "";
+  get("cmbFactorS").value = String(sf ?? 1);
+  get("cmbModelW").value = "";
+  get("cmbFactorW").value = "1";
   combo.runFrameCombinations();
   return combo.getLast();
 }
