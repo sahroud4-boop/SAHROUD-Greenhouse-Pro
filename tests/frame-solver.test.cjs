@@ -41,9 +41,9 @@ function extractFunction(source, name) {
   throw new Error("unterminated function: " + name);
 }
 
-const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress", "frameAxialForceScreen", "frameSectionDemandScreen", "frameSectionPropertiesForAxis", "frameEulerBucklingForAxis", "frameEulerBucklingMinimum"];
+const names = ["frame2DStiffness", "frame2DTransform", "matVec", "transpose", "matMul", "solveLinearSystem", "analyzeFrame2D", "frameElasticExtremeFiberStress", "frameAxialForceScreen", "frameSectionDemandScreen", "frameSectionPropertiesForAxis", "frameEulerBucklingForAxis", "frameEulerBucklingMinimum", "validateSectionProfileData"];
 const code = names.map(name => extractFunction(scriptMatch[1], name)).join("\n") +
-  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress, frameAxialForceScreen, frameSectionDemandScreen, frameSectionPropertiesForAxis, frameEulerBucklingForAxis, frameEulerBucklingMinimum };";
+  "\nglobalThis.api = { analyzeFrame2D, frameElasticExtremeFiberStress, frameAxialForceScreen, frameSectionDemandScreen, frameSectionPropertiesForAxis, frameEulerBucklingForAxis, frameEulerBucklingMinimum, validateSectionProfileData };";
 const context = vm.createContext({});
 vm.runInContext(code, context, { timeout: 5000 });
 const analyze = context.api.analyzeFrame2D;
@@ -349,3 +349,40 @@ assert.ok(Math.abs(independentlyCritical.transverse_mm) > 1e-6,
 // station is covered by the solver's existing uniform-load midpoint regression;
  // do not assume every support/load arrangement has an interior shear zero.
 console.log("PASS: signed local deflection superposition and critical-deflection recomputation");
+
+
+// Regression coverage: profile-bank validation for geometry and imported records.
+const validateProfile = context.api.validateSectionProfileData;
+const validIProfile = {
+  name: "I-TEST-300", mass: 42.5, shape: "i",
+  depth: 300, flangeWidth: 150, webThickness: 8, flangeThickness: 12,
+  bendingAxis: "x", area: 5400, Ix: 8e7, Iy: 6e6, Wx: 5.3e5, Wy: 8e4
+};
+assert.equal(validateProfile(validIProfile), "",
+  "a positive, geometrically compatible I-section profile must pass basic data validation");
+assert.match(validateProfile({...validIProfile, mass: 0}), /جرم واحد طول/,
+  "zero mass must be rejected");
+assert.match(validateProfile({...validIProfile, shape: "unknown"}),
+  /نوع شکل مقطع/,
+  "unknown shape values must be rejected");
+assert.match(validateProfile({...validIProfile, bendingAxis: "z"}),
+  /محور خمشی/,
+  "unsupported bending axis must be rejected");
+assert.match(validateProfile({...validIProfile, Ix: "not-a-number"}),
+  /فیلد Ix/,
+  "non-numeric entered section properties must be rejected");
+assert.match(validateProfile({...validIProfile, depth: 20, flangeThickness: 12}),
+  /ابعاد واردشده/,
+  "incompatible flange and overall depth dimensions must be rejected");
+assert.match(validateProfile({...validIProfile, webThickness: 160}),
+  /ابعاد واردشده/,
+  "web thickness greater than flange width must be rejected");
+assert.match(validateProfile({...validIProfile, flangeThickness: null, webThickness: null}),
+  /d و bf و tw و tf/,
+  "I-section geometry must not silently pass with missing required dimensions");
+assert.equal(validateProfile({name:"LEGACY",mass:7,area:900}),
+  "",
+  "legacy profiles without optional shape metadata remain import-compatible");
+assert.match(validateProfile({name:" ",mass:7}), /نام یا کد/,
+  "blank profile names must be rejected");
+console.log("PASS: section-profile bank validation, geometry consistency, and legacy import compatibility");
