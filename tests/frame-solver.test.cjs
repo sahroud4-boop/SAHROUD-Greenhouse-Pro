@@ -255,8 +255,8 @@ near(mixed.members[0].max_transverse_deflection.x_mm,
 assert.ok(Math.abs(independentlyCritical.transverse_mm) > 1e-6,
   "mixed load case must produce a non-zero combined local deflection");
 
-const simpleUniformA = { ...beam, elementLoads: [{ element: 0, qx: 0, qy: -0.8 }] };
-const simpleUniformB = { ...beam, elementLoads: [{ element: 0, qx: 0, qy: -0.3 }] };
+const simpleUniformA = { ...beam, elementLoads: [{ element: 0, qx: 0, qy: 0.8 }] };
+const simpleUniformB = { ...beam, elementLoads: [{ element: 0, qx: 0, qy: 0.3 }] };
 const asymmetricSimple = runCases(simpleUniformA, 1.25, simpleUniformB, -0.4);
 assert.ok(asymmetricSimple, "asymmetric simply-supported uniform-load combination must calculate");
 const simpleAOutput = analyze(simpleUniformA), simpleBOutput = analyze(simpleUniformB);
