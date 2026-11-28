@@ -973,7 +973,7 @@ function evaluateSectionCandidates(){
      let bucklingRatio=null;
      if(role.key==="columns"){
       const rx=Math.sqrt(Number(profile.Ix)/Number(profile.area)),ry=Math.sqrt(Number(profile.Iy)/Number(profile.area));
-      bucklingRatio=Math.max(...target.map(m=>{const q=m.local_end_forces_N_Nmm,L=Number(m.length_mm);if(!Array.isArray(q)||q.length<6||!q.every(Number.isFinite)||!(Number.isFinite(L)&&L>0))throw new Error("داده نیرو یا طول ستون برای غربالگری کمانش معتبر نیست.");const Nc=Math.max(0,q[0],-q[3]),pcrx=Math.PI**2*Number(profile.E)*Number(profile.Ix)/(Kx*L)**2,pcry=Math.PI**2*Number(profile.E)*Number(profile.Iy)/(Ky*L)**2;return Nc/Math.min(pcrx,pcry);}));
+      bucklingRatio=Math.max(...target.map(m=>{const q=m.local_end_forces_N_Nmm,L=Number(m.length_mm);if(!Array.isArray(q)||q.length<6||!q.every(Number.isFinite)||!(Number.isFinite(L)&&L>0))throw new Error("داده نیرو یا طول ستون برای غربالگری کمانش معتبر نیست.");const Nc=frameAxialForceScreen(m).maxCompression_N,pcrx=Math.PI**2*Number(profile.E)*Number(profile.Ix)/(Kx*L)**2,pcry=Math.PI**2*Number(profile.E)*Number(profile.Iy)/(Ky*L)**2;return Nc/Math.min(pcrx,pcry);}));
      }
      if(Number.isFinite(maxRatio)&&(bucklingRatio===null||Number.isFinite(bucklingRatio)))ranked.push({name:profile.name,mass:Number(profile.mass),ratio:maxRatio,stressMPa:criticalStress.stressAbs,criticalMember:criticalStress.member,criticalEnd:criticalStress.criticalEnd,axialRatio:criticalStress.axialRatio,axialStressMPa:criticalStress.axialStressAbs,axialCriticalEnd:criticalStress.axialCriticalEnd,bucklingRatio,fy:Number(profile.Fy),baseline:profile.name===baselineName});
     }catch(err){/* candidate singularity or invalid data: skip */}
@@ -1080,13 +1080,13 @@ function runColumnBucklingScreen(){
    const m=out.members.find(x=>x.id===el.id);if(!m)throw new Error("نتیجه تحلیل برای "+el.id+" موجود نیست.");
    const q=m.local_end_forces_N_Nmm;
    if(!Array.isArray(q)||q.length<6||!q.every(Number.isFinite))throw new Error("نیروهای انتهایی عضو "+el.id+" نامعتبر است.");
-   const Nc=Math.max(0,q[0],-q[3]),L=Number(m.length_mm);
+   const axial=frameAxialForceScreen(m),Nc=axial.maxCompression_N,L=Number(m.length_mm);
    if(!(Number.isFinite(L)&&L>0))throw new Error("طول عضو "+el.id+" معتبر نیست.");
    const lx=Kx*L/rx,ly=Ky*L/ry;
    const pcrx=Math.PI**2*E*Ix/(Kx*L)**2,pcry=Math.PI**2*E*Iy/(Ky*L)**2,pcr=Math.min(pcrx,pcry);
-   return {id:el.id,L,Nc,rx,ry,lx,ly,pcrx,pcry,pcr,ratio:Nc/pcr,axis:pcrx<=pcry?"x":"y"};
+   return {id:el.id,L,Nc,compressionAt_mm:axial.compressionAt_mm,rx,ry,lx,ly,pcrx,pcry,pcr,ratio:Nc/pcr,axis:pcrx<=pcry?"x":"y"};
   });
-  const html='<div class="result"><p><b>مقطع ستون:</b> '+esc(profile.name)+' · <b>تعداد:</b> '+rows.length+' · <b>rₓ:</b> '+fmt(rx,2)+' mm · <b>rᵧ:</b> '+fmt(ry,2)+' mm</p><div class="tablewrap"><table><tr><th>عضو</th><th>L (mm)</th><th>N فشاری (kN)</th><th>KL/r محور x</th><th>KL/r محور y</th><th>Pcr محور x (kN)</th><th>Pcr محور y (kN)</th><th>محور بحرانی اویلر</th><th>N/Pcr,min</th></tr>'+rows.map(r=>'<tr><td>'+esc(r.id)+'</td><td>'+fmt(r.L,1)+'</td><td>'+fmt(r.Nc/1000,3)+'</td><td>'+fmt(r.lx,2)+'</td><td>'+fmt(r.ly,2)+'</td><td>'+fmt(r.pcrx/1000,2)+'</td><td>'+fmt(r.pcry/1000,2)+'</td><td>'+r.axis+'</td><td>'+fmt(r.ratio,4)+'</td></tr>').join('')+'</table></div><p class="muted">شعاع ژیراسیون از رابطه r=√(I/A) و مستقل از مقادیر اختیاری واردشده rx/ry محاسبه شده است. محور x/y مطابق نام‌گذاری دیتاشیت مقطع است؛ جهت‌گیری واقعی مقطع حول عضو باید جداگانه کنترل شود. کمترین بار بحرانی دو محور برای نسبت غربالگری گزارش شده است.</p></div>';
+  const html='<div class="result"><p><b>مقطع ستون:</b> '+esc(profile.name)+' · <b>تعداد:</b> '+rows.length+' · <b>rₓ:</b> '+fmt(rx,2)+' mm · <b>rᵧ:</b> '+fmt(ry,2)+' mm</p><div class="tablewrap"><table><tr><th>عضو</th><th>L (mm)</th><th>N فشاری بیشینه (kN)</th><th>محل N فشاری (mm)</th><th>KL/r محور x</th><th>KL/r محور y</th><th>Pcr محور x (kN)</th><th>Pcr محور y (kN)</th><th>محور بحرانی اویلر</th><th>N/Pcr,min</th></tr>'+rows.map(r=>'<tr><td>'+esc(r.id)+'</td><td>'+fmt(r.L,1)+'</td><td>'+fmt(r.Nc/1000,3)+'</td><td>'+fmt(r.compressionAt_mm,1)+'</td><td>'+fmt(r.lx,2)+'</td><td>'+fmt(r.ly,2)+'</td><td>'+fmt(r.pcrx/1000,2)+'</td><td>'+fmt(r.pcry/1000,2)+'</td><td>'+r.axis+'</td><td>'+fmt(r.ratio,4)+'</td></tr>').join('')+'</table></div><p class="muted">شعاع ژیراسیون از رابطه r=√(I/A) و مستقل از مقادیر اختیاری واردشده rx/ry محاسبه شده است. محور x/y مطابق نام‌گذاری دیتاشیت مقطع است؛ جهت‌گیری واقعی مقطع حول عضو باید جداگانه کنترل شود. کمترین بار بحرانی دو محور برای نسبت غربالگری گزارش شده است.</p></div>';
   $("bucklingOutput").innerHTML=html;
   status("bucklingStatus","غربالگری اویلر دو‌محوره انجام شد؛ Kها، طول مهارنشده واقعی، جهت‌گیری مقطع و شرایط انتهایی باید توسط مهندس تأیید شوند. این نسبت مقاومت طراحی آیین‌نامه‌ای نیست.");
   return {rows,profile:profile.name,rx,ry};
