@@ -238,6 +238,7 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:15px}
    <div><label>شعاع ژیراسیون ry (mm)</label><input id="profileRy" type="number" min="0" step="any"></div>
    <div><label>منبع / شماره دیتاشیت</label><input id="profileSource" placeholder="عنوان، ناشر، شماره صفحه"></div>
   </div>
+  <div class="toolbar" style="margin-top:10px"><button class="btn-secondary" type="button" onclick="calculateAndFillIdealizedIProfile()">محاسبه خواص هندسی I ایده‌آل (گوشه تیز)</button><span class="muted">فقط مدل متقارن ایده‌آل؛ برای مقاطع نوردشده، دیتاشیت و شعاع فیله ملاک است.</span></div>
   <label>یادداشت و تاریخ اعتبار منبع</label><input id="profileNotes" placeholder="تاریخ انتشار/دریافت، لینک مرجع یا توضیح">
   <div class="toolbar" style="margin-top:12px"><button onclick="addSectionProfile()">افزودن به بانک مقاطع</button><button class="btn-soft" onclick="exportSectionProfiles()">خروجی بانک JSON</button><label class="btn btn-soft" for="profileImport">ورود بانک JSON</label><input id="profileImport" type="file" accept=".json,application/json" hidden onchange="importSectionProfiles(event)"></div>
   <div class="status" id="profileStatus"></div>
@@ -497,6 +498,27 @@ let sectionProfileBank=[];
 function loadSectionProfileBank(){try{const raw=localStorage.getItem(PROFILE_BANK_KEY);const parsed=raw?JSON.parse(raw):[];sectionProfileBank=Array.isArray(parsed)?parsed.filter(p=>p&&typeof p.name==="string"&&p.name.trim()):[]}catch(e){sectionProfileBank=[];status("profileStatus","خواندن بانک محلی ناموفق بود: "+e.message,true)}renderSectionProfileBank()}
 function persistSectionProfileBank(){localStorage.setItem(PROFILE_BANK_KEY,JSON.stringify(sectionProfileBank));renderSectionProfileBank()}
 function profileField(id){const e=$(id);if(!e||e.value.trim()==="")return null;const v=Number(e.value);return Number.isFinite(v)&&v>=0?v:null}
+function calculateIdealizedISection(d,bf,tw,tf){
+ const v=[d,bf,tw,tf].map(Number);
+ if(v.some(x=>!Number.isFinite(x)||x<=0))return {error:"همه ابعاد باید عددی و مثبت باشند."};
+ [d,bf,tw,tf]=v;
+ if(2*tf>=d||tw>=bf)return {error:"ابعاد نامعتبرند: باید 2tf<d و tw<bf باشد."};
+ const webHeight=d-2*tf;
+ const area=2*bf*tf+tw*webHeight;
+ const Ix=(bf*Math.pow(d,3)-(bf-tw)*Math.pow(webHeight,3))/12;
+ const Iy=(2*tf*Math.pow(bf,3)+webHeight*Math.pow(tw,3))/12;
+ if(![area,Ix,Iy].every(x=>Number.isFinite(x)&&x>0))return {error:"محاسبه هندسی به نتیجه مثبت و معتبر نرسید."};
+ return {area,Ix,Iy,Wx:Ix/(d/2),Wy:Iy/(bf/2),rx:Math.sqrt(Ix/area),ry:Math.sqrt(Iy/area),assumption:"مقطع I متقارن ایده‌آل با گوشه‌های تیز؛ بدون فیله، شعاع نورد، تلرانس و اثر ساخت"};
+}
+function calculateAndFillIdealizedIProfile(){
+ if($("profileShape").value!=="i"){status("profileStatus","این محاسبه فقط برای مدل ایده‌آل مقطع I متقارن است.",true);return}
+ const result=calculateIdealizedISection($("profileDepth").value,$("profileFlangeWidth").value,$("profileWebThickness").value,$("profileFlangeThickness").value);
+ if(result.error){status("profileStatus",result.error,true);return}
+ for(const [id,key] of [["profileArea","area"],["profileIx","Ix"],["profileIy","Iy"],["profileWx","Wx"],["profileWy","Wy"],["profileRx","rx"],["profileRy","ry"]])$(id).value=Number(result[key].toPrecision(8));
+ const notes=$("profileNotes");const warning="خواص هندسی محاسبه‌شده از مدل I متقارن با گوشه تیز؛ بدون فیله/شعاع نورد و تلرانس. برای مقطع نوردشده یا تأیید نهایی، دیتاشیت سازنده ملاک است.";
+ notes.value=notes.value?notes.value+" | "+warning:warning;
+ status("profileStatus","خواص هندسی ایده‌آل محاسبه و در فیلدها درج شد؛ این مقادیر جایگزین دیتاشیت مقطع نوردشده نیستند.");
+}
 function validateSectionProfileData(p){
  if(!p||typeof p.name!=="string"||!p.name.trim())return "نام یا کد مقطع الزامی است.";
  if(!(Number.isFinite(Number(p.mass))&&Number(p.mass)>0))return "جرم واحد طول باید عددی مثبت باشد.";
